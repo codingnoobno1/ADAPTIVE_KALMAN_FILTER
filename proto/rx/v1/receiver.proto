@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+package livekalman.rx.v1;
+option go_package = "github.com/streaming-live-kalman/filter/gen/rx/v1;rxv1";
+
+import "common/v1/common.proto";
+
+message TxFrame {
+  string run_id = 1;
+  uint64 stream_id = 2;
+  uint64 sequence = 3;
+  uint64 first_sample_index = 4;
+  uint32 sample_rate_hz = 5;
+  uint32 samples_per_symbol = 6;
+  uint64 capture_timestamp_us = 7;
+  uint64 config_version = 8;
+  repeated float samples = 9;
+  bytes reference_bits = 10;
+  livekalman.common.v1.SampleFormat sample_format = 11;
+  bytes packed_samples = 12;
+}
+
+message RxFeedback {
+  uint64 sequence = 1;
+  float snr_db = 2;
+  float noise_variance = 3;
+  uint64 compared_bits = 4;
+  uint64 bit_errors = 5;
+  float ber = 6;
+  double latency_ms = 7;
+  uint64 active_config_version = 8;
+  uint32 queue_depth = 9;
+}
+
+message RxConfig {
+  uint64 command_id = 1;
+  uint64 version = 2;
+  uint64 effective_sequence = 3;
+  float kalman_q = 4;
+  float kalman_r = 5;
+  bool reset_state = 6;
+}
+
+message ApplyRxReply {
+  bool accepted = 1;
+  string reason = 2;
+  uint64 applied_version = 3;
+}
+
+message RxStatus {
+  uint64 active_version = 1;
+  bool stream_active = 2;
+  uint64 last_sequence = 3;
+  uint64 sequence_gaps = 4;
+}
+
+service ReceiverService {
+  rpc ProcessSignal(stream TxFrame) returns (stream RxFeedback);
+  rpc ApplyReceiverConfig(RxConfig) returns (ApplyRxReply);
+  rpc GetRxStatus(livekalman.common.v1.Empty) returns (RxStatus);
+}
+

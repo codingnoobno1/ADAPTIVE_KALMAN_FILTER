@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package livekalman.control.v1;
+option go_package = "github.com/streaming-live-kalman/filter/gen/control/v1;controlv1";
+
+message ReceiverMetrics {
+  string run_id = 1;
+  uint64 sequence = 2;
+  float snr_db = 3;
+  float noise_variance = 4;
+  uint64 compared_bits = 5;
+  uint64 bit_errors = 6;
+  float ber = 7;
+  double latency_ms = 8;
+  uint64 active_config_version = 9;
+  uint32 queue_depth = 10;
+  uint64 observed_at_unix_ms = 11;
+}
+
+message PolicyDecision {
+  uint64 command_id = 1;
+  uint64 proposed_version = 2;
+  uint64 effective_sequence = 3;
+  float proposed_kalman_q = 4;
+  float proposed_kalman_r = 5;
+  bool reset_state = 6;
+  string reason = 7;
+}
+
+message WatchRequest { string run_id = 1; }
+
+message ExperimentEvent {
+  string run_id = 1;
+  uint64 sequence = 2;
+  string kind = 3;
+  string description = 4;
+  ReceiverMetrics metrics = 5;
+  PolicyDecision decision = 6;
+  uint64 emitted_at_unix_ms = 7;
+}
+
+message ExperimentStateRequest { string run_id = 1; }
+
+message ExperimentState {
+  string run_id = 1;
+  bool active = 2;
+  ReceiverMetrics latest = 3;
+  uint64 desired_config_version = 4;
+}
+
+service ControllerService {
+  rpc Adapt(stream ReceiverMetrics) returns (stream PolicyDecision);
+  rpc WatchExperiment(WatchRequest) returns (stream ExperimentEvent);
+  rpc GetExperimentState(ExperimentStateRequest) returns (ExperimentState);
+}
+

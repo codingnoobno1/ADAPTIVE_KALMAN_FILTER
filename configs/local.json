@@ -1,0 +1,29 @@
+{
+  "tx": {
+    "listen": "127.0.0.1:55051",
+    "receiver": "127.0.0.1:55052",
+    "runId": "local-demo",
+    "sampleRateHz": 48000,
+    "samplesPerSymbol": 8,
+    "samplesPerFrame": 512,
+    "amplitude": 1.0,
+    "noiseStdDev": 0.70,
+    "seed": 20260925
+  },
+  "rx": {
+    "listen": "127.0.0.1:55052",
+    "httpListen": "127.0.0.1:8082",
+    "controller": "127.0.0.1:55053",
+    "queueCapacity": 32,
+    "kalmanQ": 0.20,
+    "kalmanR": 0.50
+  },
+  "controller": {
+    "listen": "127.0.0.1:55053",
+    "httpListen": "127.0.0.1:8080",
+    "windowSize": 12,
+    "decisionCooldownFrames": 64,
+    "minKalmanR": 0.02,
+    "maxKalmanR": 4.0
+  }
+}

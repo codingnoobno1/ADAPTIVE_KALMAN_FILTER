@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package livekalman.common.v1;
+option go_package = "github.com/streaming-live-kalman/filter/gen/common/v1;commonv1";
+
+// SampleFormat makes the byte representation explicit for embedded producers.
+enum SampleFormat {
+  SAMPLE_FORMAT_UNSPECIFIED = 0;
+  SAMPLE_FORMAT_FLOAT32_LE = 1;
+  SAMPLE_FORMAT_INT16_LE = 2;
+}
+
+message Empty {}
+

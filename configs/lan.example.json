@@ -1,0 +1,29 @@
+{
+  "tx": {
+    "listen": "0.0.0.0:50051",
+    "receiver": "192.168.1.12:50052",
+    "runId": "lan-demo",
+    "sampleRateHz": 48000,
+    "samplesPerSymbol": 8,
+    "samplesPerFrame": 512,
+    "amplitude": 1.0,
+    "noiseStdDev": 0.70,
+    "seed": 20260925
+  },
+  "rx": {
+    "listen": "0.0.0.0:50052",
+    "httpListen": "0.0.0.0:8082",
+    "controller": "192.168.1.13:50053",
+    "queueCapacity": 32,
+    "kalmanQ": 0.20,
+    "kalmanR": 0.50
+  },
+  "controller": {
+    "listen": "0.0.0.0:50053",
+    "httpListen": "0.0.0.0:8080",
+    "windowSize": 12,
+    "decisionCooldownFrames": 64,
+    "minKalmanR": 0.02,
+    "maxKalmanR": 4.0
+  }
+}

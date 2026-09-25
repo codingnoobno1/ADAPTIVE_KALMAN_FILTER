@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package livekalman.tx.v1;
+option go_package = "github.com/streaming-live-kalman/filter/gen/tx/v1;txv1";
+
+import "common/v1/common.proto";
+
+message TxConfig {
+  uint64 command_id = 1;
+  uint64 version = 2;
+  uint64 effective_sequence = 3;
+  uint32 symbol_rate = 4;
+  float amplitude = 5;
+  float noise_stddev = 6;
+}
+
+message ApplyTxReply {
+  bool accepted = 1;
+  string reason = 2;
+  uint64 applied_version = 3;
+}
+
+message TxStatus {
+  uint64 active_version = 1;
+  bool running = 2;
+  uint64 sequence = 3;
+  string run_id = 4;
+}
+
+message TxEvent {
+  uint64 sequence = 1;
+  string description = 2;
+}
+
+service TransmitterService {
+  rpc ApplyTransmitterConfig(TxConfig) returns (ApplyTxReply);
+  rpc GetTxStatus(livekalman.common.v1.Empty) returns (TxStatus);
+  rpc WatchTxEvents(livekalman.common.v1.Empty) returns (stream TxEvent);
+}
+

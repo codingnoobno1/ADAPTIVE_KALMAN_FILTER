@@ -1,0 +1,13 @@
+.tools/
+bin/
+logs/
+run/
+**/bin/
+**/obj/
+**/.dart_tool/
+**/build/
+**/.flutter-plugins*
+**/ephemeral/
+.vs/
+*.user
+*.suo

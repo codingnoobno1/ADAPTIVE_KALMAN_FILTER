@@ -1,0 +1,5 @@
+livekalman.rx.v1.TxFrame.run_id max_size:48
+livekalman.rx.v1.TxFrame.samples max_count:512
+livekalman.rx.v1.TxFrame.reference_bits max_size:64
+livekalman.rx.v1.TxFrame.packed_samples max_size:2048
+

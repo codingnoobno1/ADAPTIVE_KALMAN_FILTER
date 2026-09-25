@@ -1,0 +1,19 @@
+<article class="metric-card @Accent">
+    <div class="metric-top">
+        <span class="metric-icon" aria-hidden="true">@Icon</span>
+        <span class="metric-label">@Label</span>
+        <span class="metric-pulse"></span>
+    </div>
+    <div class="metric-value">@Value <small>@Unit</small></div>
+    <div class="metric-note">@Note</div>
+</article>
+
+@code {
+    [Parameter, EditorRequired] public string Label { get; set; } = "";
+    [Parameter, EditorRequired] public string Value { get; set; } = "";
+    [Parameter] public string Unit { get; set; } = "";
+    [Parameter] public string Icon { get; set; } = "•";
+    [Parameter] public string Note { get; set; } = "Awaiting telemetry";
+    [Parameter] public string Accent { get; set; } = "mint";
+}
+
