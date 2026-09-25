@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:livekalman_sdk/livekalman_sdk.dart' as lk;
 
 void main() => runApp(const SignalMonitorApp());
 
@@ -48,6 +49,15 @@ class Metrics {
       version: n('active_config_version').toInt(),
     );
   }
+
+  factory Metrics.fromProto(lk.ReceiverMetrics m) => Metrics(
+    sequence: m.sequence.toInt(),
+    snr: m.snrDb,
+    ber: m.ber,
+    noise: m.noiseVariance,
+    latency: m.latencyMs,
+    version: m.activeConfigVersion.toInt(),
+  );
 }
 
 class MonitorPage extends StatefulWidget {
@@ -63,14 +73,24 @@ class _MonitorPageState extends State<MonitorPage> {
   final history = <Metrics>[];
   http.Client? client;
   StreamSubscription<String>? subscription;
+  StreamSubscription<lk.ExperimentEvent>? grpcSubscription;
+  lk.LiveKalmanClient? grpcClient;
   Metrics latest = const Metrics();
   String status = 'OFFLINE';
+  bool get isLive => status.startsWith('LIVE');
 
   Future<void> connect() async {
     await disconnect();
     setState(() => status = 'CONNECTING');
     client = http.Client();
     try {
+      final uri = Uri.parse(endpoint.text);
+      if (uri.scheme == 'grpc') {
+        client?.close();
+        client = null;
+        await _connectGrpc(uri);
+        return;
+      }
       final response = await client!.send(
         http.Request('GET', Uri.parse(endpoint.text))
           ..headers['Accept'] = 'text/event-stream',
@@ -104,10 +124,45 @@ class _MonitorPageState extends State<MonitorPage> {
     }
   }
 
+  Future<void> _connectGrpc(Uri uri) async {
+    int port(String name, int fallback) =>
+        int.tryParse(uri.queryParameters[name] ?? '') ?? fallback;
+    final controllerHost = uri.host;
+    grpcClient = lk.LiveKalmanClient.insecure(
+      lk.LabEndpoints(
+        transmitterHost: uri.queryParameters['txHost'] ?? controllerHost,
+        receiverHost: uri.queryParameters['rxHost'] ?? controllerHost,
+        controllerHost: controllerHost,
+        transmitterPort: port('txPort', 55051),
+        receiverPort: port('rxPort', 55052),
+        controllerPort: port('controllerPort', uri.hasPort ? uri.port : 55053),
+      ),
+    );
+    await grpcClient!.discoverNodes();
+    setState(() => status = 'LIVE / GRPC');
+    grpcSubscription = grpcClient!.watchExperiment().listen(
+      (event) {
+        if (!event.hasMetrics()) return;
+        final value = Metrics.fromProto(event.metrics);
+        setState(() {
+          latest = value;
+          history.add(value);
+          if (history.length > 80) history.removeAt(0);
+        });
+      },
+      onError: (Object _) => mounted ? setState(() => status = 'RETRY') : null,
+      onDone: () => mounted ? setState(() => status = 'OFFLINE') : null,
+    );
+  }
+
   Future<void> disconnect() async {
     await subscription?.cancel();
+    await grpcSubscription?.cancel();
+    await grpcClient?.close();
     client?.close();
     subscription = null;
+    grpcSubscription = null;
+    grpcClient = null;
     client = null;
   }
 
@@ -232,17 +287,13 @@ class _MonitorPageState extends State<MonitorPage> {
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
-          color: status == 'LIVE'
-              ? const Color(0x2258f3c2)
-              : const Color(0x22ff7b9c),
+          color: isLive ? const Color(0x2258f3c2) : const Color(0x22ff7b9c),
           borderRadius: BorderRadius.circular(99),
         ),
         child: Text(
           '● $status',
           style: TextStyle(
-            color: status == 'LIVE'
-                ? const Color(0xff58f3c2)
-                : const Color(0xffff7b9c),
+            color: isLive ? const Color(0xff58f3c2) : const Color(0xffff7b9c),
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -271,9 +322,9 @@ class _MonitorPageState extends State<MonitorPage> {
         ),
         const SizedBox(width: 12),
         FilledButton.icon(
-          onPressed: status == 'LIVE' ? disconnect : connect,
-          icon: Icon(status == 'LIVE' ? Icons.stop : Icons.play_arrow),
-          label: Text(status == 'LIVE' ? 'STOP' : 'CONNECT'),
+          onPressed: isLive ? disconnect : connect,
+          icon: Icon(isLive ? Icons.stop : Icons.play_arrow),
+          label: Text(isLive ? 'STOP' : 'CONNECT'),
         ),
         const SizedBox(width: 16),
         Text(

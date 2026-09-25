@@ -1,5 +1,5 @@
 {
-  "tx": {
+  "sender": {
     "listen": "127.0.0.1:55051",
     "receiver": "127.0.0.1:55052",
     "runId": "local-demo",
@@ -10,7 +10,7 @@
     "noiseStdDev": 0.70,
     "seed": 20260925
   },
-  "rx": {
+  "receiver": {
     "listen": "127.0.0.1:55052",
     "httpListen": "127.0.0.1:8082",
     "controller": "127.0.0.1:55053",

@@ -12,3 +12,57 @@ enum SampleFormat {
 
 message Empty {}
 
+// NodeRole identifies the independently deployable process behind an endpoint.
+enum NodeRole {
+  NODE_ROLE_UNSPECIFIED = 0;
+  NODE_ROLE_TRANSMITTER = 1;
+  NODE_ROLE_RECEIVER = 2;
+  NODE_ROLE_CONTROLLER = 3;
+}
+
+enum HealthState {
+  HEALTH_STATE_UNSPECIFIED = 0;
+  HEALTH_STATE_STARTING = 1;
+  HEALTH_STATE_READY = 2;
+  HEALTH_STATE_DEGRADED = 3;
+  HEALTH_STATE_STOPPING = 4;
+}
+
+message Capability {
+  string name = 1;
+  string version = 2;
+  map<string, string> attributes = 3;
+}
+
+message NodeInfo {
+  string node_id = 1;
+  string display_name = 2;
+  NodeRole role = 3;
+  string api_version = 4;
+  string listen_address = 5;
+  repeated Capability capabilities = 6;
+}
+
+message NodeStatus {
+  string node_id = 1;
+  NodeRole role = 2;
+  HealthState health = 3;
+  bool active = 4;
+  bool peer_connected = 5;
+  string active_run_id = 6;
+  uint64 active_config_version = 7;
+  uint64 last_sequence = 8;
+  uint64 uptime_ms = 9;
+  string message = 10;
+  uint64 observed_at_unix_ms = 11;
+}
+
+message WatchNodeRequest { uint32 interval_ms = 1; }
+
+// NodeService is implemented by TX, RX and Controller. Clients can discover
+// role/capabilities and monitor health without knowing the role-specific API.
+service NodeService {
+  rpc GetNodeInfo(Empty) returns (NodeInfo);
+  rpc GetNodeStatus(Empty) returns (NodeStatus);
+  rpc WatchNodeStatus(WatchNodeRequest) returns (stream NodeStatus);
+}

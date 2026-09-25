@@ -10,7 +10,21 @@ From PowerShell in this directory:
 .\scripts\dev-all.ps1 -Dashboard flutter
 ```
 
-That command downloads a project-local Go/protoc toolchain, generates protobuf code, runs tests, builds all targets, starts Controller -> RX -> TX, and launches the selected dashboard. Use `-Dashboard maui` or `-Dashboard none` as needed.
+That command downloads a project-local Go/protoc toolchain, generates protobuf code, runs tests, builds all targets, starts Controller -> Receiver -> Sender, and launches the selected dashboard. Use `-Dashboard maui` or `-Dashboard none` as needed.
+
+## Three-person server layout
+
+```text
+server/
+  sender/       main.go + core/ + extensions/   # Laptop 1 developer
+  receiver/     main.go + core/ + extensions/   # Laptop 2 developer
+  controller/   main.go + core/ + extensions/   # Laptop 3 developer
+shared/         config, DSP primitives, networking and common node health
+proto/          coordinated cross-team contracts
+apps/           MAUI and Flutter presentation layers
+```
+
+Each server's `main.go` is intentionally small and imports its base requirements. Required behavior lives in `core/`; optional hardware, AI, UI-export and policy features belong behind interfaces in `extensions/`. See [team workflow](docs/team-workflow.md).
 
 For faster later runs:
 
@@ -33,12 +47,20 @@ Runtime logs are written to `logs/`; exact child PIDs are kept in `run/`. The st
 # Laptop 3
 .\scripts\run-role.ps1 -Role controller
 # Laptop 2
-.\scripts\run-role.ps1 -Role rx
+.\scripts\run-role.ps1 -Role receiver
 # Laptop 1
-.\scripts\run-role.ps1 -Role tx
+.\scripts\run-role.ps1 -Role sender
 ```
 
 The processes tolerate a missing peer and reconnect. On one PC, the local profile uses `55051-55053`; the LAN profile uses the PDF's `50051-50053` ports.
+
+Inspect all three nodes through their shared discovery API:
+
+```powershell
+.\bin\labctl.exe
+```
+
+`labctl` is a diagnostic client, not a fourth server.
 
 ## Interfaces
 
@@ -61,5 +83,10 @@ See [architecture](docs/architecture.md) for lifecycle, state, and security boun
 - Controller-generated bounded `R` updates with cooldown, versioning, and future effective sequence.
 - Responsive dark monitoring UIs for Windows/Android/web (Flutter) and Windows/Android/iOS/macOS targets (.NET MAUI).
 - Portable PowerShell bootstrap/build/run/stop scripts and Go DSP tests.
+- A common `NodeService` implemented by all three processes for discovery, capabilities and health.
+- Reusable Go (`pkg/labclient`) and Dart (`sdk/dart/livekalman_sdk`) client SDKs.
+- Role-specific extension interfaces under each server for signal sources, frame processors, AI enrichment, adaptation policies and event sinks.
 
 The algorithm is an executable research baseline, not a claim of an optimal Kalman state model. Tune `Q`, `R`, symbol timing, and synchronization against controlled seeds before comparing fixed and adaptive runs.
+
+See [Extending the platform](docs/extending.md) before adding new modulation schemes, hardware sources, DSP algorithms or controller policies.

@@ -71,6 +71,114 @@ func (SampleFormat) EnumDescriptor() ([]byte, []int) {
 	return file_common_v1_common_proto_rawDescGZIP(), []int{0}
 }
 
+// NodeRole identifies the independently deployable process behind an endpoint.
+type NodeRole int32
+
+const (
+	NodeRole_NODE_ROLE_UNSPECIFIED NodeRole = 0
+	NodeRole_NODE_ROLE_TRANSMITTER NodeRole = 1
+	NodeRole_NODE_ROLE_RECEIVER    NodeRole = 2
+	NodeRole_NODE_ROLE_CONTROLLER  NodeRole = 3
+)
+
+// Enum value maps for NodeRole.
+var (
+	NodeRole_name = map[int32]string{
+		0: "NODE_ROLE_UNSPECIFIED",
+		1: "NODE_ROLE_TRANSMITTER",
+		2: "NODE_ROLE_RECEIVER",
+		3: "NODE_ROLE_CONTROLLER",
+	}
+	NodeRole_value = map[string]int32{
+		"NODE_ROLE_UNSPECIFIED": 0,
+		"NODE_ROLE_TRANSMITTER": 1,
+		"NODE_ROLE_RECEIVER":    2,
+		"NODE_ROLE_CONTROLLER":  3,
+	}
+)
+
+func (x NodeRole) Enum() *NodeRole {
+	p := new(NodeRole)
+	*p = x
+	return p
+}
+
+func (x NodeRole) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (NodeRole) Descriptor() protoreflect.EnumDescriptor {
+	return file_common_v1_common_proto_enumTypes[1].Descriptor()
+}
+
+func (NodeRole) Type() protoreflect.EnumType {
+	return &file_common_v1_common_proto_enumTypes[1]
+}
+
+func (x NodeRole) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use NodeRole.Descriptor instead.
+func (NodeRole) EnumDescriptor() ([]byte, []int) {
+	return file_common_v1_common_proto_rawDescGZIP(), []int{1}
+}
+
+type HealthState int32
+
+const (
+	HealthState_HEALTH_STATE_UNSPECIFIED HealthState = 0
+	HealthState_HEALTH_STATE_STARTING    HealthState = 1
+	HealthState_HEALTH_STATE_READY       HealthState = 2
+	HealthState_HEALTH_STATE_DEGRADED    HealthState = 3
+	HealthState_HEALTH_STATE_STOPPING    HealthState = 4
+)
+
+// Enum value maps for HealthState.
+var (
+	HealthState_name = map[int32]string{
+		0: "HEALTH_STATE_UNSPECIFIED",
+		1: "HEALTH_STATE_STARTING",
+		2: "HEALTH_STATE_READY",
+		3: "HEALTH_STATE_DEGRADED",
+		4: "HEALTH_STATE_STOPPING",
+	}
+	HealthState_value = map[string]int32{
+		"HEALTH_STATE_UNSPECIFIED": 0,
+		"HEALTH_STATE_STARTING":    1,
+		"HEALTH_STATE_READY":       2,
+		"HEALTH_STATE_DEGRADED":    3,
+		"HEALTH_STATE_STOPPING":    4,
+	}
+)
+
+func (x HealthState) Enum() *HealthState {
+	p := new(HealthState)
+	*p = x
+	return p
+}
+
+func (x HealthState) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (HealthState) Descriptor() protoreflect.EnumDescriptor {
+	return file_common_v1_common_proto_enumTypes[2].Descriptor()
+}
+
+func (HealthState) Type() protoreflect.EnumType {
+	return &file_common_v1_common_proto_enumTypes[2]
+}
+
+func (x HealthState) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use HealthState.Descriptor instead.
+func (HealthState) EnumDescriptor() ([]byte, []int) {
+	return file_common_v1_common_proto_rawDescGZIP(), []int{2}
+}
+
 type Empty struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -107,16 +215,378 @@ func (*Empty) Descriptor() ([]byte, []int) {
 	return file_common_v1_common_proto_rawDescGZIP(), []int{0}
 }
 
+type Capability struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Version       string                 `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
+	Attributes    map[string]string      `protobuf:"bytes,3,rep,name=attributes,proto3" json:"attributes,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Capability) Reset() {
+	*x = Capability{}
+	mi := &file_common_v1_common_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Capability) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Capability) ProtoMessage() {}
+
+func (x *Capability) ProtoReflect() protoreflect.Message {
+	mi := &file_common_v1_common_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Capability.ProtoReflect.Descriptor instead.
+func (*Capability) Descriptor() ([]byte, []int) {
+	return file_common_v1_common_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *Capability) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *Capability) GetVersion() string {
+	if x != nil {
+		return x.Version
+	}
+	return ""
+}
+
+func (x *Capability) GetAttributes() map[string]string {
+	if x != nil {
+		return x.Attributes
+	}
+	return nil
+}
+
+type NodeInfo struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	NodeId        string                 `protobuf:"bytes,1,opt,name=node_id,json=nodeId,proto3" json:"node_id,omitempty"`
+	DisplayName   string                 `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
+	Role          NodeRole               `protobuf:"varint,3,opt,name=role,proto3,enum=livekalman.common.v1.NodeRole" json:"role,omitempty"`
+	ApiVersion    string                 `protobuf:"bytes,4,opt,name=api_version,json=apiVersion,proto3" json:"api_version,omitempty"`
+	ListenAddress string                 `protobuf:"bytes,5,opt,name=listen_address,json=listenAddress,proto3" json:"listen_address,omitempty"`
+	Capabilities  []*Capability          `protobuf:"bytes,6,rep,name=capabilities,proto3" json:"capabilities,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *NodeInfo) Reset() {
+	*x = NodeInfo{}
+	mi := &file_common_v1_common_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *NodeInfo) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NodeInfo) ProtoMessage() {}
+
+func (x *NodeInfo) ProtoReflect() protoreflect.Message {
+	mi := &file_common_v1_common_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NodeInfo.ProtoReflect.Descriptor instead.
+func (*NodeInfo) Descriptor() ([]byte, []int) {
+	return file_common_v1_common_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *NodeInfo) GetNodeId() string {
+	if x != nil {
+		return x.NodeId
+	}
+	return ""
+}
+
+func (x *NodeInfo) GetDisplayName() string {
+	if x != nil {
+		return x.DisplayName
+	}
+	return ""
+}
+
+func (x *NodeInfo) GetRole() NodeRole {
+	if x != nil {
+		return x.Role
+	}
+	return NodeRole_NODE_ROLE_UNSPECIFIED
+}
+
+func (x *NodeInfo) GetApiVersion() string {
+	if x != nil {
+		return x.ApiVersion
+	}
+	return ""
+}
+
+func (x *NodeInfo) GetListenAddress() string {
+	if x != nil {
+		return x.ListenAddress
+	}
+	return ""
+}
+
+func (x *NodeInfo) GetCapabilities() []*Capability {
+	if x != nil {
+		return x.Capabilities
+	}
+	return nil
+}
+
+type NodeStatus struct {
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	NodeId              string                 `protobuf:"bytes,1,opt,name=node_id,json=nodeId,proto3" json:"node_id,omitempty"`
+	Role                NodeRole               `protobuf:"varint,2,opt,name=role,proto3,enum=livekalman.common.v1.NodeRole" json:"role,omitempty"`
+	Health              HealthState            `protobuf:"varint,3,opt,name=health,proto3,enum=livekalman.common.v1.HealthState" json:"health,omitempty"`
+	Active              bool                   `protobuf:"varint,4,opt,name=active,proto3" json:"active,omitempty"`
+	PeerConnected       bool                   `protobuf:"varint,5,opt,name=peer_connected,json=peerConnected,proto3" json:"peer_connected,omitempty"`
+	ActiveRunId         string                 `protobuf:"bytes,6,opt,name=active_run_id,json=activeRunId,proto3" json:"active_run_id,omitempty"`
+	ActiveConfigVersion uint64                 `protobuf:"varint,7,opt,name=active_config_version,json=activeConfigVersion,proto3" json:"active_config_version,omitempty"`
+	LastSequence        uint64                 `protobuf:"varint,8,opt,name=last_sequence,json=lastSequence,proto3" json:"last_sequence,omitempty"`
+	UptimeMs            uint64                 `protobuf:"varint,9,opt,name=uptime_ms,json=uptimeMs,proto3" json:"uptime_ms,omitempty"`
+	Message             string                 `protobuf:"bytes,10,opt,name=message,proto3" json:"message,omitempty"`
+	ObservedAtUnixMs    uint64                 `protobuf:"varint,11,opt,name=observed_at_unix_ms,json=observedAtUnixMs,proto3" json:"observed_at_unix_ms,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *NodeStatus) Reset() {
+	*x = NodeStatus{}
+	mi := &file_common_v1_common_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *NodeStatus) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NodeStatus) ProtoMessage() {}
+
+func (x *NodeStatus) ProtoReflect() protoreflect.Message {
+	mi := &file_common_v1_common_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NodeStatus.ProtoReflect.Descriptor instead.
+func (*NodeStatus) Descriptor() ([]byte, []int) {
+	return file_common_v1_common_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *NodeStatus) GetNodeId() string {
+	if x != nil {
+		return x.NodeId
+	}
+	return ""
+}
+
+func (x *NodeStatus) GetRole() NodeRole {
+	if x != nil {
+		return x.Role
+	}
+	return NodeRole_NODE_ROLE_UNSPECIFIED
+}
+
+func (x *NodeStatus) GetHealth() HealthState {
+	if x != nil {
+		return x.Health
+	}
+	return HealthState_HEALTH_STATE_UNSPECIFIED
+}
+
+func (x *NodeStatus) GetActive() bool {
+	if x != nil {
+		return x.Active
+	}
+	return false
+}
+
+func (x *NodeStatus) GetPeerConnected() bool {
+	if x != nil {
+		return x.PeerConnected
+	}
+	return false
+}
+
+func (x *NodeStatus) GetActiveRunId() string {
+	if x != nil {
+		return x.ActiveRunId
+	}
+	return ""
+}
+
+func (x *NodeStatus) GetActiveConfigVersion() uint64 {
+	if x != nil {
+		return x.ActiveConfigVersion
+	}
+	return 0
+}
+
+func (x *NodeStatus) GetLastSequence() uint64 {
+	if x != nil {
+		return x.LastSequence
+	}
+	return 0
+}
+
+func (x *NodeStatus) GetUptimeMs() uint64 {
+	if x != nil {
+		return x.UptimeMs
+	}
+	return 0
+}
+
+func (x *NodeStatus) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+func (x *NodeStatus) GetObservedAtUnixMs() uint64 {
+	if x != nil {
+		return x.ObservedAtUnixMs
+	}
+	return 0
+}
+
+type WatchNodeRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	IntervalMs    uint32                 `protobuf:"varint,1,opt,name=interval_ms,json=intervalMs,proto3" json:"interval_ms,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *WatchNodeRequest) Reset() {
+	*x = WatchNodeRequest{}
+	mi := &file_common_v1_common_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WatchNodeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WatchNodeRequest) ProtoMessage() {}
+
+func (x *WatchNodeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_common_v1_common_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WatchNodeRequest.ProtoReflect.Descriptor instead.
+func (*WatchNodeRequest) Descriptor() ([]byte, []int) {
+	return file_common_v1_common_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *WatchNodeRequest) GetIntervalMs() uint32 {
+	if x != nil {
+		return x.IntervalMs
+	}
+	return 0
+}
+
 var File_common_v1_common_proto protoreflect.FileDescriptor
 
 const file_common_v1_common_proto_rawDesc = "" +
 	"\n" +
 	"\x16common/v1/common.proto\x12\x14livekalman.common.v1\"\a\n" +
-	"\x05Empty*g\n" +
+	"\x05Empty\"\xcb\x01\n" +
+	"\n" +
+	"Capability\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
+	"\aversion\x18\x02 \x01(\tR\aversion\x12P\n" +
+	"\n" +
+	"attributes\x18\x03 \x03(\v20.livekalman.common.v1.Capability.AttributesEntryR\n" +
+	"attributes\x1a=\n" +
+	"\x0fAttributesEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x88\x02\n" +
+	"\bNodeInfo\x12\x17\n" +
+	"\anode_id\x18\x01 \x01(\tR\x06nodeId\x12!\n" +
+	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x122\n" +
+	"\x04role\x18\x03 \x01(\x0e2\x1e.livekalman.common.v1.NodeRoleR\x04role\x12\x1f\n" +
+	"\vapi_version\x18\x04 \x01(\tR\n" +
+	"apiVersion\x12%\n" +
+	"\x0elisten_address\x18\x05 \x01(\tR\rlistenAddress\x12D\n" +
+	"\fcapabilities\x18\x06 \x03(\v2 .livekalman.common.v1.CapabilityR\fcapabilities\"\xb6\x03\n" +
+	"\n" +
+	"NodeStatus\x12\x17\n" +
+	"\anode_id\x18\x01 \x01(\tR\x06nodeId\x122\n" +
+	"\x04role\x18\x02 \x01(\x0e2\x1e.livekalman.common.v1.NodeRoleR\x04role\x129\n" +
+	"\x06health\x18\x03 \x01(\x0e2!.livekalman.common.v1.HealthStateR\x06health\x12\x16\n" +
+	"\x06active\x18\x04 \x01(\bR\x06active\x12%\n" +
+	"\x0epeer_connected\x18\x05 \x01(\bR\rpeerConnected\x12\"\n" +
+	"\ractive_run_id\x18\x06 \x01(\tR\vactiveRunId\x122\n" +
+	"\x15active_config_version\x18\a \x01(\x04R\x13activeConfigVersion\x12#\n" +
+	"\rlast_sequence\x18\b \x01(\x04R\flastSequence\x12\x1b\n" +
+	"\tuptime_ms\x18\t \x01(\x04R\buptimeMs\x12\x18\n" +
+	"\amessage\x18\n" +
+	" \x01(\tR\amessage\x12-\n" +
+	"\x13observed_at_unix_ms\x18\v \x01(\x04R\x10observedAtUnixMs\"3\n" +
+	"\x10WatchNodeRequest\x12\x1f\n" +
+	"\vinterval_ms\x18\x01 \x01(\rR\n" +
+	"intervalMs*g\n" +
 	"\fSampleFormat\x12\x1d\n" +
 	"\x19SAMPLE_FORMAT_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18SAMPLE_FORMAT_FLOAT32_LE\x10\x01\x12\x1a\n" +
-	"\x16SAMPLE_FORMAT_INT16_LE\x10\x02B@Z>github.com/streaming-live-kalman/filter/gen/common/v1;commonv1b\x06proto3"
+	"\x16SAMPLE_FORMAT_INT16_LE\x10\x02*r\n" +
+	"\bNodeRole\x12\x19\n" +
+	"\x15NODE_ROLE_UNSPECIFIED\x10\x00\x12\x19\n" +
+	"\x15NODE_ROLE_TRANSMITTER\x10\x01\x12\x16\n" +
+	"\x12NODE_ROLE_RECEIVER\x10\x02\x12\x18\n" +
+	"\x14NODE_ROLE_CONTROLLER\x10\x03*\x94\x01\n" +
+	"\vHealthState\x12\x1c\n" +
+	"\x18HEALTH_STATE_UNSPECIFIED\x10\x00\x12\x19\n" +
+	"\x15HEALTH_STATE_STARTING\x10\x01\x12\x16\n" +
+	"\x12HEALTH_STATE_READY\x10\x02\x12\x19\n" +
+	"\x15HEALTH_STATE_DEGRADED\x10\x03\x12\x19\n" +
+	"\x15HEALTH_STATE_STOPPING\x10\x042\x88\x02\n" +
+	"\vNodeService\x12J\n" +
+	"\vGetNodeInfo\x12\x1b.livekalman.common.v1.Empty\x1a\x1e.livekalman.common.v1.NodeInfo\x12N\n" +
+	"\rGetNodeStatus\x12\x1b.livekalman.common.v1.Empty\x1a .livekalman.common.v1.NodeStatus\x12]\n" +
+	"\x0fWatchNodeStatus\x12&.livekalman.common.v1.WatchNodeRequest\x1a .livekalman.common.v1.NodeStatus0\x01B@Z>github.com/streaming-live-kalman/filter/gen/common/v1;commonv1b\x06proto3"
 
 var (
 	file_common_v1_common_proto_rawDescOnce sync.Once
@@ -130,18 +600,36 @@ func file_common_v1_common_proto_rawDescGZIP() []byte {
 	return file_common_v1_common_proto_rawDescData
 }
 
-var file_common_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_common_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
+var file_common_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_common_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_common_v1_common_proto_goTypes = []any{
-	(SampleFormat)(0), // 0: livekalman.common.v1.SampleFormat
-	(*Empty)(nil),     // 1: livekalman.common.v1.Empty
+	(SampleFormat)(0),        // 0: livekalman.common.v1.SampleFormat
+	(NodeRole)(0),            // 1: livekalman.common.v1.NodeRole
+	(HealthState)(0),         // 2: livekalman.common.v1.HealthState
+	(*Empty)(nil),            // 3: livekalman.common.v1.Empty
+	(*Capability)(nil),       // 4: livekalman.common.v1.Capability
+	(*NodeInfo)(nil),         // 5: livekalman.common.v1.NodeInfo
+	(*NodeStatus)(nil),       // 6: livekalman.common.v1.NodeStatus
+	(*WatchNodeRequest)(nil), // 7: livekalman.common.v1.WatchNodeRequest
+	nil,                      // 8: livekalman.common.v1.Capability.AttributesEntry
 }
 var file_common_v1_common_proto_depIdxs = []int32{
-	0, // [0:0] is the sub-list for method output_type
-	0, // [0:0] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	8, // 0: livekalman.common.v1.Capability.attributes:type_name -> livekalman.common.v1.Capability.AttributesEntry
+	1, // 1: livekalman.common.v1.NodeInfo.role:type_name -> livekalman.common.v1.NodeRole
+	4, // 2: livekalman.common.v1.NodeInfo.capabilities:type_name -> livekalman.common.v1.Capability
+	1, // 3: livekalman.common.v1.NodeStatus.role:type_name -> livekalman.common.v1.NodeRole
+	2, // 4: livekalman.common.v1.NodeStatus.health:type_name -> livekalman.common.v1.HealthState
+	3, // 5: livekalman.common.v1.NodeService.GetNodeInfo:input_type -> livekalman.common.v1.Empty
+	3, // 6: livekalman.common.v1.NodeService.GetNodeStatus:input_type -> livekalman.common.v1.Empty
+	7, // 7: livekalman.common.v1.NodeService.WatchNodeStatus:input_type -> livekalman.common.v1.WatchNodeRequest
+	5, // 8: livekalman.common.v1.NodeService.GetNodeInfo:output_type -> livekalman.common.v1.NodeInfo
+	6, // 9: livekalman.common.v1.NodeService.GetNodeStatus:output_type -> livekalman.common.v1.NodeStatus
+	6, // 10: livekalman.common.v1.NodeService.WatchNodeStatus:output_type -> livekalman.common.v1.NodeStatus
+	8, // [8:11] is the sub-list for method output_type
+	5, // [5:8] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_common_v1_common_proto_init() }
@@ -154,10 +642,10 @@ func file_common_v1_common_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_common_v1_common_proto_rawDesc), len(file_common_v1_common_proto_rawDesc)),
-			NumEnums:      1,
-			NumMessages:   1,
+			NumEnums:      3,
+			NumMessages:   6,
 			NumExtensions: 0,
-			NumServices:   0,
+			NumServices:   1,
 		},
 		GoTypes:           file_common_v1_common_proto_goTypes,
 		DependencyIndexes: file_common_v1_common_proto_depIdxs,

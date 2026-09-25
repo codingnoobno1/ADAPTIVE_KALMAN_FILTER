@@ -1,5 +1,5 @@
 {
-  "tx": {
+  "sender": {
     "listen": "0.0.0.0:50051",
     "receiver": "192.168.1.12:50052",
     "runId": "lan-demo",
@@ -10,7 +10,7 @@
     "noiseStdDev": 0.70,
     "seed": 20260925
   },
-  "rx": {
+  "receiver": {
     "listen": "0.0.0.0:50052",
     "httpListen": "0.0.0.0:8082",
     "controller": "192.168.1.13:50053",
