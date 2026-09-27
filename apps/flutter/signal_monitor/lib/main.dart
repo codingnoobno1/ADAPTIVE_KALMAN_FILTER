@@ -10,16 +10,23 @@ import 'package:livekalman_sdk/livekalman_sdk.dart' as lk;
 
 Future<void> main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
-  final preferences = RolePreferenceStore();
+  final preferences = SetupPreferenceStore();
   final commandLineRole = AppRole.fromArguments(args);
-  final savedRole = AppRole.fromName(await preferences.read());
+  final commandLineEndpoint = endpointFromArguments(args);
+  final savedSetup = await preferences.read();
   runApp(
     SignalMonitorApp(
-      initialRole: commandLineRole ?? savedRole,
-      roleStore: preferences,
+      initialRole:
+          commandLineRole ??
+          (savedSetup.endpoint == null ? null : savedSetup.role),
+      initialEndpoint: commandLineEndpoint ?? savedSetup.endpoint,
+      setupStore: preferences,
     ),
   );
 }
+
+const defaultLabEndpoint =
+    'grpc://127.0.0.1:55053?txHost=127.0.0.1&rxHost=127.0.0.1&txPort=55051&rxPort=55052&txHttpPort=8081';
 
 const ink = Color(0xff071116);
 const surface = Color(0xff0d1a21);
@@ -31,33 +38,78 @@ const amber = Color(0xffffd166);
 const blue = Color(0xff74a9ff);
 const rose = Color(0xffff7b9c);
 
-class RolePreferenceStore {
-  Future<File> roleFile() async {
+class AppSetup {
+  const AppSetup({this.role, this.endpoint});
+
+  final AppRole? role;
+  final String? endpoint;
+}
+
+class SetupPreferenceStore {
+  Future<Directory> setupDirectory() async {
     final base =
         Platform.environment['APPDATA'] ??
         Platform.environment['HOME'] ??
         Directory.systemTemp.path;
     final directory = Directory('$base${Platform.pathSeparator}LiveKalmanLab');
     await directory.create(recursive: true);
-    return File('${directory.path}${Platform.pathSeparator}device-role.txt');
+    return directory;
   }
 
-  Future<String?> read() async {
+  Future<AppSetup> read() async {
     try {
-      final file = await roleFile();
-      return await file.exists() ? (await file.readAsString()).trim() : null;
-    } on FileSystemException {
-      return null;
+      final directory = await setupDirectory();
+      final file = File('${directory.path}${Platform.pathSeparator}setup.json');
+      if (await file.exists()) {
+        final json =
+            jsonDecode(await file.readAsString()) as Map<String, dynamic>;
+        return AppSetup(
+          role: AppRole.fromName(json['role'] as String?),
+          endpoint: json['endpoint'] as String?,
+        );
+      }
+      final legacy = File(
+        '${directory.path}${Platform.pathSeparator}device-role.txt',
+      );
+      return AppSetup(
+        role: await legacy.exists()
+            ? AppRole.fromName((await legacy.readAsString()).trim())
+            : null,
+      );
+    } on Object {
+      return const AppSetup();
     }
   }
 
-  Future<void> write(String role) async {
+  Future<void> write(AppRole role, String endpoint) async {
     try {
-      await (await roleFile()).writeAsString(role, flush: true);
-    } on FileSystemException {
-      // Role selection still works for this session on read-only systems.
+      final directory = await setupDirectory();
+      final file = File('${directory.path}${Platform.pathSeparator}setup.json');
+      await file.writeAsString(
+        jsonEncode({'role': role.name, 'endpoint': endpoint}),
+        flush: true,
+      );
+    } on Object {
+      // Setup still works for this session on read-only systems.
     }
   }
+}
+
+String? endpointFromArguments(List<String> arguments) {
+  for (var index = 0; index < arguments.length; index++) {
+    final argument = arguments[index];
+    if (argument.startsWith('--endpoint=')) {
+      return argument.substring('--endpoint='.length);
+    }
+    if (argument.startsWith('--api=')) {
+      return argument.substring('--api='.length);
+    }
+    if ((argument == '--endpoint' || argument == '--api') &&
+        index + 1 < arguments.length) {
+      return arguments[index + 1];
+    }
+  }
+  return null;
 }
 
 enum AppRole {
@@ -105,10 +157,16 @@ IconData roleIcon(AppRole role) => switch (role) {
 };
 
 class SignalMonitorApp extends StatefulWidget {
-  const SignalMonitorApp({super.key, this.initialRole, this.roleStore});
+  const SignalMonitorApp({
+    super.key,
+    this.initialRole,
+    this.initialEndpoint,
+    this.setupStore,
+  });
 
   final AppRole? initialRole;
-  final RolePreferenceStore? roleStore;
+  final String? initialEndpoint;
+  final SetupPreferenceStore? setupStore;
 
   @override
   State<SignalMonitorApp> createState() => _SignalMonitorAppState();
@@ -116,16 +174,29 @@ class SignalMonitorApp extends StatefulWidget {
 
 class _SignalMonitorAppState extends State<SignalMonitorApp> {
   AppRole? role;
+  late String endpoint;
 
   @override
   void initState() {
     super.initState();
     role = widget.initialRole;
+    endpoint = widget.initialEndpoint ?? defaultLabEndpoint;
   }
 
   Future<void> selectRole(AppRole selected) async {
-    await widget.roleStore?.write(selected.name);
+    await widget.setupStore?.write(selected, endpoint);
     if (mounted) setState(() => role = selected);
+  }
+
+  Future<void> saveSetup(AppRole selected, String selectedEndpoint) async {
+    endpoint = selectedEndpoint;
+    await widget.setupStore?.write(selected, endpoint);
+    if (mounted) setState(() => role = selected);
+  }
+
+  Future<void> saveEndpoint(String selectedEndpoint) async {
+    endpoint = selectedEndpoint;
+    if (role != null) await widget.setupStore?.write(role!, endpoint);
   }
 
   @override
@@ -159,11 +230,13 @@ class _SignalMonitorAppState extends State<SignalMonitorApp> {
       useMaterial3: true,
     ),
     home: role == null
-        ? RoleSelectionPage(onSelected: selectRole)
+        ? RoleSelectionPage(initialEndpoint: endpoint, onCompleted: saveSetup)
         : MonitorPage(
             key: ValueKey(role),
             role: role!,
             onChangeRole: selectRole,
+            initialEndpoint: endpoint,
+            onEndpointChanged: saveEndpoint,
           ),
   );
 }
@@ -252,10 +325,111 @@ String mediaLabel(lk.MediaType type) => switch (type) {
   _ => 'DETECTING',
 };
 
-class RoleSelectionPage extends StatelessWidget {
-  const RoleSelectionPage({super.key, required this.onSelected});
+class TransferStatus {
+  const TransferStatus({
+    required this.id,
+    required this.name,
+    required this.mediaType,
+    required this.encoding,
+    required this.totalBytes,
+    required this.sentBytes,
+    required this.state,
+    required this.estimatedSeconds,
+  });
 
-  final ValueChanged<AppRole> onSelected;
+  final String id, name, mediaType, encoding, state;
+  final int totalBytes, sentBytes;
+  final double estimatedSeconds;
+
+  double get progress =>
+      totalBytes <= 0 ? 0 : (sentBytes / totalBytes).clamp(0, 1).toDouble();
+
+  factory TransferStatus.fromJson(Map<String, dynamic> json) {
+    num number(String key) => (json[key] as num?) ?? 0;
+    return TransferStatus(
+      id: json['transferId'] as String? ?? '',
+      name: json['fileName'] as String? ?? 'unnamed transfer',
+      mediaType: json['mediaType'] as String? ?? 'binary',
+      encoding: json['encoding'] as String? ?? 'raw',
+      totalBytes: number('totalBytes').toInt(),
+      sentBytes: number('sentBytes').toInt(),
+      state: json['state'] as String? ?? 'unknown',
+      estimatedSeconds: number('estimatedSeconds').toDouble(),
+    );
+  }
+}
+
+Uri senderTransferUri(String labEndpoint) {
+  final lab = Uri.parse(labEndpoint);
+  final host = lab.queryParameters['txHost'] ?? lab.host;
+  final port = int.tryParse(lab.queryParameters['txHttpPort'] ?? '') ?? 8081;
+  return Uri(scheme: 'http', host: host, port: port, path: '/api/v1/transfers');
+}
+
+String localFileName(String path) {
+  final parts = path.replaceAll('\\', '/').split('/');
+  return parts.isEmpty ? path : parts.last;
+}
+
+String contentTypeForFile(String name) {
+  final extension = name.toLowerCase().split('.').last;
+  return switch (extension) {
+    'txt' || 'csv' || 'md' => 'text/plain',
+    'json' => 'application/json',
+    'bmp' => 'image/bmp',
+    'png' => 'image/png',
+    'jpg' || 'jpeg' => 'image/jpeg',
+    'wav' => 'audio/wav',
+    _ => 'application/octet-stream',
+  };
+}
+
+class RoleSelectionPage extends StatefulWidget {
+  const RoleSelectionPage({
+    super.key,
+    required this.initialEndpoint,
+    required this.onCompleted,
+  });
+
+  final String initialEndpoint;
+  final void Function(AppRole role, String endpoint) onCompleted;
+
+  @override
+  State<RoleSelectionPage> createState() => _RoleSelectionPageState();
+}
+
+class _RoleSelectionPageState extends State<RoleSelectionPage> {
+  AppRole? selectedRole;
+  late final TextEditingController endpoint;
+  String? error;
+
+  @override
+  void initState() {
+    super.initState();
+    endpoint = TextEditingController(text: widget.initialEndpoint);
+  }
+
+  @override
+  void dispose() {
+    endpoint.dispose();
+    super.dispose();
+  }
+
+  void continueToWorkspace() {
+    final value = endpoint.text.trim();
+    final uri = Uri.tryParse(value);
+    if (selectedRole == null) {
+      setState(() => error = 'Select which role this device will run.');
+      return;
+    }
+    if (uri == null ||
+        !{'grpc', 'http', 'https'}.contains(uri.scheme) ||
+        uri.host.isEmpty) {
+      setState(() => error = 'Enter a valid grpc:// or http(s):// server API.');
+      return;
+    }
+    widget.onCompleted(selectedRole!, value);
+  }
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -310,30 +484,42 @@ class RoleSelectionPage extends StatelessWidget {
                       final cards = [
                         RoleChoiceCard(
                           role: AppRole.sender,
+                          selected: selectedRole == AppRole.sender,
                           laptop: 'LAPTOP 01',
                           description:
                               'Configure BPSK generation, inspect the signal preview and monitor transmission.',
                           icon: Icons.waves_rounded,
                           color: blue,
-                          onTap: onSelected,
+                          onTap: (role) => setState(() {
+                            selectedRole = role;
+                            error = null;
+                          }),
                         ),
                         RoleChoiceCard(
                           role: AppRole.receiver,
+                          selected: selectedRole == AppRole.receiver,
                           laptop: 'LAPTOP 02',
                           description:
                               'Inspect Kalman filtering, BER/SNR, latency and reconstructed media.',
                           icon: Icons.filter_alt_rounded,
                           color: mint,
-                          onTap: onSelected,
+                          onTap: (role) => setState(() {
+                            selectedRole = role;
+                            error = null;
+                          }),
                         ),
                         RoleChoiceCard(
                           role: AppRole.controller,
+                          selected: selectedRole == AppRole.controller,
                           laptop: 'LAPTOP 03',
                           description:
                               'Observe the complete topology, adaptation policy and experiment events.',
                           icon: Icons.tune_rounded,
                           color: rose,
-                          onTap: onSelected,
+                          onTap: (role) => setState(() {
+                            selectedRole = role;
+                            error = null;
+                          }),
                         ),
                       ];
                       if (constraints.maxWidth >= 820) {
@@ -365,9 +551,63 @@ class RoleSelectionPage extends StatelessWidget {
                       );
                     },
                   ),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 20),
+                  AppPanel(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const PanelTitle(
+                          icon: Icons.hub_rounded,
+                          title: 'SERVER API / LAB ENDPOINT',
+                          color: mint,
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Enter the controller address. Sender and receiver service addresses can be included as query parameters.',
+                          style: TextStyle(color: muted, fontSize: 12),
+                        ),
+                        const SizedBox(height: 14),
+                        TextField(
+                          key: const Key('setup-endpoint'),
+                          controller: endpoint,
+                          autocorrect: false,
+                          onSubmitted: (_) => continueToWorkspace(),
+                          decoration: const InputDecoration(
+                            labelText: 'Server API',
+                            prefixIcon: Icon(Icons.dns_rounded),
+                            hintText: 'grpc://192.168.1.30:55053',
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Example: grpc://192.168.1.30:55053?txHost=192.168.1.10&rxHost=192.168.1.20&txHttpPort=8081',
+                          style: TextStyle(color: muted, fontSize: 10),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (error != null) ...[
+                    const SizedBox(height: 12),
+                    Text(error!, style: const TextStyle(color: rose)),
+                  ],
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      key: const Key('complete-setup'),
+                      onPressed: continueToWorkspace,
+                      icon: const Icon(Icons.rocket_launch_rounded),
+                      label: Text(
+                        selectedRole == null
+                            ? 'SELECT A DEVICE ROLE'
+                            : 'SAVE SETUP & OPEN ${selectedRole!.label.toUpperCase()}',
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   const Text(
-                    'Your choice is remembered. Use SWITCH ROLE in the header to change it later.',
+                    'Role and endpoint are remembered on this device. Both can be changed later.',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: muted, fontSize: 12),
                   ),
@@ -385,6 +625,7 @@ class RoleChoiceCard extends StatelessWidget {
   const RoleChoiceCard({
     super.key,
     required this.role,
+    required this.selected,
     required this.laptop,
     required this.description,
     required this.icon,
@@ -393,6 +634,7 @@ class RoleChoiceCard extends StatelessWidget {
   });
 
   final AppRole role;
+  final bool selected;
   final String laptop, description;
   final IconData icon;
   final Color color;
@@ -407,7 +649,13 @@ class RoleChoiceCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: surface.withValues(alpha: .96),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: color.withValues(alpha: .34)),
+        border: Border.all(
+          color: color.withValues(alpha: selected ? .95 : .34),
+          width: selected ? 2 : 1,
+        ),
+        boxShadow: selected
+            ? [BoxShadow(color: color.withValues(alpha: .16), blurRadius: 28)]
+            : null,
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -447,7 +695,7 @@ class RoleChoiceCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                'RUN AS ${role.label.toUpperCase()}',
+                selected ? 'SELECTED' : 'RUN AS ${role.label.toUpperCase()}',
                 style: TextStyle(
                   color: color,
                   fontSize: 10,
@@ -455,7 +703,11 @@ class RoleChoiceCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 6),
-              Icon(Icons.arrow_forward_rounded, color: color, size: 17),
+              Icon(
+                selected ? Icons.check_circle_rounded : Icons.touch_app_rounded,
+                color: color,
+                size: 17,
+              ),
             ],
           ),
         ],
@@ -469,20 +721,22 @@ class MonitorPage extends StatefulWidget {
     super.key,
     required this.role,
     required this.onChangeRole,
+    required this.initialEndpoint,
+    required this.onEndpointChanged,
   });
 
   final AppRole role;
   final ValueChanged<AppRole> onChangeRole;
+  final String initialEndpoint;
+  final ValueChanged<String> onEndpointChanged;
 
   @override
   State<MonitorPage> createState() => _MonitorPageState();
 }
 
 class _MonitorPageState extends State<MonitorPage> {
-  final endpoint = TextEditingController(
-    text:
-        'grpc://127.0.0.1:55053?txHost=127.0.0.1&rxHost=127.0.0.1&txPort=55051&rxPort=55052',
-  );
+  late final TextEditingController endpoint;
+  final transferPath = TextEditingController();
   final history = <Metrics>[];
   final media = <MediaActivity>[];
   http.Client? httpClient;
@@ -491,6 +745,7 @@ class _MonitorPageState extends State<MonitorPage> {
   StreamSubscription<lk.MediaEvent>? mediaSubscription;
   lk.LiveKalmanClient? grpcClient;
   Timer? statusTimer;
+  Timer? transferTimer;
   List<lk.NodeInfo> nodeInfo = const [];
   List<lk.NodeStatus> nodeStatus = const [];
   Metrics latest = const Metrics();
@@ -501,11 +756,27 @@ class _MonitorPageState extends State<MonitorPage> {
   double senderNoise = .7;
   double senderSymbolRate = 6000;
   bool applyingSenderConfig = false;
+  bool uploadingFile = false;
+  bool pollingTransfers = false;
+  String transferEncoding = 'raw';
+  double transferShiftKey = 7;
+  TransferStatus? activeTransfer;
+  List<TransferStatus> queuedTransfers = const [];
+  List<TransferStatus> recentTransfers = const [];
+  double transferBytesPerSecond = 0;
+  int maxTransferBytes = 1024 * 1024;
+  String transferMessage = 'Connect to load the sender transfer queue.';
   final experimentLog = <String>[];
   final qHistory = <double>[];
   final rHistory = <double>[];
 
   bool get isLive => connectionState.startsWith('LIVE');
+
+  @override
+  void initState() {
+    super.initState();
+    endpoint = TextEditingController(text: widget.initialEndpoint);
+  }
 
   Future<void> connect() async {
     await disconnect(notify: false);
@@ -515,7 +786,9 @@ class _MonitorPageState extends State<MonitorPage> {
       connectionDetail = 'Discovering lab services…';
     });
     try {
-      final uri = Uri.parse(endpoint.text.trim());
+      final endpointValue = endpoint.text.trim();
+      final uri = Uri.parse(endpointValue);
+      widget.onEndpointChanged(endpointValue);
       if (uri.scheme == 'grpc') {
         await connectGrpc(uri);
       } else {
@@ -607,6 +880,13 @@ class _MonitorPageState extends State<MonitorPage> {
       const Duration(seconds: 2),
       (_) => refreshNodeStatus(),
     );
+    if (widget.role == AppRole.sender) {
+      await refreshTransfers(uri);
+      transferTimer = Timer.periodic(
+        const Duration(seconds: 1),
+        (_) => refreshTransfers(uri),
+      );
+    }
   }
 
   Future<void> refreshNodeStatus() async {
@@ -619,6 +899,91 @@ class _MonitorPageState extends State<MonitorPage> {
       // Experiment and media streams own the primary connection state.
     } finally {
       polling = false;
+    }
+  }
+
+  Future<void> refreshTransfers([Uri? labUri]) async {
+    if (pollingTransfers || widget.role != AppRole.sender) return;
+    pollingTransfers = true;
+    try {
+      final api = senderTransferUri(labUri?.toString() ?? endpoint.text.trim());
+      final response = await http.get(api).timeout(const Duration(seconds: 3));
+      if (response.statusCode != 200) {
+        throw StateError('Sender API returned HTTP ${response.statusCode}');
+      }
+      final payload = jsonDecode(response.body) as Map<String, dynamic>;
+      TransferStatus? transfer(dynamic value) => value is Map
+          ? TransferStatus.fromJson(value.cast<String, dynamic>())
+          : null;
+      List<TransferStatus> transfers(dynamic value) => value is List
+          ? value.map(transfer).whereType<TransferStatus>().toList()
+          : const [];
+      if (!mounted) return;
+      setState(() {
+        activeTransfer = transfer(payload['active']);
+        queuedTransfers = transfers(payload['queued']);
+        recentTransfers = transfers(payload['recent']);
+        transferBytesPerSecond =
+            (payload['bytesPerSecond'] as num?)?.toDouble() ?? 0;
+        maxTransferBytes =
+            (payload['maxTransferBytes'] as num?)?.toInt() ?? 1024 * 1024;
+        transferMessage = activeTransfer == null && queuedTransfers.isEmpty
+            ? 'Sender is ready for text, image, audio or binary files.'
+            : 'Transfer queue is live.';
+      });
+    } catch (error) {
+      if (mounted) {
+        setState(() => transferMessage = friendlyError(error));
+      }
+    } finally {
+      pollingTransfers = false;
+    }
+  }
+
+  Future<void> uploadTransfer() async {
+    if (uploadingFile) return;
+    setState(() => uploadingFile = true);
+    try {
+      final path = transferPath.text.trim().replaceAll('"', '');
+      if (path.isEmpty) throw StateError('Enter the full path of a file.');
+      final file = File(path);
+      if (!await file.exists()) throw StateError('File does not exist: $path');
+      final size = await file.length();
+      if (size == 0) throw StateError('The selected file is empty.');
+      if (size > maxTransferBytes) {
+        throw StateError(
+          'File is ${formatBytes(size)}; maximum is ${formatBytes(maxTransferBytes)}.',
+        );
+      }
+      final name = localFileName(path);
+      final query = <String, String>{
+        'name': name,
+        'encoding': transferEncoding,
+        if (transferEncoding == 'byte_shift')
+          'key': transferShiftKey.round().toString(),
+      };
+      final api = senderTransferUri(
+        endpoint.text.trim(),
+      ).replace(queryParameters: query);
+      final response = await http
+          .post(
+            api,
+            headers: {'Content-Type': contentTypeForFile(name)},
+            body: await file.readAsBytes(),
+          )
+          .timeout(const Duration(seconds: 15));
+      if (response.statusCode != 202) {
+        throw StateError(
+          'Upload failed: HTTP ${response.statusCode} ${response.body}',
+        );
+      }
+      if (!mounted) return;
+      setState(() => transferMessage = '$name was added to the BPSK queue.');
+      await refreshTransfers();
+    } catch (error) {
+      if (mounted) setState(() => transferMessage = friendlyError(error));
+    } finally {
+      if (mounted) setState(() => uploadingFile = false);
     }
   }
 
@@ -705,6 +1070,8 @@ class _MonitorPageState extends State<MonitorPage> {
   Future<void> disconnect({bool notify = true}) async {
     statusTimer?.cancel();
     statusTimer = null;
+    transferTimer?.cancel();
+    transferTimer = null;
     await sseSubscription?.cancel();
     await experimentSubscription?.cancel();
     await mediaSubscription?.cancel();
@@ -730,6 +1097,7 @@ class _MonitorPageState extends State<MonitorPage> {
   void dispose() {
     unawaited(disconnect(notify: false));
     endpoint.dispose();
+    transferPath.dispose();
     super.dispose();
   }
 
@@ -788,6 +1156,24 @@ class _MonitorPageState extends State<MonitorPage> {
         onSymbolRateChanged: (value) =>
             setState(() => senderSymbolRate = value),
         onApply: applySenderConfiguration,
+      ),
+      const SizedBox(height: 16),
+      FileTransferPanel(
+        pathController: transferPath,
+        connected: grpcClient != null,
+        uploading: uploadingFile,
+        encoding: transferEncoding,
+        shiftKey: transferShiftKey,
+        active: activeTransfer,
+        queued: queuedTransfers,
+        recent: recentTransfers,
+        bytesPerSecond: transferBytesPerSecond,
+        maxBytes: maxTransferBytes,
+        message: transferMessage,
+        onEncodingChanged: (value) => setState(() => transferEncoding = value),
+        onShiftKeyChanged: (value) => setState(() => transferShiftKey = value),
+        onUpload: uploadTransfer,
+        onRefresh: () => refreshTransfers(),
       ),
     ],
     AppRole.receiver => [
@@ -1395,6 +1781,272 @@ class SenderWorkspace extends StatelessWidget {
       },
     );
   }
+}
+
+class FileTransferPanel extends StatelessWidget {
+  const FileTransferPanel({
+    super.key,
+    required this.pathController,
+    required this.connected,
+    required this.uploading,
+    required this.encoding,
+    required this.shiftKey,
+    required this.active,
+    required this.queued,
+    required this.recent,
+    required this.bytesPerSecond,
+    required this.maxBytes,
+    required this.message,
+    required this.onEncodingChanged,
+    required this.onShiftKeyChanged,
+    required this.onUpload,
+    required this.onRefresh,
+  });
+
+  final TextEditingController pathController;
+  final bool connected, uploading;
+  final String encoding, message;
+  final double shiftKey, bytesPerSecond;
+  final int maxBytes;
+  final TransferStatus? active;
+  final List<TransferStatus> queued, recent;
+  final ValueChanged<String> onEncodingChanged;
+  final ValueChanged<double> onShiftKeyChanged;
+  final VoidCallback onUpload, onRefresh;
+
+  @override
+  Widget build(BuildContext context) => AppPanel(
+    padding: const EdgeInsets.all(20),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Expanded(
+              child: PanelTitle(
+                icon: Icons.upload_file_rounded,
+                title: 'FILE TRANSMISSION / BPSK QUEUE',
+                color: blue,
+              ),
+            ),
+            IconButton(
+              tooltip: 'Refresh queue',
+              onPressed: connected ? onRefresh : null,
+              icon: const Icon(Icons.refresh_rounded),
+            ),
+          ],
+        ),
+        const SizedBox(height: 7),
+        Text(
+          'Stream text, BMP/WAV media or any binary file through the same modulation pipeline. Maximum ${formatBytes(maxBytes)}.',
+          style: const TextStyle(color: muted, fontSize: 12),
+        ),
+        const SizedBox(height: 16),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final compact = constraints.maxWidth < 760;
+            final path = TextField(
+              key: const Key('transfer-file-path'),
+              controller: pathController,
+              autocorrect: false,
+              decoration: const InputDecoration(
+                labelText: 'File path',
+                hintText: r'E:\media\message.txt',
+                prefixIcon: Icon(Icons.description_outlined),
+              ),
+            );
+            final mode = SegmentedButton<String>(
+              segments: const [
+                ButtonSegment(
+                  value: 'raw',
+                  label: Text('RAW'),
+                  icon: Icon(Icons.lock_open_rounded, size: 17),
+                ),
+                ButtonSegment(
+                  value: 'byte_shift',
+                  label: Text('BYTE SHIFT'),
+                  icon: Icon(Icons.key_rounded, size: 17),
+                ),
+              ],
+              selected: {encoding},
+              onSelectionChanged: (values) => onEncodingChanged(values.first),
+            );
+            if (compact) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [path, const SizedBox(height: 12), mode],
+              );
+            }
+            return Row(
+              children: [
+                Expanded(child: path),
+                const SizedBox(width: 14),
+                mode,
+              ],
+            );
+          },
+        ),
+        if (encoding == 'byte_shift') ...[
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              const SizedBox(
+                width: 80,
+                child: Text(
+                  'SHIFT KEY',
+                  style: TextStyle(color: muted, fontSize: 10),
+                ),
+              ),
+              Expanded(
+                child: Slider(
+                  value: shiftKey,
+                  min: 0,
+                  max: 255,
+                  divisions: 255,
+                  onChanged: onShiftKeyChanged,
+                ),
+              ),
+              SizedBox(
+                width: 38,
+                child: Text(
+                  shiftKey.round().toString(),
+                  textAlign: TextAlign.end,
+                  style: const TextStyle(
+                    color: amber,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+        const SizedBox(height: 14),
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            key: const Key('send-file'),
+            onPressed: connected && !uploading ? onUpload : null,
+            icon: uploading
+                ? const SizedBox(
+                    width: 17,
+                    height: 17,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.cell_tower_rounded),
+            label: Text(uploading ? 'ADDING TO QUEUE…' : 'SEND FILE'),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Icon(
+              connected ? Icons.circle : Icons.info_outline_rounded,
+              size: connected ? 9 : 15,
+              color: connected ? mint : muted,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                connected ? message : 'Connect to enable the sender API.',
+                style: const TextStyle(color: muted, fontSize: 11),
+              ),
+            ),
+            Text(
+              '${bytesPerSecond.toStringAsFixed(0)} B/s',
+              style: const TextStyle(color: mint, fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
+        const SizedBox(height: 18),
+        if (active != null) ...[
+          TransferRow(transfer: active!, active: true),
+          const SizedBox(height: 10),
+        ],
+        if (queued.isNotEmpty) ...[
+          const Text(
+            'QUEUED',
+            style: TextStyle(color: muted, fontSize: 10, letterSpacing: 1.2),
+          ),
+          const SizedBox(height: 8),
+          ...queued.take(3).map((item) => TransferRow(transfer: item)),
+        ],
+        if (active == null && queued.isEmpty && recent.isEmpty)
+          const EmptyPanelMessage(
+            icon: Icons.inbox_outlined,
+            text: 'No transfers yet. Enter a local path and send a demo file.',
+          ),
+        if (recent.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          const Text(
+            'RECENT',
+            style: TextStyle(color: muted, fontSize: 10, letterSpacing: 1.2),
+          ),
+          const SizedBox(height: 8),
+          ...recent.take(3).map((item) => TransferRow(transfer: item)),
+        ],
+      ],
+    ),
+  );
+}
+
+class TransferRow extends StatelessWidget {
+  const TransferRow({super.key, required this.transfer, this.active = false});
+
+  final TransferStatus transfer;
+  final bool active;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    margin: const EdgeInsets.only(bottom: 8),
+    padding: const EdgeInsets.all(13),
+    decoration: BoxDecoration(
+      color: ink.withValues(alpha: .54),
+      borderRadius: BorderRadius.circular(13),
+      border: Border.all(color: active ? blue.withValues(alpha: .42) : line),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              active
+                  ? Icons.podcasts_rounded
+                  : Icons.insert_drive_file_outlined,
+              size: 18,
+              color: active ? blue : muted,
+            ),
+            const SizedBox(width: 9),
+            Expanded(
+              child: Text(
+                transfer.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ),
+            TinyChip(
+              label: transfer.state.toUpperCase(),
+              color: active ? blue : mint,
+            ),
+          ],
+        ),
+        const SizedBox(height: 9),
+        LinearProgressIndicator(
+          value: transfer.progress,
+          minHeight: 5,
+          borderRadius: BorderRadius.circular(99),
+          color: active ? blue : mint,
+          backgroundColor: line,
+        ),
+        const SizedBox(height: 7),
+        Text(
+          '${formatBytes(transfer.sentBytes)} / ${formatBytes(transfer.totalBytes)}  •  ${transfer.mediaType.toUpperCase()}  •  ${transfer.encoding.toUpperCase()}',
+          style: const TextStyle(color: muted, fontSize: 10),
+        ),
+      ],
+    ),
+  );
 }
 
 class PanelTitle extends StatelessWidget {
@@ -2555,4 +3207,39 @@ class ChartPainter extends CustomPainter {
 String friendlyError(Object error) {
   final value = error.toString().replaceFirst('Exception: ', '');
   return value.length > 120 ? '${value.substring(0, 120)}…' : value;
+}
+
+String formatBytes(int bytes) {
+  if (bytes >= 1024 * 1024) {
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MiB';
+  }
+  if (bytes >= 1024) return '${(bytes / 1024).toStringAsFixed(1)} KiB';
+  return '$bytes B';
+}
+
+class EmptyPanelMessage extends StatelessWidget {
+  const EmptyPanelMessage({super.key, required this.icon, required this.text});
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(18),
+    decoration: BoxDecoration(
+      color: ink.withValues(alpha: .35),
+      borderRadius: BorderRadius.circular(13),
+      border: Border.all(color: line),
+    ),
+    child: Row(
+      children: [
+        Icon(icon, color: muted),
+        const SizedBox(width: 11),
+        Expanded(
+          child: Text(text, style: const TextStyle(color: muted, fontSize: 12)),
+        ),
+      ],
+    ),
+  );
 }

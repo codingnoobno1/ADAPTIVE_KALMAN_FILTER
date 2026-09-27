@@ -8,6 +8,27 @@ void main() {
     expect(AppRole.fromArguments(['--role=receiver']), AppRole.receiver);
     expect(AppRole.fromArguments(['--role', 'controller']), AppRole.controller);
     expect(AppRole.fromArguments(['--role', 'unknown']), isNull);
+    expect(
+      endpointFromArguments(['--endpoint', 'grpc://10.0.0.3:55053']),
+      'grpc://10.0.0.3:55053',
+    );
+    expect(
+      endpointFromArguments(['--endpoint=http://lab:8080']),
+      'http://lab:8080',
+    );
+    expect(
+      endpointFromArguments(['--api=grpc://lab:55053']),
+      'grpc://lab:55053',
+    );
+  });
+
+  test('sender transfer API is derived from the lab endpoint', () {
+    expect(
+      senderTransferUri(
+        'grpc://10.0.0.30:55053?txHost=10.0.0.10&txHttpPort=9081',
+      ).toString(),
+      'http://10.0.0.10:9081/api/v1/transfers',
+    );
   });
 
   testWidgets('first run asks which role this device should use', (
@@ -22,6 +43,11 @@ void main() {
     expect(find.text('RUN AS CONTROLLER'), findsOneWidget);
     await tester.tap(find.text('RUN AS RECEIVER'));
     await tester.pump();
+    expect(find.text('SERVER API / LAB ENDPOINT'), findsOneWidget);
+    expect(find.byKey(const Key('setup-endpoint')), findsOneWidget);
+    await tester.ensureVisible(find.byKey(const Key('complete-setup')));
+    await tester.tap(find.byKey(const Key('complete-setup')));
+    await tester.pumpAndSettle();
     expect(find.text('Adaptive Kalman Receiver'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
@@ -38,6 +64,7 @@ void main() {
     expect(find.text('SIGNAL CONFIGURATION'), findsOneWidget);
     expect(find.text('BPSK CONSTELLATION / PREVIEW'), findsOneWidget);
     expect(find.text('TRANSMISSION STATUS'), findsOneWidget);
+    expect(find.text('FILE TRANSMISSION / BPSK QUEUE'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

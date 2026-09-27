@@ -7,9 +7,10 @@ Responsive Windows/mobile operations UI for the three-device lab:
 - Laptop 3 Controller health, adaptive configuration and experiment events.
 - SNR/BER history, latency, noise and active Kalman profile.
 
-On the first launch, the application asks whether the device is the Sender,
-Receiver or Controller and remembers that choice. Use the role menu in the
-header to switch later. All three laptops use the same executable.
+On the first launch, the application asks for both the device role and the lab
+server API. It remembers both values on that Windows account. Use the role menu
+in the header to switch later; the endpoint remains editable in every
+workspace. All three laptops use the same executable.
 
 The role can also be selected at launch:
 
@@ -17,10 +18,12 @@ The role can also be selected at launch:
 signal_monitor.exe --role sender
 signal_monitor.exe --role receiver
 signal_monitor.exe --role controller
+signal_monitor.exe --role sender --endpoint "grpc://192.168.1.30:55053?txHost=192.168.1.10&rxHost=192.168.1.20&txHttpPort=8081"
 ```
 
-- Sender mode provides versioned BPSK amplitude, symbol-rate and noise controls
-  plus constellation/waveform previews and transmission status.
+- Sender mode provides versioned BPSK amplitude, symbol-rate and noise controls,
+  constellation/waveform previews, and a live text/image/audio file-transfer
+  queue with raw or byte-shift encoding.
 - Receiver mode provides DSP metrics, history charts and decoded media status.
 - Controller mode provides the three-device topology, adaptation history and
   event log.
@@ -31,14 +34,18 @@ The full dashboard uses the three gRPC endpoints. The controller address is the
 main URI and Sender/Receiver addresses are query parameters:
 
 ```text
-grpc://192.168.1.30:50053?txHost=192.168.1.10&rxHost=192.168.1.20&txPort=50051&rxPort=50052
+grpc://192.168.1.30:50053?txHost=192.168.1.10&rxHost=192.168.1.20&txPort=50051&rxPort=50052&txHttpPort=8081
 ```
 
 For a single-machine local run:
 
 ```text
-grpc://127.0.0.1:55053?txHost=127.0.0.1&rxHost=127.0.0.1&txPort=55051&rxPort=55052
+grpc://127.0.0.1:55053?txHost=127.0.0.1&rxHost=127.0.0.1&txPort=55051&rxPort=55052&txHttpPort=8081
 ```
+
+`txHttpPort` is the Sender's transfer API port. The application derives
+`http://<txHost>:<txHttpPort>/api/v1/transfers` and uses it for queueing files
+and polling transfer progress.
 
 The Controller SSE URL remains supported as a metrics-only fallback, but it
 cannot provide three-node discovery or the Receiver media stream.
