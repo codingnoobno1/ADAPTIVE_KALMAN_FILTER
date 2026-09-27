@@ -42,6 +42,8 @@ const ReceiverMetrics$json = {
       '5': 4,
       '10': 'observedAtUnixMs'
     },
+    {'1': 'frame_mean', '3': 12, '4': 1, '5': 2, '10': 'frameMean'},
+    {'1': 'dc_estimate', '3': 13, '4': 1, '5': 2, '10': 'dcEstimate'},
   ],
 };
 
@@ -53,7 +55,8 @@ final $typed_data.Uint8List receiverMetricsDescriptor = $convert.base64Decode(
     'MSHQoKYml0X2Vycm9ycxgGIAEoBFIJYml0RXJyb3JzEhAKA2JlchgHIAEoAlIDYmVyEh0KCmxh'
     'dGVuY3lfbXMYCCABKAFSCWxhdGVuY3lNcxIyChVhY3RpdmVfY29uZmlnX3ZlcnNpb24YCSABKA'
     'RSE2FjdGl2ZUNvbmZpZ1ZlcnNpb24SHwoLcXVldWVfZGVwdGgYCiABKA1SCnF1ZXVlRGVwdGgS'
-    'LQoTb2JzZXJ2ZWRfYXRfdW5peF9tcxgLIAEoBFIQb2JzZXJ2ZWRBdFVuaXhNcw==');
+    'LQoTb2JzZXJ2ZWRfYXRfdW5peF9tcxgLIAEoBFIQb2JzZXJ2ZWRBdFVuaXhNcxIdCgpmcmFtZV'
+    '9tZWFuGAwgASgCUglmcmFtZU1lYW4SHwoLZGNfZXN0aW1hdGUYDSABKAJSCmRjRXN0aW1hdGU=');
 
 @$core.Deprecated('Use policyDecisionDescriptor instead')
 const PolicyDecision$json = {

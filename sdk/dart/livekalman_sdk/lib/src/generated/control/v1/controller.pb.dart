@@ -30,6 +30,8 @@ class ReceiverMetrics extends $pb.GeneratedMessage {
     $fixnum.Int64? activeConfigVersion,
     $core.int? queueDepth,
     $fixnum.Int64? observedAtUnixMs,
+    $core.double? frameMean,
+    $core.double? dcEstimate,
   }) {
     final result = ReceiverMetrics._();
     if (runId != null) result.runId = runId;
@@ -44,6 +46,8 @@ class ReceiverMetrics extends $pb.GeneratedMessage {
       result.activeConfigVersion = activeConfigVersion;
     if (queueDepth != null) result.queueDepth = queueDepth;
     if (observedAtUnixMs != null) result.observedAtUnixMs = observedAtUnixMs;
+    if (frameMean != null) result.frameMean = frameMean;
+    if (dcEstimate != null) result.dcEstimate = dcEstimate;
     return result;
   }
 
@@ -84,6 +88,8 @@ class ReceiverMetrics extends $pb.GeneratedMessage {
     ..a<$fixnum.Int64>(
         11, _omitFieldNames ? '' : 'observedAtUnixMs', $pb.PbFieldType.OU6,
         defaultOrMaker: $fixnum.Int64.ZERO)
+    ..aD(12, _omitFieldNames ? '' : 'frameMean', fieldType: $pb.PbFieldType.OF)
+    ..aD(13, _omitFieldNames ? '' : 'dcEstimate', fieldType: $pb.PbFieldType.OF)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -206,6 +212,27 @@ class ReceiverMetrics extends $pb.GeneratedMessage {
   $core.bool hasObservedAtUnixMs() => $_has(10);
   @$pb.TagNumber(11)
   void clearObservedAtUnixMs() => $_clearField(11);
+
+  /// Raw frame sample mean: a filter-independent view of DC drift, used as an
+  /// ML policy feature (balanced BPSK symbols average to zero).
+  @$pb.TagNumber(12)
+  $core.double get frameMean => $_getN(11);
+  @$pb.TagNumber(12)
+  set frameMean($core.double value) => $_setFloat(11, value);
+  @$pb.TagNumber(12)
+  $core.bool hasFrameMean() => $_has(11);
+  @$pb.TagNumber(12)
+  void clearFrameMean() => $_clearField(12);
+
+  /// The receiver Kalman filter's tracked DC offset after this frame.
+  @$pb.TagNumber(13)
+  $core.double get dcEstimate => $_getN(12);
+  @$pb.TagNumber(13)
+  set dcEstimate($core.double value) => $_setFloat(12, value);
+  @$pb.TagNumber(13)
+  $core.bool hasDcEstimate() => $_has(12);
+  @$pb.TagNumber(13)
+  void clearDcEstimate() => $_clearField(13);
 }
 
 class PolicyDecision extends $pb.GeneratedMessage {

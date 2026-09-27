@@ -56,6 +56,24 @@ const TxFrame$json = {
       '10': 'sampleFormat'
     },
     {'1': 'packed_samples', '3': 12, '4': 1, '5': 12, '10': 'packedSamples'},
+    {
+      '1': 'media',
+      '3': 13,
+      '4': 1,
+      '5': 11,
+      '6': '.livekalman.common.v1.MediaDescriptor',
+      '10': 'media'
+    },
+    {'1': 'media_offset', '3': 14, '4': 1, '5': 4, '10': 'mediaOffset'},
+    {'1': 'media_end', '3': 15, '4': 1, '5': 8, '10': 'mediaEnd'},
+    {
+      '1': 'payload_byte_count',
+      '3': 16,
+      '4': 1,
+      '5': 13,
+      '10': 'payloadByteCount'
+    },
+    {'1': 'scrambled', '3': 17, '4': 1, '5': 8, '10': 'scrambled'},
   ],
 };
 
@@ -69,7 +87,11 @@ final $typed_data.Uint8List txFrameDescriptor = $convert.base64Decode(
     'lnX3ZlcnNpb24YCCABKARSDWNvbmZpZ1ZlcnNpb24SGAoHc2FtcGxlcxgJIAMoAlIHc2FtcGxl'
     'cxIlCg5yZWZlcmVuY2VfYml0cxgKIAEoDFINcmVmZXJlbmNlQml0cxJHCg1zYW1wbGVfZm9ybW'
     'F0GAsgASgOMiIubGl2ZWthbG1hbi5jb21tb24udjEuU2FtcGxlRm9ybWF0UgxzYW1wbGVGb3Jt'
-    'YXQSJQoOcGFja2VkX3NhbXBsZXMYDCABKAxSDXBhY2tlZFNhbXBsZXM=');
+    'YXQSJQoOcGFja2VkX3NhbXBsZXMYDCABKAxSDXBhY2tlZFNhbXBsZXMSOwoFbWVkaWEYDSABKA'
+    'syJS5saXZla2FsbWFuLmNvbW1vbi52MS5NZWRpYURlc2NyaXB0b3JSBW1lZGlhEiEKDG1lZGlh'
+    'X29mZnNldBgOIAEoBFILbWVkaWFPZmZzZXQSGwoJbWVkaWFfZW5kGA8gASgIUghtZWRpYUVuZB'
+    'IsChJwYXlsb2FkX2J5dGVfY291bnQYECABKA1SEHBheWxvYWRCeXRlQ291bnQSHAoJc2NyYW1i'
+    'bGVkGBEgASgIUglzY3JhbWJsZWQ=');
 
 @$core.Deprecated('Use rxFeedbackDescriptor instead')
 const RxFeedback$json = {

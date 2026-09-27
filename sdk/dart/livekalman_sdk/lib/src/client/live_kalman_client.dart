@@ -32,6 +32,7 @@ final class LiveKalmanClient {
     : transmitter = tx_grpc.TransmitterServiceClient(_txChannel),
       receiver = rx_grpc.ReceiverServiceClient(_rxChannel),
       controller = control_grpc.ControllerServiceClient(_controllerChannel),
+      receiverMedia = common_grpc.MediaStreamServiceClient(_rxChannel),
       transmitterNode = common_grpc.NodeServiceClient(_txChannel),
       receiverNode = common_grpc.NodeServiceClient(_rxChannel),
       controllerNode = common_grpc.NodeServiceClient(_controllerChannel);
@@ -55,6 +56,7 @@ final class LiveKalmanClient {
   final tx_grpc.TransmitterServiceClient transmitter;
   final rx_grpc.ReceiverServiceClient receiver;
   final control_grpc.ControllerServiceClient controller;
+  final common_grpc.MediaStreamServiceClient receiverMedia;
   final common_grpc.NodeServiceClient transmitterNode;
   final common_grpc.NodeServiceClient receiverNode;
   final common_grpc.NodeServiceClient controllerNode;
@@ -73,6 +75,12 @@ final class LiveKalmanClient {
 
   Stream<control.ExperimentEvent> watchExperiment({String runId = ''}) =>
       controller.watchExperiment(control.WatchRequest(runId: runId));
+
+  /// One receiver stream for automatically detected text, image, audio and
+  /// binary payload chunks. An empty [types] list watches every media type.
+  Stream<common.MediaEvent> watchMedia({
+    List<common.MediaType> types = const [],
+  }) => receiverMedia.watchMedia(common.WatchMediaRequest(types: types));
 
   Future<void> close() async {
     await Future.wait([

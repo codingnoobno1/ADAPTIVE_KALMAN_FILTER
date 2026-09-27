@@ -1,28 +1,170 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
+import 'dart:math' as math;
 
+import 'package:fixnum/fixnum.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:livekalman_sdk/livekalman_sdk.dart' as lk;
 
-void main() => runApp(const SignalMonitorApp());
+Future<void> main(List<String> args) async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final preferences = RolePreferenceStore();
+  final commandLineRole = AppRole.fromArguments(args);
+  final savedRole = AppRole.fromName(await preferences.read());
+  runApp(
+    SignalMonitorApp(
+      initialRole: commandLineRole ?? savedRole,
+      roleStore: preferences,
+    ),
+  );
+}
 
-class SignalMonitorApp extends StatelessWidget {
-  const SignalMonitorApp({super.key});
+const ink = Color(0xff071116);
+const surface = Color(0xff0d1a21);
+const surfaceHigh = Color(0xff12252e);
+const line = Color(0xff20343e);
+const muted = Color(0xff8fa5af);
+const mint = Color(0xff58f3c2);
+const amber = Color(0xffffd166);
+const blue = Color(0xff74a9ff);
+const rose = Color(0xffff7b9c);
+
+class RolePreferenceStore {
+  Future<File> roleFile() async {
+    final base =
+        Platform.environment['APPDATA'] ??
+        Platform.environment['HOME'] ??
+        Directory.systemTemp.path;
+    final directory = Directory('$base${Platform.pathSeparator}LiveKalmanLab');
+    await directory.create(recursive: true);
+    return File('${directory.path}${Platform.pathSeparator}device-role.txt');
+  }
+
+  Future<String?> read() async {
+    try {
+      final file = await roleFile();
+      return await file.exists() ? (await file.readAsString()).trim() : null;
+    } on FileSystemException {
+      return null;
+    }
+  }
+
+  Future<void> write(String role) async {
+    try {
+      await (await roleFile()).writeAsString(role, flush: true);
+    } on FileSystemException {
+      // Role selection still works for this session on read-only systems.
+    }
+  }
+}
+
+enum AppRole {
+  sender,
+  receiver,
+  controller;
+
+  static AppRole? fromName(String? value) {
+    for (final role in values) {
+      if (role.name == value?.toLowerCase()) return role;
+    }
+    return null;
+  }
+
+  static AppRole? fromArguments(List<String> arguments) {
+    for (var index = 0; index < arguments.length; index++) {
+      final argument = arguments[index];
+      if (argument.startsWith('--role=')) {
+        return fromName(argument.substring('--role='.length));
+      }
+      if (argument == '--role' && index + 1 < arguments.length) {
+        return fromName(arguments[index + 1]);
+      }
+    }
+    return null;
+  }
+
+  String get label => switch (this) {
+    AppRole.sender => 'Sender',
+    AppRole.receiver => 'Receiver',
+    AppRole.controller => 'Controller',
+  };
+}
+
+Color roleColor(AppRole role) => switch (role) {
+  AppRole.sender => blue,
+  AppRole.receiver => mint,
+  AppRole.controller => rose,
+};
+
+IconData roleIcon(AppRole role) => switch (role) {
+  AppRole.sender => Icons.waves_rounded,
+  AppRole.receiver => Icons.filter_alt_rounded,
+  AppRole.controller => Icons.tune_rounded,
+};
+
+class SignalMonitorApp extends StatefulWidget {
+  const SignalMonitorApp({super.key, this.initialRole, this.roleStore});
+
+  final AppRole? initialRole;
+  final RolePreferenceStore? roleStore;
+
+  @override
+  State<SignalMonitorApp> createState() => _SignalMonitorAppState();
+}
+
+class _SignalMonitorAppState extends State<SignalMonitorApp> {
+  AppRole? role;
+
+  @override
+  void initState() {
+    super.initState();
+    role = widget.initialRole;
+  }
+
+  Future<void> selectRole(AppRole selected) async {
+    await widget.roleStore?.write(selected.name);
+    if (mounted) setState(() => role = selected);
+  }
+
   @override
   Widget build(BuildContext context) => MaterialApp(
     debugShowCheckedModeBanner: false,
     title: 'Live Kalman Lab',
     theme: ThemeData(
       brightness: Brightness.dark,
-      scaffoldBackgroundColor: const Color(0xff071016),
+      scaffoldBackgroundColor: ink,
       colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xff58f3c2),
+        seedColor: mint,
         brightness: Brightness.dark,
+        surface: surface,
+      ),
+      textTheme: ThemeData.dark().textTheme.apply(
+        bodyColor: const Color(0xffe7f1f4),
+        displayColor: const Color(0xfff4fbfc),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: ink.withValues(alpha: .55),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: line),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: line),
+        ),
       ),
       useMaterial3: true,
     ),
-    home: const MonitorPage(),
+    home: role == null
+        ? RoleSelectionPage(onSelected: selectRole)
+        : MonitorPage(
+            key: ValueKey(role),
+            role: role!,
+            onChangeRole: selectRole,
+          ),
   );
 }
 
@@ -35,96 +177,390 @@ class Metrics {
     this.latency = 0,
     this.version = 0,
   });
+
   final int sequence, version;
   final double snr, ber, noise, latency;
-  factory Metrics.fromEvent(Map<String, dynamic> e) {
-    final m = (e['metrics'] as Map?)?.cast<String, dynamic>() ?? const {};
-    num n(String key) => (m[key] as num?) ?? 0;
+
+  factory Metrics.fromEvent(Map<String, dynamic> event) {
+    final values =
+        (event['metrics'] as Map?)?.cast<String, dynamic>() ?? const {};
+    num number(String key) => (values[key] as num?) ?? 0;
     return Metrics(
-      sequence: n('sequence').toInt(),
-      snr: n('snr_db').toDouble(),
-      ber: n('ber').toDouble(),
-      noise: n('noise_variance').toDouble(),
-      latency: n('latency_ms').toDouble(),
-      version: n('active_config_version').toInt(),
+      sequence: number('sequence').toInt(),
+      snr: number('snr_db').toDouble(),
+      ber: number('ber').toDouble(),
+      noise: number('noise_variance').toDouble(),
+      latency: number('latency_ms').toDouble(),
+      version: number('active_config_version').toInt(),
     );
   }
 
-  factory Metrics.fromProto(lk.ReceiverMetrics m) => Metrics(
-    sequence: m.sequence.toInt(),
-    snr: m.snrDb,
-    ber: m.ber,
-    noise: m.noiseVariance,
-    latency: m.latencyMs,
-    version: m.activeConfigVersion.toInt(),
+  factory Metrics.fromProto(lk.ReceiverMetrics metrics) => Metrics(
+    sequence: metrics.sequence.toInt(),
+    snr: metrics.snrDb,
+    ber: metrics.ber,
+    noise: metrics.noiseVariance,
+    latency: metrics.latencyMs,
+    version: metrics.activeConfigVersion.toInt(),
+  );
+}
+
+class MediaActivity {
+  const MediaActivity({
+    required this.id,
+    required this.name,
+    required this.kind,
+    required this.contentType,
+    required this.received,
+    required this.total,
+    required this.complete,
+    required this.checksumValid,
+    required this.preview,
+  });
+
+  final String id, name, kind, contentType, preview;
+  final int received, total;
+  final bool complete, checksumValid;
+
+  factory MediaActivity.fromProto(lk.MediaEvent event) {
+    final media = event.media;
+    var preview = '';
+    if (event.detectedType == lk.MediaType.MEDIA_TYPE_TEXT &&
+        event.data.isNotEmpty) {
+      preview = utf8.decode(event.data, allowMalformed: true).trim();
+      if (preview.length > 72) preview = '${preview.substring(0, 72)}…';
+    }
+    return MediaActivity(
+      id: media.transferId,
+      name: media.fileName.isEmpty ? media.transferId : media.fileName,
+      kind: mediaLabel(event.detectedType),
+      contentType: event.detectedContentType,
+      received: event.receivedSize.toInt(),
+      total: media.totalSize.toInt(),
+      complete: event.endOfStream,
+      checksumValid: event.checksumValid,
+      preview: preview,
+    );
+  }
+}
+
+String mediaLabel(lk.MediaType type) => switch (type) {
+  lk.MediaType.MEDIA_TYPE_TEXT => 'TEXT',
+  lk.MediaType.MEDIA_TYPE_IMAGE => 'IMAGE',
+  lk.MediaType.MEDIA_TYPE_AUDIO => 'AUDIO',
+  lk.MediaType.MEDIA_TYPE_BINARY => 'BINARY',
+  _ => 'DETECTING',
+};
+
+class RoleSelectionPage extends StatelessWidget {
+  const RoleSelectionPage({super.key, required this.onSelected});
+
+  final ValueChanged<AppRole> onSelected;
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    body: DecoratedBox(
+      decoration: const BoxDecoration(
+        gradient: RadialGradient(
+          center: Alignment(0, -1),
+          radius: 1.2,
+          colors: [Color(0xff153a36), ink],
+          stops: [0, .58],
+        ),
+      ),
+      child: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1100),
+              child: Column(
+                children: [
+                  Container(
+                    width: 62,
+                    height: 62,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(colors: [mint, blue]),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: const [
+                        BoxShadow(color: Color(0x5558f3c2), blurRadius: 32),
+                      ],
+                    ),
+                    child: const Icon(Icons.graphic_eq, color: ink, size: 34),
+                  ),
+                  const SizedBox(height: 22),
+                  const Text(
+                    'CHOOSE THIS DEVICE ROLE',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: .7,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'The same Flutter application runs on all three laptops. Select the workspace this device should open.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: muted, fontSize: 15),
+                  ),
+                  const SizedBox(height: 30),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final cards = [
+                        RoleChoiceCard(
+                          role: AppRole.sender,
+                          laptop: 'LAPTOP 01',
+                          description:
+                              'Configure BPSK generation, inspect the signal preview and monitor transmission.',
+                          icon: Icons.waves_rounded,
+                          color: blue,
+                          onTap: onSelected,
+                        ),
+                        RoleChoiceCard(
+                          role: AppRole.receiver,
+                          laptop: 'LAPTOP 02',
+                          description:
+                              'Inspect Kalman filtering, BER/SNR, latency and reconstructed media.',
+                          icon: Icons.filter_alt_rounded,
+                          color: mint,
+                          onTap: onSelected,
+                        ),
+                        RoleChoiceCard(
+                          role: AppRole.controller,
+                          laptop: 'LAPTOP 03',
+                          description:
+                              'Observe the complete topology, adaptation policy and experiment events.',
+                          icon: Icons.tune_rounded,
+                          color: rose,
+                          onTap: onSelected,
+                        ),
+                      ];
+                      if (constraints.maxWidth >= 820) {
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: cards
+                              .map(
+                                (card) => Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 7,
+                                    ),
+                                    child: card,
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                        );
+                      }
+                      return Column(
+                        children: cards
+                            .map(
+                              (card) => Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: card,
+                              ),
+                            )
+                            .toList(),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 18),
+                  const Text(
+                    'Your choice is remembered. Use SWITCH ROLE in the header to change it later.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: muted, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+class RoleChoiceCard extends StatelessWidget {
+  const RoleChoiceCard({
+    super.key,
+    required this.role,
+    required this.laptop,
+    required this.description,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  final AppRole role;
+  final String laptop, description;
+  final IconData icon;
+  final Color color;
+  final ValueChanged<AppRole> onTap;
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+    onTap: () => onTap(role),
+    borderRadius: BorderRadius.circular(24),
+    child: Ink(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: surface.withValues(alpha: .96),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: color.withValues(alpha: .34)),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 54,
+            height: 54,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: .12),
+              borderRadius: BorderRadius.circular(17),
+            ),
+            child: Icon(icon, color: color, size: 29),
+          ),
+          const SizedBox(height: 17),
+          Text(
+            laptop,
+            style: TextStyle(
+              color: color,
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.5,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            role.label,
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            description,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: muted, height: 1.45),
+          ),
+          const SizedBox(height: 18),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'RUN AS ${role.label.toUpperCase()}',
+                style: TextStyle(
+                  color: color,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Icon(Icons.arrow_forward_rounded, color: color, size: 17),
+            ],
+          ),
+        ],
+      ),
+    ),
   );
 }
 
 class MonitorPage extends StatefulWidget {
-  const MonitorPage({super.key});
+  const MonitorPage({
+    super.key,
+    required this.role,
+    required this.onChangeRole,
+  });
+
+  final AppRole role;
+  final ValueChanged<AppRole> onChangeRole;
+
   @override
   State<MonitorPage> createState() => _MonitorPageState();
 }
 
 class _MonitorPageState extends State<MonitorPage> {
   final endpoint = TextEditingController(
-    text: 'http://127.0.0.1:8080/api/v1/events',
+    text:
+        'grpc://127.0.0.1:55053?txHost=127.0.0.1&rxHost=127.0.0.1&txPort=55051&rxPort=55052',
   );
   final history = <Metrics>[];
-  http.Client? client;
-  StreamSubscription<String>? subscription;
-  StreamSubscription<lk.ExperimentEvent>? grpcSubscription;
+  final media = <MediaActivity>[];
+  http.Client? httpClient;
+  StreamSubscription<String>? sseSubscription;
+  StreamSubscription<lk.ExperimentEvent>? experimentSubscription;
+  StreamSubscription<lk.MediaEvent>? mediaSubscription;
   lk.LiveKalmanClient? grpcClient;
+  Timer? statusTimer;
+  List<lk.NodeInfo> nodeInfo = const [];
+  List<lk.NodeStatus> nodeStatus = const [];
   Metrics latest = const Metrics();
-  String status = 'OFFLINE';
-  bool get isLive => status.startsWith('LIVE');
+  String connectionState = 'OFFLINE';
+  String connectionDetail = 'Connect to begin a live experiment';
+  bool polling = false;
+  double senderAmplitude = 1;
+  double senderNoise = .7;
+  double senderSymbolRate = 6000;
+  bool applyingSenderConfig = false;
+  final experimentLog = <String>[];
+  final qHistory = <double>[];
+  final rHistory = <double>[];
+
+  bool get isLive => connectionState.startsWith('LIVE');
 
   Future<void> connect() async {
-    await disconnect();
-    setState(() => status = 'CONNECTING');
-    client = http.Client();
+    await disconnect(notify: false);
+    if (!mounted) return;
+    setState(() {
+      connectionState = 'CONNECTING';
+      connectionDetail = 'Discovering lab services…';
+    });
     try {
-      final uri = Uri.parse(endpoint.text);
+      final uri = Uri.parse(endpoint.text.trim());
       if (uri.scheme == 'grpc') {
-        client?.close();
-        client = null;
-        await _connectGrpc(uri);
-        return;
+        await connectGrpc(uri);
+      } else {
+        await connectSse(uri);
       }
-      final response = await client!.send(
-        http.Request('GET', Uri.parse(endpoint.text))
-          ..headers['Accept'] = 'text/event-stream',
-      );
-      if (response.statusCode != 200) {
-        throw StateError('HTTP ${response.statusCode}');
-      }
-      setState(() => status = 'LIVE');
-      subscription = response.stream
-          .transform(utf8.decoder)
-          .transform(const LineSplitter())
-          .where((line) => line.startsWith('data: '))
-          .listen(
-            (line) {
-              final event =
-                  jsonDecode(line.substring(6)) as Map<String, dynamic>;
-              if (event['kind'] != 'metrics') return;
-              final value = Metrics.fromEvent(event);
-              setState(() {
-                latest = value;
-                history.add(value);
-                if (history.length > 80) history.removeAt(0);
-              });
-            },
-            onError: (Object _) =>
-                mounted ? setState(() => status = 'RETRY') : null,
-            onDone: () => mounted ? setState(() => status = 'OFFLINE') : null,
-          );
-    } catch (_) {
-      if (mounted) setState(() => status = 'OFFLINE');
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        connectionState = 'OFFLINE';
+        connectionDetail = friendlyError(error);
+      });
     }
   }
 
-  Future<void> _connectGrpc(Uri uri) async {
+  Future<void> connectSse(Uri uri) async {
+    httpClient = http.Client();
+    final response = await httpClient!.send(
+      http.Request('GET', uri)..headers['Accept'] = 'text/event-stream',
+    );
+    if (response.statusCode != 200) {
+      throw StateError('Controller returned HTTP ${response.statusCode}');
+    }
+    if (!mounted) return;
+    setState(() {
+      connectionState = 'LIVE / SSE';
+      connectionDetail = 'Controller metrics stream connected';
+    });
+    sseSubscription = response.stream
+        .transform(utf8.decoder)
+        .transform(const LineSplitter())
+        .where((entry) => entry.startsWith('data: '))
+        .listen(
+          (entry) {
+            final event =
+                jsonDecode(entry.substring(6)) as Map<String, dynamic>;
+            if (event['kind'] == 'metrics') {
+              recordMetrics(Metrics.fromEvent(event));
+            }
+          },
+          onError: (Object error) => streamEnded(error),
+          onDone: () => streamEnded(null),
+        );
+  }
+
+  Future<void> connectGrpc(Uri uri) async {
     int port(String name, int fallback) =>
         int.tryParse(uri.queryParameters[name] ?? '') ?? fallback;
     final controllerHost = uri.host;
@@ -138,200 +574,1585 @@ class _MonitorPageState extends State<MonitorPage> {
         controllerPort: port('controllerPort', uri.hasPort ? uri.port : 55053),
       ),
     );
-    await grpcClient!.discoverNodes();
-    setState(() => status = 'LIVE / GRPC');
-    grpcSubscription = grpcClient!.watchExperiment().listen(
+    final discovered = await grpcClient!.discoverNodes();
+    final statuses = await grpcClient!.nodeStatuses();
+    if (!mounted) return;
+    setState(() {
+      nodeInfo = discovered;
+      nodeStatus = statuses;
+      connectionState = 'LIVE / GRPC';
+      connectionDetail = 'All three services discovered';
+    });
+    experimentSubscription = grpcClient!.watchExperiment().listen(
       (event) {
-        if (!event.hasMetrics()) return;
-        final value = Metrics.fromProto(event.metrics);
-        setState(() {
-          latest = value;
-          history.add(value);
-          if (history.length > 80) history.removeAt(0);
-        });
+        recordExperimentEvent(event);
+        if (event.hasMetrics()) {
+          recordMetrics(Metrics.fromProto(event.metrics));
+        }
       },
-      onError: (Object _) => mounted ? setState(() => status = 'RETRY') : null,
-      onDone: () => mounted ? setState(() => status = 'OFFLINE') : null,
+      onError: (Object error) => streamEnded(error),
+      onDone: () => streamEnded(null),
+    );
+    mediaSubscription = grpcClient!.watchMedia().listen(
+      recordMedia,
+      onError: (Object error) {
+        if (mounted) {
+          setState(() {
+            connectionDetail = 'Media stream: ${friendlyError(error)}';
+          });
+        }
+      },
+    );
+    statusTimer = Timer.periodic(
+      const Duration(seconds: 2),
+      (_) => refreshNodeStatus(),
     );
   }
 
-  Future<void> disconnect() async {
-    await subscription?.cancel();
-    await grpcSubscription?.cancel();
+  Future<void> refreshNodeStatus() async {
+    if (grpcClient == null || polling) return;
+    polling = true;
+    try {
+      final statuses = await grpcClient!.nodeStatuses();
+      if (mounted) setState(() => nodeStatus = statuses);
+    } catch (_) {
+      // Experiment and media streams own the primary connection state.
+    } finally {
+      polling = false;
+    }
+  }
+
+  void recordMetrics(Metrics value) {
+    if (!mounted) return;
+    setState(() {
+      latest = value;
+      history.add(value);
+      if (history.length > 96) history.removeAt(0);
+    });
+  }
+
+  void recordExperimentEvent(lk.ExperimentEvent event) {
+    if (!mounted) return;
+    setState(() {
+      final description = event.description.isEmpty
+          ? event.kind
+          : event.description;
+      if (description.isNotEmpty) {
+        experimentLog.insert(0, description);
+        if (experimentLog.length > 12) experimentLog.removeLast();
+      }
+      if (event.hasDecision()) {
+        qHistory.add(event.decision.proposedKalmanQ);
+        rHistory.add(event.decision.proposedKalmanR);
+        if (qHistory.length > 64) qHistory.removeAt(0);
+        if (rHistory.length > 64) rHistory.removeAt(0);
+      }
+    });
+  }
+
+  Future<void> applySenderConfiguration() async {
+    if (grpcClient == null || applyingSenderConfig) return;
+    setState(() => applyingSenderConfig = true);
+    try {
+      final sender = at(nodeStatus, 0);
+      final version = (sender?.activeConfigVersion.toInt() ?? 0) + 1;
+      final sequence = (sender?.lastSequence.toInt() ?? 0) + 2;
+      final reply = await grpcClient!.transmitter.applyTransmitterConfig(
+        lk.TxConfig(
+          commandId: Int64(DateTime.now().millisecondsSinceEpoch),
+          version: Int64(version),
+          effectiveSequence: Int64(sequence),
+          symbolRate: senderSymbolRate.round(),
+          amplitude: senderAmplitude,
+          noiseStddev: senderNoise,
+        ),
+      );
+      if (!mounted) return;
+      setState(() {
+        connectionDetail = reply.accepted
+            ? 'Sender configuration queued for frame $sequence'
+            : 'Sender rejected configuration: ${reply.reason}';
+      });
+    } catch (error) {
+      if (mounted) {
+        setState(() => connectionDetail = friendlyError(error));
+      }
+    } finally {
+      if (mounted) setState(() => applyingSenderConfig = false);
+    }
+  }
+
+  void recordMedia(lk.MediaEvent event) {
+    if (!mounted) return;
+    final item = MediaActivity.fromProto(event);
+    setState(() {
+      media.removeWhere((entry) => entry.id == item.id);
+      media.insert(0, item);
+      if (media.length > 8) media.removeLast();
+    });
+  }
+
+  void streamEnded(Object? error) {
+    if (!mounted) return;
+    setState(() {
+      connectionState = error == null ? 'OFFLINE' : 'RETRY';
+      connectionDetail = error == null
+          ? 'The remote stream closed'
+          : friendlyError(error);
+    });
+  }
+
+  Future<void> disconnect({bool notify = true}) async {
+    statusTimer?.cancel();
+    statusTimer = null;
+    await sseSubscription?.cancel();
+    await experimentSubscription?.cancel();
+    await mediaSubscription?.cancel();
     await grpcClient?.close();
-    client?.close();
-    subscription = null;
-    grpcSubscription = null;
+    httpClient?.close();
+    sseSubscription = null;
+    experimentSubscription = null;
+    mediaSubscription = null;
     grpcClient = null;
-    client = null;
+    httpClient = null;
+    polling = false;
+    if (notify && mounted) {
+      setState(() {
+        connectionState = 'OFFLINE';
+        connectionDetail = 'Disconnected by operator';
+        nodeInfo = const [];
+        nodeStatus = const [];
+      });
+    }
   }
 
   @override
   void dispose() {
-    disconnect();
+    unawaited(disconnect(notify: false));
     endpoint.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    body: SafeArea(
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1220),
-          child: ListView(
-            padding: const EdgeInsets.all(24),
-            children: [
-              _header(),
-              const SizedBox(height: 24),
-              Wrap(
-                spacing: 14,
-                runSpacing: 14,
-                children: [
-                  MetricCard(
-                    label: 'SIGNAL / NOISE',
-                    value: '${latest.snr.toStringAsFixed(2)} dB',
-                    accent: const Color(0xff58f3c2),
-                  ),
-                  MetricCard(
-                    label: 'BIT ERROR RATE',
-                    value: latest.ber.toStringAsExponential(2),
-                    accent: const Color(0xffffd166),
-                  ),
-                  MetricCard(
-                    label: 'PIPELINE LATENCY',
-                    value: '${latest.latency.toStringAsFixed(2)} ms',
-                    accent: const Color(0xff7fb3ff),
-                  ),
-                  MetricCard(
-                    label: 'KALMAN PROFILE',
-                    value: 'v${latest.version}',
-                    accent: const Color(0xffff7b9c),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              LayoutBuilder(
-                builder: (context, c) {
-                  final charts = [
-                    SignalChart(
-                      title: 'SNR WINDOW',
-                      values: history.map((m) => m.snr).toList(),
-                      color: const Color(0xff58f3c2),
-                    ),
-                    SignalChart(
-                      title: 'BER WINDOW',
-                      values: history.map((m) => m.ber).toList(),
-                      color: const Color(0xffffd166),
-                    ),
-                  ];
-                  return c.maxWidth > 760
-                      ? Row(
-                          children: [
-                            Expanded(child: charts[0]),
-                            const SizedBox(width: 14),
-                            Expanded(child: charts[1]),
-                          ],
-                        )
-                      : Column(
-                          children: [
-                            charts[0],
-                            const SizedBox(height: 14),
-                            charts[1],
-                          ],
-                        );
-                },
-              ),
-              const SizedBox(height: 14),
-              _footer(),
-            ],
+    body: DecoratedBox(
+      decoration: const BoxDecoration(
+        gradient: RadialGradient(
+          center: Alignment(-.85, -.95),
+          radius: 1.35,
+          colors: [Color(0xff12322e), ink],
+          stops: [0, .52],
+        ),
+      ),
+      child: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1420),
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(20, 18, 20, 32),
+              children: [
+                header(),
+                const SizedBox(height: 22),
+                ...roleSections(),
+                const SizedBox(height: 18),
+                connectionPanel(),
+              ],
+            ),
           ),
         ),
       ),
     ),
   );
 
-  Widget _header() => Row(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Container(
-        width: 46,
-        height: 46,
-        decoration: BoxDecoration(
-          color: const Color(0xff58f3c2),
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: const Icon(Icons.graphic_eq, color: Color(0xff071016)),
+  List<Widget> roleSections() => switch (widget.role) {
+    AppRole.sender => [
+      RoleHero(
+        eyebrow: 'LAPTOP 01 / TRANSMITTER',
+        title: 'BPSK Signal Generator',
+        description:
+            'Configure the source and monitor sample delivery to the receiver.',
+        icon: Icons.waves_rounded,
+        color: blue,
+        status: at(nodeStatus, 0),
       ),
-      const SizedBox(width: 14),
-      const Expanded(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'STREAMING / LIVE KALMAN',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
-                letterSpacing: .8,
+      const SizedBox(height: 16),
+      SenderWorkspace(
+        amplitude: senderAmplitude,
+        noise: senderNoise,
+        symbolRate: senderSymbolRate,
+        connected: grpcClient != null,
+        applying: applyingSenderConfig,
+        status: at(nodeStatus, 0),
+        onAmplitudeChanged: (value) => setState(() => senderAmplitude = value),
+        onNoiseChanged: (value) => setState(() => senderNoise = value),
+        onSymbolRateChanged: (value) =>
+            setState(() => senderSymbolRate = value),
+        onApply: applySenderConfiguration,
+      ),
+    ],
+    AppRole.receiver => [
+      RoleHero(
+        eyebrow: 'LAPTOP 02 / RECEIVER',
+        title: 'Adaptive Kalman Receiver',
+        description:
+            'Demodulate BPSK, measure signal quality and reconstruct media.',
+        icon: Icons.filter_alt_rounded,
+        color: mint,
+        status: at(nodeStatus, 1),
+      ),
+      const SizedBox(height: 22),
+      const SectionHeading(
+        eyebrow: 'LIVE TELEMETRY',
+        title: 'Receiver signal quality',
+        description: 'Measurements from the active DSP pipeline.',
+      ),
+      const SizedBox(height: 12),
+      metricsGrid(),
+      const SizedBox(height: 14),
+      charts(),
+      const SizedBox(height: 20),
+      lowerPanels(),
+    ],
+    AppRole.controller => [
+      RoleHero(
+        eyebrow: 'LAPTOP 03 / CONTROLLER',
+        title: 'Adaptive Experiment Control',
+        description:
+            'Observe all nodes, policy decisions and configuration changes.',
+        icon: Icons.tune_rounded,
+        color: rose,
+        status: at(nodeStatus, 2),
+      ),
+      const SizedBox(height: 22),
+      const SectionHeading(
+        eyebrow: 'SYSTEM TOPOLOGY',
+        title: 'Three-device signal path',
+        description: 'Independent services with one control plane.',
+      ),
+      const SizedBox(height: 12),
+      deviceTopology(),
+      const SizedBox(height: 22),
+      ControllerWorkspace(
+        latest: latest,
+        snrHistory: history.map((item) => item.snr).toList(),
+        berHistory: history.map((item) => item.ber).toList(),
+        qHistory: qHistory,
+        rHistory: rHistory,
+        events: experimentLog,
+      ),
+    ],
+  };
+
+  Widget header() => LayoutBuilder(
+    builder: (context, constraints) {
+      final compact = constraints.maxWidth < 680;
+      final identity = Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(colors: [mint, blue]),
+              borderRadius: BorderRadius.circular(15),
+              boxShadow: const [
+                BoxShadow(color: Color(0x4458f3c2), blurRadius: 24),
+              ],
+            ),
+            child: const Icon(Icons.graphic_eq, color: ink, size: 27),
+          ),
+          const SizedBox(width: 14),
+          const Flexible(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'STREAMING / LIVE KALMAN',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: .7,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'Adaptive signal operations console',
+                  style: TextStyle(color: muted, fontSize: 13),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+      final actions = Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          PopupMenuButton<AppRole>(
+            tooltip: 'Switch device role',
+            onSelected: widget.onChangeRole,
+            itemBuilder: (context) => AppRole.values
+                .map(
+                  (role) => PopupMenuItem(
+                    value: role,
+                    child: Row(
+                      children: [
+                        Icon(roleIcon(role), size: 18),
+                        const SizedBox(width: 9),
+                        Text('Run as ${role.label}'),
+                      ],
+                    ),
+                  ),
+                )
+                .toList(),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
+              decoration: BoxDecoration(
+                color: roleColor(widget.role).withValues(alpha: .09),
+                borderRadius: BorderRadius.circular(99),
+                border: Border.all(
+                  color: roleColor(widget.role).withValues(alpha: .25),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    roleIcon(widget.role),
+                    size: 15,
+                    color: roleColor(widget.role),
+                  ),
+                  const SizedBox(width: 7),
+                  Text(
+                    widget.role.label.toUpperCase(),
+                    style: TextStyle(
+                      color: roleColor(widget.role),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
               ),
             ),
-            SizedBox(height: 3),
-            Text(
-              'Adaptive BPSK experiment console',
-              style: TextStyle(color: Color(0xff8ba0ad)),
+          ),
+          StatusPill(label: connectionState, live: isLive),
+          FilledButton.icon(
+            onPressed: isLive ? () => disconnect() : connect,
+            style: FilledButton.styleFrom(
+              backgroundColor: isLive ? surfaceHigh : mint,
+              foregroundColor: isLive ? rose : ink,
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+            ),
+            icon: Icon(isLive ? Icons.stop_rounded : Icons.bolt_rounded),
+            label: Text(isLive ? 'DISCONNECT' : 'CONNECT LAB'),
+          ),
+        ],
+      );
+      return compact
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [identity, const SizedBox(height: 16), actions],
+            )
+          : Row(
+              children: [
+                Expanded(child: identity),
+                actions,
+              ],
+            );
+    },
+  );
+
+  Widget deviceTopology() => LayoutBuilder(
+    builder: (context, constraints) {
+      final cards = [
+        DeviceCard(
+          laptop: 'LAPTOP 01',
+          title: 'Sender',
+          subtitle: 'Signal source',
+          icon: Icons.waves_rounded,
+          accent: blue,
+          info: at(nodeInfo, 0),
+          status: at(nodeStatus, 0),
+          fallbackCapabilities: const ['BPSK', 'AWGN', 'FRAME STREAM'],
+        ),
+        DeviceCard(
+          laptop: 'LAPTOP 02',
+          title: 'Receiver',
+          subtitle: 'Kalman + media DSP',
+          icon: Icons.filter_alt_rounded,
+          accent: mint,
+          info: at(nodeInfo, 1),
+          status: at(nodeStatus, 1),
+          fallbackCapabilities: const ['DEMODULATE', 'AUTO DETECT', 'MEDIA'],
+        ),
+        DeviceCard(
+          laptop: 'LAPTOP 03',
+          title: 'Controller',
+          subtitle: 'Adaptive policy',
+          icon: Icons.tune_rounded,
+          accent: rose,
+          info: at(nodeInfo, 2),
+          status: at(nodeStatus, 2),
+          fallbackCapabilities: const ['Q/R POLICY', 'EVENTS', 'STATUS'],
+        ),
+      ];
+      if (constraints.maxWidth >= 960) {
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(child: cards[0]),
+            const FlowArrow(label: 'SAMPLES'),
+            Expanded(child: cards[1]),
+            const FlowArrow(label: 'METRICS'),
+            Expanded(child: cards[2]),
+          ],
+        );
+      }
+      return Column(
+        children: [
+          cards[0],
+          const FlowArrow(label: 'SAMPLES', vertical: true),
+          cards[1],
+          const FlowArrow(label: 'METRICS', vertical: true),
+          cards[2],
+        ],
+      );
+    },
+  );
+
+  T? at<T>(List<T> values, int index) =>
+      index < values.length ? values[index] : null;
+
+  Widget metricsGrid() => LayoutBuilder(
+    builder: (context, constraints) {
+      final width = constraints.maxWidth;
+      final columns = width >= 1050 ? 5 : (width >= 620 ? 3 : 2);
+      final tileWidth = (width - (columns - 1) * 12) / columns;
+      return Wrap(
+        spacing: 12,
+        runSpacing: 12,
+        children: [
+          MetricCard(
+            width: tileWidth,
+            label: 'SIGNAL / NOISE',
+            value: '${latest.snr.toStringAsFixed(2)} dB',
+            icon: Icons.network_check_rounded,
+            accent: mint,
+          ),
+          MetricCard(
+            width: tileWidth,
+            label: 'BIT ERROR RATE',
+            value: latest.ber.toStringAsExponential(2),
+            icon: Icons.rule_rounded,
+            accent: amber,
+          ),
+          MetricCard(
+            width: tileWidth,
+            label: 'NOISE VARIANCE',
+            value: latest.noise.toStringAsFixed(4),
+            icon: Icons.blur_on_rounded,
+            accent: blue,
+          ),
+          MetricCard(
+            width: tileWidth,
+            label: 'PIPELINE LATENCY',
+            value: '${latest.latency.toStringAsFixed(2)} ms',
+            icon: Icons.speed_rounded,
+            accent: rose,
+          ),
+          MetricCard(
+            width: tileWidth,
+            label: 'KALMAN PROFILE',
+            value: 'v${latest.version}',
+            icon: Icons.auto_graph_rounded,
+            accent: const Color(0xffb68cff),
+          ),
+        ],
+      );
+    },
+  );
+
+  Widget charts() => LayoutBuilder(
+    builder: (context, constraints) {
+      final chartWidgets = [
+        SignalChart(
+          title: 'SNR WINDOW',
+          valueLabel: '${latest.snr.toStringAsFixed(1)} dB',
+          values: history.map((item) => item.snr).toList(),
+          color: mint,
+        ),
+        SignalChart(
+          title: 'BER WINDOW',
+          valueLabel: latest.ber.toStringAsExponential(1),
+          values: history.map((item) => item.ber).toList(),
+          color: amber,
+        ),
+      ];
+      return constraints.maxWidth >= 760
+          ? Row(
+              children: [
+                Expanded(child: chartWidgets[0]),
+                const SizedBox(width: 14),
+                Expanded(child: chartWidgets[1]),
+              ],
+            )
+          : Column(
+              children: [
+                chartWidgets[0],
+                const SizedBox(height: 14),
+                chartWidgets[1],
+              ],
+            );
+    },
+  );
+
+  Widget lowerPanels() => LayoutBuilder(
+    builder: (context, constraints) {
+      final mediaPanel = MediaPanel(items: media);
+      final runPanel = RunPanel(
+        sequence: latest.sequence,
+        version: latest.version,
+        connectionDetail: connectionDetail,
+        receiverStatus: at(nodeStatus, 1),
+      );
+      return constraints.maxWidth >= 860
+          ? Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(flex: 3, child: mediaPanel),
+                const SizedBox(width: 14),
+                Expanded(flex: 2, child: runPanel),
+              ],
+            )
+          : Column(
+              children: [mediaPanel, const SizedBox(height: 14), runPanel],
+            );
+    },
+  );
+
+  Widget connectionPanel() => AppPanel(
+    padding: const EdgeInsets.all(16),
+    child: LayoutBuilder(
+      builder: (context, constraints) {
+        final field = TextField(
+          controller: endpoint,
+          decoration: const InputDecoration(
+            labelText: 'Lab endpoint',
+            hintText: 'grpc://controller:55053?txHost=…&rxHost=…',
+            prefixIcon: Icon(Icons.lan_rounded),
+            isDense: true,
+          ),
+          onSubmitted: (_) => connect(),
+        );
+        final frame = Text(
+          'FRAME ${latest.sequence.toString().padLeft(8, '0')}',
+          style: const TextStyle(
+            fontFamily: 'monospace',
+            color: muted,
+            fontWeight: FontWeight.w700,
+          ),
+        );
+        if (constraints.maxWidth < 720) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [field, const SizedBox(height: 12), frame],
+          );
+        }
+        return Row(
+          children: [
+            Expanded(child: field),
+            const SizedBox(width: 18),
+            frame,
+          ],
+        );
+      },
+    ),
+  );
+}
+
+class RoleHero extends StatelessWidget {
+  const RoleHero({
+    super.key,
+    required this.eyebrow,
+    required this.title,
+    required this.description,
+    required this.icon,
+    required this.color,
+    required this.status,
+  });
+
+  final String eyebrow, title, description;
+  final IconData icon;
+  final Color color;
+  final lk.NodeStatus? status;
+
+  @override
+  Widget build(BuildContext context) => AppPanel(
+    padding: const EdgeInsets.all(20),
+    child: Row(
+      children: [
+        Container(
+          width: 54,
+          height: 54,
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: .12),
+            borderRadius: BorderRadius.circular(17),
+            border: Border.all(color: color.withValues(alpha: .28)),
+          ),
+          child: Icon(icon, color: color, size: 29),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                eyebrow,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.5,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 23,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(description, style: const TextStyle(color: muted)),
+            ],
+          ),
+        ),
+        if (status != null)
+          TinyChip(
+            label: status!.active ? 'RUNNING' : 'READY',
+            color: status!.health == lk.HealthState.HEALTH_STATE_READY
+                ? mint
+                : rose,
+          ),
+      ],
+    ),
+  );
+}
+
+class SenderWorkspace extends StatelessWidget {
+  const SenderWorkspace({
+    super.key,
+    required this.amplitude,
+    required this.noise,
+    required this.symbolRate,
+    required this.connected,
+    required this.applying,
+    required this.status,
+    required this.onAmplitudeChanged,
+    required this.onNoiseChanged,
+    required this.onSymbolRateChanged,
+    required this.onApply,
+  });
+
+  final double amplitude, noise, symbolRate;
+  final bool connected, applying;
+  final lk.NodeStatus? status;
+  final ValueChanged<double> onAmplitudeChanged;
+  final ValueChanged<double> onNoiseChanged;
+  final ValueChanged<double> onSymbolRateChanged;
+  final VoidCallback onApply;
+
+  List<double> get preview => List.generate(96, (index) {
+    final bit = ((index ~/ 8) % 5 == 1 || (index ~/ 8) % 5 == 2) ? 1.0 : -1.0;
+    return bit * amplitude + math.sin(index * 2.17) * noise * .22;
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final controls = AppPanel(
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const PanelTitle(
+            icon: Icons.settings_input_antenna_rounded,
+            title: 'SIGNAL CONFIGURATION',
+            color: blue,
+          ),
+          const SizedBox(height: 18),
+          const ConfigValue(label: 'MODULATION', value: 'BPSK'),
+          ConfigSlider(
+            label: 'SYMBOL RATE',
+            value: symbolRate,
+            min: 1000,
+            max: 12000,
+            divisions: 11,
+            valueText: '${symbolRate.round()} baud',
+            color: blue,
+            onChanged: onSymbolRateChanged,
+          ),
+          ConfigSlider(
+            label: 'AMPLITUDE',
+            value: amplitude,
+            min: .2,
+            max: 2,
+            divisions: 18,
+            valueText: amplitude.toStringAsFixed(1),
+            color: mint,
+            onChanged: onAmplitudeChanged,
+          ),
+          ConfigSlider(
+            label: 'AWGN / NOISE',
+            value: noise,
+            min: 0,
+            max: 2,
+            divisions: 20,
+            valueText: noise.toStringAsFixed(2),
+            color: amber,
+            onChanged: onNoiseChanged,
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: connected && !applying ? onApply : null,
+              icon: applying
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.send_rounded),
+              label: Text(applying ? 'APPLYING…' : 'APPLY AT FRAME BOUNDARY'),
+            ),
+          ),
+          const SizedBox(height: 9),
+          Text(
+            connected
+                ? 'Configuration is versioned and queued safely.'
+                : 'Connect to enable transmitter commands.',
+            style: const TextStyle(color: muted, fontSize: 11),
+          ),
+        ],
+      ),
+    );
+    final visualizer = Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: ConstellationPanel(amplitude: amplitude, noise: noise),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: SignalChart(
+                title: 'TIME-DOMAIN PREVIEW',
+                valueLabel: 'CONFIG PREVIEW',
+                values: preview,
+                color: blue,
+              ),
             ),
           ],
         ),
-      ),
-      Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-        decoration: BoxDecoration(
-          color: isLive ? const Color(0x2258f3c2) : const Color(0x22ff7b9c),
-          borderRadius: BorderRadius.circular(99),
-        ),
+        const SizedBox(height: 14),
+        TransmissionPanel(status: status, symbolRate: symbolRate),
+      ],
+    );
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth >= 920) {
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(width: 330, child: controls),
+              const SizedBox(width: 14),
+              Expanded(child: visualizer),
+            ],
+          );
+        }
+        if (constraints.maxWidth < 600) {
+          return Column(
+            children: [
+              controls,
+              const SizedBox(height: 14),
+              ConstellationPanel(amplitude: amplitude, noise: noise),
+              const SizedBox(height: 14),
+              SignalChart(
+                title: 'TIME-DOMAIN PREVIEW',
+                valueLabel: 'CONFIG PREVIEW',
+                values: preview,
+                color: blue,
+              ),
+              const SizedBox(height: 14),
+              TransmissionPanel(status: status, symbolRate: symbolRate),
+            ],
+          );
+        }
+        return Column(
+          children: [controls, const SizedBox(height: 14), visualizer],
+        );
+      },
+    );
+  }
+}
+
+class PanelTitle extends StatelessWidget {
+  const PanelTitle({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.color,
+  });
+  final IconData icon;
+  final String title;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      Icon(icon, color: color, size: 19),
+      const SizedBox(width: 9),
+      Expanded(
         child: Text(
-          '● $status',
-          style: TextStyle(
-            color: isLive ? const Color(0xff58f3c2) : const Color(0xffff7b9c),
+          title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
             fontWeight: FontWeight.w700,
+            letterSpacing: .8,
           ),
         ),
       ),
     ],
   );
+}
 
-  Widget _footer() => Container(
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: const Color(0xff0d1a22),
-      borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: const Color(0xff1a2d38)),
-    ),
+class ConfigValue extends StatelessWidget {
+  const ConfigValue({super.key, required this.label, required this.value});
+  final String label, value;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 16),
     child: Row(
       children: [
         Expanded(
-          child: TextField(
-            controller: endpoint,
-            decoration: const InputDecoration(
-              labelText: 'Controller event stream',
-              border: OutlineInputBorder(),
-              isDense: true,
-            ),
+          child: Text(
+            label,
+            style: const TextStyle(color: muted, fontSize: 10),
           ),
         ),
-        const SizedBox(width: 12),
-        FilledButton.icon(
-          onPressed: isLive ? disconnect : connect,
-          icon: Icon(isLive ? Icons.stop : Icons.play_arrow),
-          label: Text(isLive ? 'STOP' : 'CONNECT'),
+        TinyChip(label: value, color: blue),
+      ],
+    ),
+  );
+}
+
+class ConfigSlider extends StatelessWidget {
+  const ConfigSlider({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.min,
+    required this.max,
+    required this.divisions,
+    required this.valueText,
+    required this.color,
+    required this.onChanged,
+  });
+  final String label, valueText;
+  final double value, min, max;
+  final int divisions;
+  final Color color;
+  final ValueChanged<double> onChanged;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 10),
+    child: Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(color: muted, fontSize: 10),
+              ),
+            ),
+            Text(
+              valueText,
+              style: TextStyle(color: color, fontWeight: FontWeight.w700),
+            ),
+          ],
         ),
-        const SizedBox(width: 16),
+        SliderTheme(
+          data: SliderTheme.of(context).copyWith(activeTrackColor: color),
+          child: Slider(
+            value: value,
+            min: min,
+            max: max,
+            divisions: divisions,
+            onChanged: onChanged,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class ConstellationPanel extends StatelessWidget {
+  const ConstellationPanel({
+    super.key,
+    required this.amplitude,
+    required this.noise,
+  });
+  final double amplitude, noise;
+
+  @override
+  Widget build(BuildContext context) => AppPanel(
+    padding: const EdgeInsets.all(18),
+    child: SizedBox(
+      height: 215,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'BPSK CONSTELLATION / PREVIEW',
+            style: TextStyle(
+              color: muted,
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.2,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: CustomPaint(
+              painter: ConstellationPainter(amplitude, noise),
+              size: Size.infinite,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+class TransmissionPanel extends StatelessWidget {
+  const TransmissionPanel({
+    super.key,
+    required this.status,
+    required this.symbolRate,
+  });
+  final lk.NodeStatus? status;
+  final double symbolRate;
+
+  @override
+  Widget build(BuildContext context) => AppPanel(
+    padding: const EdgeInsets.all(18),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const PanelTitle(
+          icon: Icons.cell_tower_rounded,
+          title: 'TRANSMISSION STATUS',
+          color: mint,
+        ),
+        const SizedBox(height: 15),
+        Wrap(
+          spacing: 28,
+          runSpacing: 14,
+          children: [
+            SmallStat(
+              label: 'STATE',
+              value: status?.active == true ? 'STREAMING' : 'IDLE',
+            ),
+            SmallStat(
+              label: 'FRAME',
+              value: status?.lastSequence.toString() ?? '—',
+            ),
+            SmallStat(label: 'BIT RATE', value: '${symbolRate.round()} bit/s'),
+            SmallStat(
+              label: 'PEER',
+              value: status?.peerConnected == true ? 'CONNECTED' : 'WAITING',
+            ),
+            SmallStat(
+              label: 'CONFIG',
+              value: 'v${status?.activeConfigVersion ?? 0}',
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+}
+
+class ControllerWorkspace extends StatelessWidget {
+  const ControllerWorkspace({
+    super.key,
+    required this.latest,
+    required this.snrHistory,
+    required this.berHistory,
+    required this.qHistory,
+    required this.rHistory,
+    required this.events,
+  });
+  final Metrics latest;
+  final List<double> snrHistory, berHistory, qHistory, rHistory;
+  final List<String> events;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    children: [
+      LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          final columns = width >= 900 ? 4 : 2;
+          final tileWidth = (width - (columns - 1) * 12) / columns;
+          return Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              MetricCard(
+                width: tileWidth,
+                label: 'SNR',
+                value: '${latest.snr.toStringAsFixed(2)} dB',
+                icon: Icons.network_check,
+                accent: mint,
+              ),
+              MetricCard(
+                width: tileWidth,
+                label: 'BER',
+                value: latest.ber.toStringAsExponential(2),
+                icon: Icons.rule,
+                accent: amber,
+              ),
+              MetricCard(
+                width: tileWidth,
+                label: 'LATENCY',
+                value: '${latest.latency.toStringAsFixed(2)} ms',
+                icon: Icons.speed,
+                accent: blue,
+              ),
+              MetricCard(
+                width: tileWidth,
+                label: 'CONFIG VERSION',
+                value: 'v${latest.version}',
+                icon: Icons.tune,
+                accent: rose,
+              ),
+            ],
+          );
+        },
+      ),
+      const SizedBox(height: 14),
+      LayoutBuilder(
+        builder: (context, constraints) {
+          final signalCharts = Row(
+            children: [
+              Expanded(
+                child: SignalChart(
+                  title: 'SNR HISTORY',
+                  valueLabel: '${latest.snr.toStringAsFixed(1)} dB',
+                  values: snrHistory,
+                  color: mint,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: SignalChart(
+                  title: 'BER HISTORY',
+                  valueLabel: latest.ber.toStringAsExponential(1),
+                  values: berHistory,
+                  color: amber,
+                ),
+              ),
+            ],
+          );
+          final policyCharts = Row(
+            children: [
+              Expanded(
+                child: SignalChart(
+                  title: 'PROCESS NOISE / Q',
+                  valueLabel: qHistory.isEmpty
+                      ? 'WAITING'
+                      : qHistory.last.toStringAsExponential(2),
+                  values: qHistory,
+                  color: blue,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: SignalChart(
+                  title: 'MEASUREMENT NOISE / R',
+                  valueLabel: rHistory.isEmpty
+                      ? 'WAITING'
+                      : rHistory.last.toStringAsExponential(2),
+                  values: rHistory,
+                  color: rose,
+                ),
+              ),
+            ],
+          );
+          if (constraints.maxWidth >= 780) {
+            return Column(
+              children: [
+                signalCharts,
+                const SizedBox(height: 14),
+                policyCharts,
+              ],
+            );
+          }
+          return Column(
+            children: [
+              SignalChart(
+                title: 'SNR HISTORY',
+                valueLabel: '${latest.snr.toStringAsFixed(1)} dB',
+                values: snrHistory,
+                color: mint,
+              ),
+              const SizedBox(height: 14),
+              SignalChart(
+                title: 'BER HISTORY',
+                valueLabel: latest.ber.toStringAsExponential(1),
+                values: berHistory,
+                color: amber,
+              ),
+              const SizedBox(height: 14),
+              SignalChart(
+                title: 'PROCESS NOISE / Q',
+                valueLabel: qHistory.isEmpty
+                    ? 'WAITING'
+                    : qHistory.last.toStringAsExponential(2),
+                values: qHistory,
+                color: blue,
+              ),
+              const SizedBox(height: 14),
+              SignalChart(
+                title: 'MEASUREMENT NOISE / R',
+                valueLabel: rHistory.isEmpty
+                    ? 'WAITING'
+                    : rHistory.last.toStringAsExponential(2),
+                values: rHistory,
+                color: rose,
+              ),
+            ],
+          );
+        },
+      ),
+      const SizedBox(height: 14),
+      EventLogPanel(events: events),
+    ],
+  );
+}
+
+class EventLogPanel extends StatelessWidget {
+  const EventLogPanel({super.key, required this.events});
+  final List<String> events;
+
+  @override
+  Widget build(BuildContext context) => AppPanel(
+    padding: const EdgeInsets.all(18),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const PanelTitle(
+          icon: Icons.receipt_long_rounded,
+          title: 'ADAPTATION EVENT LOG',
+          color: rose,
+        ),
+        const SizedBox(height: 14),
+        if (events.isEmpty)
+          const Text(
+            'Waiting for controller decisions…',
+            style: TextStyle(color: muted),
+          )
+        else
+          ...events
+              .take(8)
+              .map(
+                (event) => Padding(
+                  padding: const EdgeInsets.only(bottom: 9),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(
+                        Icons.check_circle_rounded,
+                        color: mint,
+                        size: 15,
+                      ),
+                      const SizedBox(width: 9),
+                      Expanded(
+                        child: Text(
+                          event,
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+      ],
+    ),
+  );
+}
+
+class ConstellationPainter extends CustomPainter {
+  ConstellationPainter(this.amplitude, this.noise);
+  final double amplitude, noise;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final grid = Paint()
+      ..color = line
+      ..strokeWidth = 1;
+    canvas.drawLine(
+      Offset(0, size.height / 2),
+      Offset(size.width, size.height / 2),
+      grid,
+    );
+    canvas.drawLine(
+      Offset(size.width / 2, 0),
+      Offset(size.width / 2, size.height),
+      grid,
+    );
+    final scale = size.width / 5;
+    for (var index = 0; index < 34; index++) {
+      final side = index.isEven ? -1.0 : 1.0;
+      final jitterX = math.sin(index * 4.17) * noise * 4;
+      final jitterY = math.cos(index * 2.31) * noise * 5;
+      final point = Offset(
+        size.width / 2 + side * amplitude * scale + jitterX,
+        size.height / 2 + jitterY,
+      );
+      canvas.drawCircle(
+        point,
+        2.5,
+        Paint()..color = blue.withValues(alpha: .65),
+      );
+    }
+    for (final side in [-1.0, 1.0]) {
+      canvas.drawCircle(
+        Offset(size.width / 2 + side * amplitude * scale, size.height / 2),
+        6,
+        Paint()..color = mint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant ConstellationPainter oldDelegate) =>
+      oldDelegate.amplitude != amplitude || oldDelegate.noise != noise;
+}
+
+class SectionHeading extends StatelessWidget {
+  const SectionHeading({
+    super.key,
+    required this.eyebrow,
+    required this.title,
+    required this.description,
+  });
+
+  final String eyebrow, title, description;
+
+  @override
+  Widget build(BuildContext context) => Wrap(
+    crossAxisAlignment: WrapCrossAlignment.end,
+    spacing: 12,
+    runSpacing: 3,
+    children: [
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            eyebrow,
+            style: const TextStyle(
+              color: mint,
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.8,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+          ),
+        ],
+      ),
+      Padding(
+        padding: const EdgeInsets.only(bottom: 2),
+        child: Text(description, style: const TextStyle(color: muted)),
+      ),
+    ],
+  );
+}
+
+class AppPanel extends StatelessWidget {
+  const AppPanel({super.key, required this.child, this.padding});
+
+  final Widget child;
+  final EdgeInsets? padding;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: padding,
+    decoration: BoxDecoration(
+      color: surface.withValues(alpha: .94),
+      borderRadius: BorderRadius.circular(22),
+      border: Border.all(color: line),
+      boxShadow: const [
+        BoxShadow(
+          color: Color(0x22000000),
+          blurRadius: 22,
+          offset: Offset(0, 9),
+        ),
+      ],
+    ),
+    child: child,
+  );
+}
+
+class DeviceCard extends StatelessWidget {
+  const DeviceCard({
+    super.key,
+    required this.laptop,
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.accent,
+    required this.info,
+    required this.status,
+    required this.fallbackCapabilities,
+  });
+
+  final String laptop, title, subtitle;
+  final IconData icon;
+  final Color accent;
+  final lk.NodeInfo? info;
+  final lk.NodeStatus? status;
+  final List<String> fallbackCapabilities;
+
+  @override
+  Widget build(BuildContext context) {
+    final ready = status?.health == lk.HealthState.HEALTH_STATE_READY;
+    final capabilities = info == null
+        ? fallbackCapabilities
+        : info!.capabilities
+              .map((item) => item.name.toUpperCase())
+              .take(3)
+              .toList();
+    return AppPanel(
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: .13),
+                  borderRadius: BorderRadius.circular(13),
+                  border: Border.all(color: accent.withValues(alpha: .32)),
+                ),
+                child: Icon(icon, color: accent),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      laptop,
+                      style: const TextStyle(
+                        color: muted,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              HealthDot(ready: ready, known: status != null),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Text(
+            subtitle,
+            style: TextStyle(color: accent, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 5),
+          Text(
+            info?.listenAddress ?? 'Waiting for service discovery',
+            style: const TextStyle(
+              color: muted,
+              fontSize: 12,
+              fontFamily: 'monospace',
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: capabilities
+                .map((item) => TinyChip(label: item, color: accent))
+                .toList(),
+          ),
+          const SizedBox(height: 15),
+          Row(
+            children: [
+              Expanded(
+                child: SmallStat(
+                  label: 'STATE',
+                  value: status == null
+                      ? 'WAITING'
+                      : (ready ? 'READY' : 'DEGRADED'),
+                ),
+              ),
+              Expanded(
+                child: SmallStat(
+                  label: 'SEQUENCE',
+                  value: status?.lastSequence.toString() ?? '—',
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class SmallStat extends StatelessWidget {
+  const SmallStat({super.key, required this.label, required this.value});
+  final String label, value;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        label,
+        style: const TextStyle(color: muted, fontSize: 9, letterSpacing: 1.2),
+      ),
+      const SizedBox(height: 3),
+      Text(
+        value,
+        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+      ),
+    ],
+  );
+}
+
+class HealthDot extends StatelessWidget {
+  const HealthDot({super.key, required this.ready, required this.known});
+  final bool ready, known;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = !known ? muted : (ready ? mint : rose);
+    return Container(
+      width: 11,
+      height: 11,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: color,
+        boxShadow: [
+          BoxShadow(color: color.withValues(alpha: .5), blurRadius: 10),
+        ],
+      ),
+    );
+  }
+}
+
+class FlowArrow extends StatelessWidget {
+  const FlowArrow({super.key, required this.label, this.vertical = false});
+  final String label;
+  final bool vertical;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    width: vertical ? 90 : 82,
+    height: vertical ? 62 : 90,
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
         Text(
-          'FRAME ${latest.sequence.toString().padLeft(6, '0')}',
-          style: const TextStyle(
-            fontFamily: 'monospace',
-            color: Color(0xff8ba0ad),
+          label,
+          style: const TextStyle(color: muted, fontSize: 8, letterSpacing: 1.1),
+        ),
+        const SizedBox(height: 3),
+        Icon(
+          vertical ? Icons.south_rounded : Icons.east_rounded,
+          color: mint,
+          size: 22,
+        ),
+      ],
+    ),
+  );
+}
+
+class TinyChip extends StatelessWidget {
+  const TinyChip({super.key, required this.label, required this.color});
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+    decoration: BoxDecoration(
+      color: color.withValues(alpha: .08),
+      borderRadius: BorderRadius.circular(7),
+      border: Border.all(color: color.withValues(alpha: .2)),
+    ),
+    child: Text(
+      label,
+      style: TextStyle(
+        color: color,
+        fontSize: 8,
+        fontWeight: FontWeight.w800,
+        letterSpacing: .6,
+      ),
+    ),
+  );
+}
+
+class StatusPill extends StatelessWidget {
+  const StatusPill({super.key, required this.label, required this.live});
+  final String label;
+  final bool live;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
+    decoration: BoxDecoration(
+      color: (live ? mint : rose).withValues(alpha: .09),
+      borderRadius: BorderRadius.circular(99),
+      border: Border.all(color: (live ? mint : rose).withValues(alpha: .24)),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        HealthDot(ready: live, known: true),
+        const SizedBox(width: 8),
+        Text(
+          label,
+          style: TextStyle(
+            color: live ? mint : rose,
+            fontSize: 10,
+            fontWeight: FontWeight.w800,
           ),
         ),
       ],
@@ -342,42 +2163,55 @@ class _MonitorPageState extends State<MonitorPage> {
 class MetricCard extends StatelessWidget {
   const MetricCard({
     super.key,
+    required this.width,
     required this.label,
     required this.value,
+    required this.icon,
     required this.accent,
   });
+
+  final double width;
   final String label, value;
+  final IconData icon;
   final Color accent;
+
   @override
-  Widget build(BuildContext context) => Container(
-    width: 280,
-    padding: const EdgeInsets.all(18),
-    decoration: BoxDecoration(
-      color: const Color(0xff0d1a22),
-      borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: const Color(0xff1a2d38)),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 11,
-            letterSpacing: 1.4,
-            color: Color(0xff8ba0ad),
+  Widget build(BuildContext context) => SizedBox(
+    width: width,
+    child: AppPanel(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 17, color: accent),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    color: muted,
+                    fontSize: 9,
+                    letterSpacing: 1.1,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ),
-        const SizedBox(height: 10),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 27,
-            fontWeight: FontWeight.w700,
-            color: accent,
+          const SizedBox(height: 13),
+          Text(
+            value,
+            maxLines: 1,
+            style: TextStyle(
+              color: accent,
+              fontSize: 24,
+              fontWeight: FontWeight.w700,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     ),
   );
 }
@@ -386,37 +2220,270 @@ class SignalChart extends StatelessWidget {
   const SignalChart({
     super.key,
     required this.title,
+    required this.valueLabel,
     required this.values,
     required this.color,
   });
-  final String title;
+
+  final String title, valueLabel;
   final List<double> values;
   final Color color;
+
   @override
-  Widget build(BuildContext context) => Container(
-    height: 250,
+  Widget build(BuildContext context) => AppPanel(
     padding: const EdgeInsets.all(18),
-    decoration: BoxDecoration(
-      color: const Color(0xff0d1a22),
-      borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: const Color(0xff1a2d38)),
+    child: SizedBox(
+      height: 215,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    color: muted,
+                    fontSize: 10,
+                    letterSpacing: 1.4,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Text(
+                valueLabel,
+                style: TextStyle(color: color, fontWeight: FontWeight.w700),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: CustomPaint(
+              painter: ChartPainter(values, color),
+              size: Size.infinite,
+            ),
+          ),
+        ],
+      ),
     ),
+  );
+}
+
+class MediaPanel extends StatelessWidget {
+  const MediaPanel({super.key, required this.items});
+  final List<MediaActivity> items;
+
+  @override
+  Widget build(BuildContext context) => AppPanel(
+    padding: const EdgeInsets.all(18),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        const Row(
+          children: [
+            Icon(Icons.perm_media_rounded, color: mint, size: 19),
+            SizedBox(width: 9),
+            Expanded(
+              child: Text(
+                'RECEIVER MEDIA',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: .8,
+                ),
+              ),
+            ),
+            TinyChip(label: 'AUTO DETECT', color: mint),
+          ],
+        ),
+        const SizedBox(height: 14),
+        if (items.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+            decoration: BoxDecoration(
+              color: ink.withValues(alpha: .35),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: const Column(
+              children: [
+                Icon(Icons.radar_rounded, color: muted, size: 30),
+                SizedBox(height: 8),
+                Text(
+                  'Waiting for text, image or audio payloads',
+                  style: TextStyle(color: muted),
+                ),
+              ],
+            ),
+          )
+        else
+          ...items.take(4).map((item) => MediaRow(item: item)),
+      ],
+    ),
+  );
+}
+
+class MediaRow extends StatelessWidget {
+  const MediaRow({super.key, required this.item});
+  final MediaActivity item;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = switch (item.kind) {
+      'TEXT' => mint,
+      'IMAGE' => blue,
+      'AUDIO' => rose,
+      _ => amber,
+    };
+    final progress = item.total <= 0
+        ? null
+        : (item.received / item.total).clamp(0.0, 1.0);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: ink.withValues(alpha: .42),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: accent.withValues(alpha: .12),
+                borderRadius: BorderRadius.circular(11),
+              ),
+              child: Icon(mediaIcon(item.kind), color: accent, size: 20),
+            ),
+            const SizedBox(width: 11),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    item.preview.isEmpty
+                        ? '${item.contentType} • ${item.received} bytes'
+                        : item.preview,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: muted, fontSize: 11),
+                  ),
+                  if (progress != null) ...[
+                    const SizedBox(height: 7),
+                    LinearProgressIndicator(
+                      value: progress,
+                      minHeight: 3,
+                      color: accent,
+                      backgroundColor: line,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+            TinyChip(
+              label: item.complete
+                  ? (item.checksumValid ? 'VERIFIED' : 'FAILED')
+                  : item.kind,
+              color: item.complete && !item.checksumValid ? rose : accent,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  IconData mediaIcon(String kind) => switch (kind) {
+    'TEXT' => Icons.description_rounded,
+    'IMAGE' => Icons.image_rounded,
+    'AUDIO' => Icons.audio_file_rounded,
+    _ => Icons.data_object_rounded,
+  };
+}
+
+class RunPanel extends StatelessWidget {
+  const RunPanel({
+    super.key,
+    required this.sequence,
+    required this.version,
+    required this.connectionDetail,
+    required this.receiverStatus,
+  });
+
+  final int sequence, version;
+  final String connectionDetail;
+  final lk.NodeStatus? receiverStatus;
+
+  @override
+  Widget build(BuildContext context) => AppPanel(
+    padding: const EdgeInsets.all(18),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Row(
+          children: [
+            Icon(Icons.monitor_heart_rounded, color: rose, size: 19),
+            SizedBox(width: 9),
+            Text(
+              'EXPERIMENT STATE',
+              style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: .8),
+            ),
+          ],
+        ),
+        const SizedBox(height: 17),
+        RunStat(
+          label: 'CURRENT FRAME',
+          value: sequence.toString().padLeft(8, '0'),
+        ),
+        RunStat(label: 'ACTIVE CONFIG', value: 'v$version'),
+        RunStat(
+          label: 'RECEIVER LINK',
+          value: receiverStatus == null
+              ? 'WAITING'
+              : (receiverStatus!.peerConnected ? 'CONNECTED' : 'IDLE'),
+        ),
+        const SizedBox(height: 8),
         Text(
-          title,
-          style: const TextStyle(
-            fontSize: 11,
-            letterSpacing: 1.4,
-            color: Color(0xff8ba0ad),
+          connectionDetail,
+          style: const TextStyle(color: muted, fontSize: 12),
+        ),
+      ],
+    ),
+  );
+}
+
+class RunStat extends StatelessWidget {
+  const RunStat({super.key, required this.label, required this.value});
+  final String label, value;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 12),
+    child: Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: muted,
+              fontSize: 10,
+              letterSpacing: 1.1,
+            ),
           ),
         ),
-        const SizedBox(height: 16),
-        Expanded(
-          child: CustomPaint(
-            painter: ChartPainter(values, color),
-            size: Size.infinite,
+        Text(
+          value,
+          style: const TextStyle(
+            fontFamily: 'monospace',
+            fontWeight: FontWeight.w800,
           ),
         ),
       ],
@@ -428,38 +2495,64 @@ class ChartPainter extends CustomPainter {
   ChartPainter(this.values, this.color);
   final List<double> values;
   final Color color;
+
   @override
   void paint(Canvas canvas, Size size) {
     final grid = Paint()
-      ..color = const Color(0xff1a2d38)
+      ..color = line.withValues(alpha: .75)
       ..strokeWidth = 1;
     for (var i = 0; i <= 4; i++) {
       final y = size.height * i / 4;
       canvas.drawLine(Offset(0, y), Offset(size.width, y), grid);
     }
     if (values.length < 2) return;
-    var min = values.reduce((a, b) => a < b ? a : b),
-        max = values.reduce((a, b) => a > b ? a : b);
-    if ((max - min).abs() < .000001) max = min + 1;
-    final path = Path();
+    var minValue = values.reduce((a, b) => a < b ? a : b);
+    var maxValue = values.reduce((a, b) => a > b ? a : b);
+    if ((maxValue - minValue).abs() < .000001) maxValue = minValue + 1;
+    final chartLine = Path();
+    final fill = Path();
     for (var i = 0; i < values.length; i++) {
-      final p = Offset(
+      final point = Offset(
         size.width * i / (values.length - 1),
-        size.height * (1 - (values[i] - min) / (max - min)),
+        size.height * (1 - (values[i] - minValue) / (maxValue - minValue)),
       );
-      i == 0 ? path.moveTo(p.dx, p.dy) : path.lineTo(p.dx, p.dy);
+      if (i == 0) {
+        chartLine.moveTo(point.dx, point.dy);
+        fill.moveTo(point.dx, size.height);
+        fill.lineTo(point.dx, point.dy);
+      } else {
+        chartLine.lineTo(point.dx, point.dy);
+        fill.lineTo(point.dx, point.dy);
+      }
     }
+    fill.lineTo(size.width, size.height);
+    fill.close();
     canvas.drawPath(
-      path,
+      fill,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [color.withValues(alpha: .2), color.withValues(alpha: 0)],
+        ).createShader(Offset.zero & size),
+    );
+    canvas.drawPath(
+      chartLine,
       Paint()
         ..color = color
-        ..strokeWidth = 2.5
+        ..strokeWidth = 2.4
         ..style = PaintingStyle.stroke
-        ..strokeCap = StrokeCap.round,
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round,
     );
   }
 
   @override
   bool shouldRepaint(covariant ChartPainter oldDelegate) =>
-      oldDelegate.values != values;
+      oldDelegate.values != values || oldDelegate.color != color;
+}
+
+String friendlyError(Object error) {
+  final value = error.toString().replaceFirst('Exception: ', '');
+  return value.length > 120 ? '${value.substring(0, 120)}…' : value;
 }

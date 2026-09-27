@@ -126,3 +126,58 @@ abstract class NodeServiceBase extends $grpc.Service {
   $async.Stream<$0.NodeStatus> watchNodeStatus(
       $grpc.ServiceCall call, $0.WatchNodeRequest request);
 }
+
+/// MediaStreamService is implemented by the receiver. Every client uses this
+/// endpoint and may filter the stream by the automatically detected type.
+@$pb.GrpcServiceName('livekalman.common.v1.MediaStreamService')
+class MediaStreamServiceClient extends $grpc.Client {
+  /// The hostname for this service.
+  static const $core.String defaultHost = '';
+
+  /// OAuth scopes needed for the client.
+  static const $core.List<$core.String> oauthScopes = [
+    '',
+  ];
+
+  MediaStreamServiceClient(super.channel, {super.options, super.interceptors});
+
+  $grpc.ResponseStream<$0.MediaEvent> watchMedia(
+    $0.WatchMediaRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createStreamingCall(
+        _$watchMedia, $async.Stream.fromIterable([request]),
+        options: options);
+  }
+
+  // method descriptors
+
+  static final _$watchMedia =
+      $grpc.ClientMethod<$0.WatchMediaRequest, $0.MediaEvent>(
+          '/livekalman.common.v1.MediaStreamService/WatchMedia',
+          ($0.WatchMediaRequest value) => value.writeToBuffer(),
+          $0.MediaEvent.fromBuffer);
+}
+
+@$pb.GrpcServiceName('livekalman.common.v1.MediaStreamService')
+abstract class MediaStreamServiceBase extends $grpc.Service {
+  $core.String get $name => 'livekalman.common.v1.MediaStreamService';
+
+  MediaStreamServiceBase() {
+    $addMethod($grpc.ServiceMethod<$0.WatchMediaRequest, $0.MediaEvent>(
+        'WatchMedia',
+        watchMedia_Pre,
+        false,
+        true,
+        ($core.List<$core.int> value) => $0.WatchMediaRequest.fromBuffer(value),
+        ($0.MediaEvent value) => value.writeToBuffer()));
+  }
+
+  $async.Stream<$0.MediaEvent> watchMedia_Pre($grpc.ServiceCall $call,
+      $async.Future<$0.WatchMediaRequest> $request) async* {
+    yield* watchMedia($call, await $request);
+  }
+
+  $async.Stream<$0.MediaEvent> watchMedia(
+      $grpc.ServiceCall call, $0.WatchMediaRequest request);
+}

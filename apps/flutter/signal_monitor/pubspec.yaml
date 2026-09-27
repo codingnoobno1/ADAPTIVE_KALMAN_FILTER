@@ -30,6 +30,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  fixnum: ^1.1.1
   http: ^1.5.0
   livekalman_sdk:
     path: ../../../sdk/dart/livekalman_sdk

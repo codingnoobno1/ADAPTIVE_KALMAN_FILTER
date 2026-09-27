@@ -15,7 +15,7 @@ import 'dart:core' as $core;
 import 'package:fixnum/fixnum.dart' as $fixnum;
 import 'package:protobuf/protobuf.dart' as $pb;
 
-import '../../common/v1/common.pbenum.dart' as $1;
+import '../../common/v1/common.pb.dart' as $1;
 
 export 'package:protobuf/protobuf.dart' show GeneratedMessageGenericExtensions;
 
@@ -33,6 +33,11 @@ class TxFrame extends $pb.GeneratedMessage {
     $core.List<$core.int>? referenceBits,
     $1.SampleFormat? sampleFormat,
     $core.List<$core.int>? packedSamples,
+    $1.MediaDescriptor? media,
+    $fixnum.Int64? mediaOffset,
+    $core.bool? mediaEnd,
+    $core.int? payloadByteCount,
+    $core.bool? scrambled,
   }) {
     final result = TxFrame._();
     if (runId != null) result.runId = runId;
@@ -48,6 +53,11 @@ class TxFrame extends $pb.GeneratedMessage {
     if (referenceBits != null) result.referenceBits = referenceBits;
     if (sampleFormat != null) result.sampleFormat = sampleFormat;
     if (packedSamples != null) result.packedSamples = packedSamples;
+    if (media != null) result.media = media;
+    if (mediaOffset != null) result.mediaOffset = mediaOffset;
+    if (mediaEnd != null) result.mediaEnd = mediaEnd;
+    if (payloadByteCount != null) result.payloadByteCount = payloadByteCount;
+    if (scrambled != null) result.scrambled = scrambled;
     return result;
   }
 
@@ -92,6 +102,15 @@ class TxFrame extends $pb.GeneratedMessage {
         enumValues: $1.SampleFormat.values)
     ..a<$core.List<$core.int>>(
         12, _omitFieldNames ? '' : 'packedSamples', $pb.PbFieldType.OY)
+    ..aOM<$1.MediaDescriptor>(13, _omitFieldNames ? '' : 'media',
+        subBuilder: $1.MediaDescriptor.$_createMessage)
+    ..a<$fixnum.Int64>(
+        14, _omitFieldNames ? '' : 'mediaOffset', $pb.PbFieldType.OU6,
+        defaultOrMaker: $fixnum.Int64.ZERO)
+    ..aOB(15, _omitFieldNames ? '' : 'mediaEnd')
+    ..aI(16, _omitFieldNames ? '' : 'payloadByteCount',
+        fieldType: $pb.PbFieldType.OU3)
+    ..aOB(17, _omitFieldNames ? '' : 'scrambled')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -215,6 +234,59 @@ class TxFrame extends $pb.GeneratedMessage {
   $core.bool hasPackedSamples() => $_has(11);
   @$pb.TagNumber(12)
   void clearPackedSamples() => $_clearField(12);
+
+  /// Optional application metadata. Payload bytes are carried by the modulated
+  /// samples and reconstructed after the receiver makes BPSK decisions.
+  @$pb.TagNumber(13)
+  $1.MediaDescriptor get media => $_getN(12);
+  @$pb.TagNumber(13)
+  set media($1.MediaDescriptor value) => $_setField(13, value);
+  @$pb.TagNumber(13)
+  $core.bool hasMedia() => $_has(12);
+  @$pb.TagNumber(13)
+  void clearMedia() => $_clearField(13);
+  @$pb.TagNumber(13)
+  $1.MediaDescriptor ensureMedia() => $_ensure(12);
+
+  @$pb.TagNumber(14)
+  $fixnum.Int64 get mediaOffset => $_getI64(13);
+  @$pb.TagNumber(14)
+  set mediaOffset($fixnum.Int64 value) => $_setInt64(13, value);
+  @$pb.TagNumber(14)
+  $core.bool hasMediaOffset() => $_has(13);
+  @$pb.TagNumber(14)
+  void clearMediaOffset() => $_clearField(14);
+
+  @$pb.TagNumber(15)
+  $core.bool get mediaEnd => $_getBF(14);
+  @$pb.TagNumber(15)
+  set mediaEnd($core.bool value) => $_setBool(14, value);
+  @$pb.TagNumber(15)
+  $core.bool hasMediaEnd() => $_has(14);
+  @$pb.TagNumber(15)
+  void clearMediaEnd() => $_clearField(15);
+
+  @$pb.TagNumber(16)
+  $core.int get payloadByteCount => $_getIZ(15);
+  @$pb.TagNumber(16)
+  set payloadByteCount($core.int value) => $_setUnsignedInt32(15, value);
+  @$pb.TagNumber(16)
+  $core.bool hasPayloadByteCount() => $_has(15);
+  @$pb.TagNumber(16)
+  void clearPayloadByteCount() => $_clearField(16);
+
+  /// True when the payload bytes were XORed with the per-frame keystream from
+  /// shared/dsp.Scramble (keyed by sequence) before modulation, so the channel
+  /// bits are balanced for the receiver's DC tracker. The receiver reverses it
+  /// after demodulation. Reference bits always describe the transmitted bits.
+  @$pb.TagNumber(17)
+  $core.bool get scrambled => $_getBF(16);
+  @$pb.TagNumber(17)
+  set scrambled($core.bool value) => $_setBool(16, value);
+  @$pb.TagNumber(17)
+  $core.bool hasScrambled() => $_has(16);
+  @$pb.TagNumber(17)
+  void clearScrambled() => $_clearField(17);
 }
 
 class RxFeedback extends $pb.GeneratedMessage {
