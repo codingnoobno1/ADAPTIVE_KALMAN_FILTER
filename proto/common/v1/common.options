@@ -1,0 +1,5 @@
+# Nanopb (ESP32) size limits. Only MediaDescriptor is sent by the device; other
+# string/bytes fields in this file stay as callbacks, which the device never uses.
+livekalman.common.v1.MediaDescriptor.transfer_id max_size:40
+livekalman.common.v1.MediaDescriptor.file_name max_size:64
+livekalman.common.v1.MediaDescriptor.content_type_hint max_size:48
