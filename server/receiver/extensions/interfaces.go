@@ -4,6 +4,7 @@ package extensions
 import (
 	"context"
 
+	commonv1 "github.com/streaming-live-kalman/filter/gen/common/v1"
 	controlv1 "github.com/streaming-live-kalman/filter/gen/control/v1"
 	rxv1 "github.com/streaming-live-kalman/filter/gen/rx/v1"
 )
@@ -18,4 +19,10 @@ type FrameProcessor interface {
 // anomaly detection or additional signal-quality estimates.
 type MetricsEnricher interface {
 	Enrich(context.Context, *controlv1.ReceiverMetrics) error
+}
+
+// MediaDetector can replace the built-in signature/UTF-8 detector later with
+// an AI classifier without changing the common media streaming API.
+type MediaDetector interface {
+	Detect(context.Context, []byte, *commonv1.MediaDescriptor) (commonv1.MediaType, string, error)
 }

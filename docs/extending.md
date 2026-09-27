@@ -7,11 +7,14 @@ The platform separates contracts, reusable SDKs, extension interfaces and proces
 | Contract | Implemented by | Purpose |
 | --- | --- | --- |
 | `common/v1.NodeService` | TX, RX and Controller | Discovery, capabilities and role-neutral health |
+| `common/v1.MediaStreamService` | RX only | Common decoded text/image/audio/binary output for Go, Dart and future devices |
 | `tx/v1.TransmitterService` | TX only | Desired transmitter configuration and status |
 | `rx/v1.ReceiverService` | RX only | Sample streaming, DSP feedback and receiver configuration |
 | `control/v1.ControllerService` | Controller only | Metrics adaptation and experiment event stream |
 
-Keep messages in `common/v1` only when every role needs them. Do not move receiver metrics or transmitter configuration into the common package simply to avoid an import.
+Keep messages in `common/v1` only when they are genuinely role-neutral or form
+a cross-platform application contract. Do not move receiver metrics or
+transmitter configuration into the common package simply to avoid an import.
 
 ## Go extensions
 

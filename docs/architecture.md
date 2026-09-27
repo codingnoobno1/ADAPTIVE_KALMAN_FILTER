@@ -7,6 +7,7 @@ TransmitterService   --->   ReceiverService       --->   ControllerService
   frame sequence              scalar Kalman state           experiment state
   reference bits              hard decision + BER           WatchExperiment
   RX stream client            Control stream client         HTTP/SSE :8080
+                               MediaStreamService                |
                                ESP32 HTTP :8082                  |
                                                                  +--> MAUI / Flutter
 ```
@@ -22,11 +23,15 @@ Every endpoint also implements `common.v1.NodeService`. This provides the same d
 
 The Wi-Fi network transports digitized samples; it is not the experimental BPSK physical channel. The receiver owns all sample-rate DSP. Dashboards receive reduced metrics rather than every sample.
 
+The receiver additionally implements `common.v1.MediaStreamService`. This is
+the single decoded-payload output for text, image, audio and unknown binary
+chunks; it does not move DSP ownership into the UI.
+
 ## Reliability rules
 
 - `run_id`, `stream_id`, and `sequence` detect restarts and gaps.
 - A gap resets the Kalman state and increments `sequence_gaps`.
-- Receiver and controller queues are bounded; slow observers lose old dashboard events rather than blocking DSP.
+- Receiver and controller queues are bounded; slow dashboard observers may lose old metrics. Media consumers are disconnected on overrun because silently dropping a file chunk would create corrupted output.
 - Controller decisions carry command IDs, config versions, and future effective sequence numbers.
 - TX and RX reject stale versions and apply accepted configuration only at a frame boundary.
 - Each client reconnects with exponential backoff and jitter.

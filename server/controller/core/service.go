@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"math"
 	"net/http"
 	"sync"
 	"sync/atomic"
@@ -13,6 +12,7 @@ import (
 
 	commonv1 "github.com/streaming-live-kalman/filter/gen/common/v1"
 	controlv1 "github.com/streaming-live-kalman/filter/gen/control/v1"
+	"github.com/streaming-live-kalman/filter/server/controller/extensions"
 	"github.com/streaming-live-kalman/filter/shared/config"
 	"github.com/streaming-live-kalman/filter/shared/node"
 )
@@ -26,6 +26,8 @@ type Server struct {
 	nextSub      atomic.Uint64
 	nextCommand  atomic.Uint64
 	lastDecision map[string]uint64
+	windows      map[string][]*controlv1.ReceiverMetrics
+	policy       extensions.AdaptationPolicy
 }
 
 func (s *Server) NodeSnapshot() node.Snapshot {
@@ -43,8 +45,12 @@ func (s *Server) NodeSnapshot() node.Snapshot {
 	return node.Snapshot{Health: commonv1.HealthState_HEALTH_STATE_READY, Active: true, PeerConnected: true, RunID: latest.RunId, ActiveConfigVersion: latest.ActiveConfigVersion, LastSequence: latest.Sequence, Message: "controller receiving metrics"}
 }
 
-func New(cfg config.Controller) *Server {
-	return &Server{cfg: cfg, latest: map[string]*controlv1.ReceiverMetrics{}, subs: map[uint64]chan *controlv1.ExperimentEvent{}, lastDecision: map[string]uint64{}}
+// New creates a Controller. A nil policy selects the rule-based baseline.
+func New(cfg config.Controller, policy extensions.AdaptationPolicy) *Server {
+	if policy == nil {
+		policy = NewRulePolicy(cfg)
+	}
+	return &Server{cfg: cfg, latest: map[string]*controlv1.ReceiverMetrics{}, subs: map[uint64]chan *controlv1.ExperimentEvent{}, lastDecision: map[string]uint64{}, windows: map[string][]*controlv1.ReceiverMetrics{}, policy: policy}
 }
 
 func (s *Server) Adapt(stream controlv1.ControllerService_AdaptServer) error {
@@ -59,14 +65,28 @@ func (s *Server) Adapt(stream controlv1.ControllerService_AdaptServer) error {
 		s.mu.Lock()
 		s.latest[m.RunId] = m
 		last := s.lastDecision[m.RunId]
+		window := append(s.windows[m.RunId], m)
+		if len(window) > s.cfg.WindowSize {
+			window = window[len(window)-s.cfg.WindowSize:]
+		}
+		s.windows[m.RunId] = window
+		window = append([]*controlv1.ReceiverMetrics(nil), window...)
 		s.mu.Unlock()
 		s.publish(&controlv1.ExperimentEvent{RunId: m.RunId, Sequence: m.Sequence, Kind: "metrics", Description: "receiver metrics", Metrics: m, EmittedAtUnixMs: uint64(time.Now().UnixMilli())})
 		if m.Sequence < last+s.cfg.DecisionCooldownFrames || m.Sequence == 0 {
 			continue
 		}
-		targetR := float32(math.Max(float64(s.cfg.MinKalmanR), math.Min(float64(s.cfg.MaxKalmanR), float64(m.NoiseVariance))))
-		version := m.ActiveConfigVersion + 1
-		decision := &controlv1.PolicyDecision{CommandId: s.nextCommand.Add(1), ProposedVersion: version, EffectiveSequence: m.Sequence + 4, ProposedKalmanQ: 0.20, ProposedKalmanR: targetR, Reason: fmt.Sprintf("innovation/noise estimate %.4f", m.NoiseVariance)}
+		decision, err := s.policy.Evaluate(stream.Context(), window)
+		if err != nil {
+			slog.Warn("adaptation policy failed; keeping active config", "run", m.RunId, "error", err)
+			continue
+		}
+		if decision == nil {
+			continue
+		}
+		decision.CommandId = s.nextCommand.Add(1)
+		decision.ProposedVersion = m.ActiveConfigVersion + 1
+		decision.EffectiveSequence = m.Sequence + 4
 		if err := stream.Send(decision); err != nil {
 			return err
 		}

@@ -179,6 +179,161 @@ func (HealthState) EnumDescriptor() ([]byte, []int) {
 	return file_common_v1_common_proto_rawDescGZIP(), []int{2}
 }
 
+// MediaType is the receiver's content classification. A producer may provide a
+// hint, but the receiver derives the final value from the reconstructed bytes.
+type MediaType int32
+
+const (
+	MediaType_MEDIA_TYPE_UNSPECIFIED MediaType = 0
+	MediaType_MEDIA_TYPE_BINARY      MediaType = 1
+	MediaType_MEDIA_TYPE_TEXT        MediaType = 2
+	MediaType_MEDIA_TYPE_IMAGE       MediaType = 3
+	MediaType_MEDIA_TYPE_AUDIO       MediaType = 4
+)
+
+// Enum value maps for MediaType.
+var (
+	MediaType_name = map[int32]string{
+		0: "MEDIA_TYPE_UNSPECIFIED",
+		1: "MEDIA_TYPE_BINARY",
+		2: "MEDIA_TYPE_TEXT",
+		3: "MEDIA_TYPE_IMAGE",
+		4: "MEDIA_TYPE_AUDIO",
+	}
+	MediaType_value = map[string]int32{
+		"MEDIA_TYPE_UNSPECIFIED": 0,
+		"MEDIA_TYPE_BINARY":      1,
+		"MEDIA_TYPE_TEXT":        2,
+		"MEDIA_TYPE_IMAGE":       3,
+		"MEDIA_TYPE_AUDIO":       4,
+	}
+)
+
+func (x MediaType) Enum() *MediaType {
+	p := new(MediaType)
+	*p = x
+	return p
+}
+
+func (x MediaType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (MediaType) Descriptor() protoreflect.EnumDescriptor {
+	return file_common_v1_common_proto_enumTypes[3].Descriptor()
+}
+
+func (MediaType) Type() protoreflect.EnumType {
+	return &file_common_v1_common_proto_enumTypes[3]
+}
+
+func (x MediaType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use MediaType.Descriptor instead.
+func (MediaType) EnumDescriptor() ([]byte, []int) {
+	return file_common_v1_common_proto_rawDescGZIP(), []int{3}
+}
+
+// Modulation identifies how payload bits were converted into signal symbols.
+type Modulation int32
+
+const (
+	Modulation_MODULATION_UNSPECIFIED Modulation = 0
+	Modulation_MODULATION_BPSK        Modulation = 1
+)
+
+// Enum value maps for Modulation.
+var (
+	Modulation_name = map[int32]string{
+		0: "MODULATION_UNSPECIFIED",
+		1: "MODULATION_BPSK",
+	}
+	Modulation_value = map[string]int32{
+		"MODULATION_UNSPECIFIED": 0,
+		"MODULATION_BPSK":        1,
+	}
+)
+
+func (x Modulation) Enum() *Modulation {
+	p := new(Modulation)
+	*p = x
+	return p
+}
+
+func (x Modulation) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (Modulation) Descriptor() protoreflect.EnumDescriptor {
+	return file_common_v1_common_proto_enumTypes[4].Descriptor()
+}
+
+func (Modulation) Type() protoreflect.EnumType {
+	return &file_common_v1_common_proto_enumTypes[4]
+}
+
+func (x Modulation) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use Modulation.Descriptor instead.
+func (Modulation) EnumDescriptor() ([]byte, []int) {
+	return file_common_v1_common_proto_rawDescGZIP(), []int{4}
+}
+
+// PayloadEncoding is applied to bytes before modulation and reversed only
+// after demodulation. BYTE_SHIFT is useful for teaching, not for security.
+type PayloadEncoding int32
+
+const (
+	PayloadEncoding_PAYLOAD_ENCODING_UNSPECIFIED PayloadEncoding = 0
+	PayloadEncoding_PAYLOAD_ENCODING_RAW         PayloadEncoding = 1
+	PayloadEncoding_PAYLOAD_ENCODING_BYTE_SHIFT  PayloadEncoding = 2
+)
+
+// Enum value maps for PayloadEncoding.
+var (
+	PayloadEncoding_name = map[int32]string{
+		0: "PAYLOAD_ENCODING_UNSPECIFIED",
+		1: "PAYLOAD_ENCODING_RAW",
+		2: "PAYLOAD_ENCODING_BYTE_SHIFT",
+	}
+	PayloadEncoding_value = map[string]int32{
+		"PAYLOAD_ENCODING_UNSPECIFIED": 0,
+		"PAYLOAD_ENCODING_RAW":         1,
+		"PAYLOAD_ENCODING_BYTE_SHIFT":  2,
+	}
+)
+
+func (x PayloadEncoding) Enum() *PayloadEncoding {
+	p := new(PayloadEncoding)
+	*p = x
+	return p
+}
+
+func (x PayloadEncoding) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (PayloadEncoding) Descriptor() protoreflect.EnumDescriptor {
+	return file_common_v1_common_proto_enumTypes[5].Descriptor()
+}
+
+func (PayloadEncoding) Type() protoreflect.EnumType {
+	return &file_common_v1_common_proto_enumTypes[5]
+}
+
+func (x PayloadEncoding) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use PayloadEncoding.Descriptor instead.
+func (PayloadEncoding) EnumDescriptor() ([]byte, []int) {
+	return file_common_v1_common_proto_rawDescGZIP(), []int{5}
+}
+
 type Empty struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -527,6 +682,276 @@ func (x *WatchNodeRequest) GetIntervalMs() uint32 {
 	return 0
 }
 
+type MediaDescriptor struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	TransferId      string                 `protobuf:"bytes,1,opt,name=transfer_id,json=transferId,proto3" json:"transfer_id,omitempty"`
+	FileName        string                 `protobuf:"bytes,2,opt,name=file_name,json=fileName,proto3" json:"file_name,omitempty"`
+	MediaTypeHint   MediaType              `protobuf:"varint,3,opt,name=media_type_hint,json=mediaTypeHint,proto3,enum=livekalman.common.v1.MediaType" json:"media_type_hint,omitempty"`
+	ContentTypeHint string                 `protobuf:"bytes,4,opt,name=content_type_hint,json=contentTypeHint,proto3" json:"content_type_hint,omitempty"`
+	TotalSize       uint64                 `protobuf:"varint,5,opt,name=total_size,json=totalSize,proto3" json:"total_size,omitempty"`
+	Crc32           uint32                 `protobuf:"varint,6,opt,name=crc32,proto3" json:"crc32,omitempty"`
+	Modulation      Modulation             `protobuf:"varint,7,opt,name=modulation,proto3,enum=livekalman.common.v1.Modulation" json:"modulation,omitempty"`
+	Encoding        PayloadEncoding        `protobuf:"varint,8,opt,name=encoding,proto3,enum=livekalman.common.v1.PayloadEncoding" json:"encoding,omitempty"`
+	ShiftKey        uint32                 `protobuf:"varint,9,opt,name=shift_key,json=shiftKey,proto3" json:"shift_key,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *MediaDescriptor) Reset() {
+	*x = MediaDescriptor{}
+	mi := &file_common_v1_common_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MediaDescriptor) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MediaDescriptor) ProtoMessage() {}
+
+func (x *MediaDescriptor) ProtoReflect() protoreflect.Message {
+	mi := &file_common_v1_common_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MediaDescriptor.ProtoReflect.Descriptor instead.
+func (*MediaDescriptor) Descriptor() ([]byte, []int) {
+	return file_common_v1_common_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *MediaDescriptor) GetTransferId() string {
+	if x != nil {
+		return x.TransferId
+	}
+	return ""
+}
+
+func (x *MediaDescriptor) GetFileName() string {
+	if x != nil {
+		return x.FileName
+	}
+	return ""
+}
+
+func (x *MediaDescriptor) GetMediaTypeHint() MediaType {
+	if x != nil {
+		return x.MediaTypeHint
+	}
+	return MediaType_MEDIA_TYPE_UNSPECIFIED
+}
+
+func (x *MediaDescriptor) GetContentTypeHint() string {
+	if x != nil {
+		return x.ContentTypeHint
+	}
+	return ""
+}
+
+func (x *MediaDescriptor) GetTotalSize() uint64 {
+	if x != nil {
+		return x.TotalSize
+	}
+	return 0
+}
+
+func (x *MediaDescriptor) GetCrc32() uint32 {
+	if x != nil {
+		return x.Crc32
+	}
+	return 0
+}
+
+func (x *MediaDescriptor) GetModulation() Modulation {
+	if x != nil {
+		return x.Modulation
+	}
+	return Modulation_MODULATION_UNSPECIFIED
+}
+
+func (x *MediaDescriptor) GetEncoding() PayloadEncoding {
+	if x != nil {
+		return x.Encoding
+	}
+	return PayloadEncoding_PAYLOAD_ENCODING_UNSPECIFIED
+}
+
+func (x *MediaDescriptor) GetShiftKey() uint32 {
+	if x != nil {
+		return x.ShiftKey
+	}
+	return 0
+}
+
+// MediaEvent is the one role-neutral output stream for text, image, audio and
+// unknown binary data. Data is decoded application bytes, never signal samples.
+type MediaEvent struct {
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	Media               *MediaDescriptor       `protobuf:"bytes,1,opt,name=media,proto3" json:"media,omitempty"`
+	DetectedType        MediaType              `protobuf:"varint,2,opt,name=detected_type,json=detectedType,proto3,enum=livekalman.common.v1.MediaType" json:"detected_type,omitempty"`
+	DetectedContentType string                 `protobuf:"bytes,3,opt,name=detected_content_type,json=detectedContentType,proto3" json:"detected_content_type,omitempty"`
+	Offset              uint64                 `protobuf:"varint,4,opt,name=offset,proto3" json:"offset,omitempty"`
+	Data                []byte                 `protobuf:"bytes,5,opt,name=data,proto3" json:"data,omitempty"`
+	EndOfStream         bool                   `protobuf:"varint,6,opt,name=end_of_stream,json=endOfStream,proto3" json:"end_of_stream,omitempty"`
+	ReceivedSize        uint64                 `protobuf:"varint,7,opt,name=received_size,json=receivedSize,proto3" json:"received_size,omitempty"`
+	ChecksumValid       bool                   `protobuf:"varint,8,opt,name=checksum_valid,json=checksumValid,proto3" json:"checksum_valid,omitempty"`
+	Message             string                 `protobuf:"bytes,9,opt,name=message,proto3" json:"message,omitempty"`
+	ObservedAtUnixMs    uint64                 `protobuf:"varint,10,opt,name=observed_at_unix_ms,json=observedAtUnixMs,proto3" json:"observed_at_unix_ms,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *MediaEvent) Reset() {
+	*x = MediaEvent{}
+	mi := &file_common_v1_common_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MediaEvent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MediaEvent) ProtoMessage() {}
+
+func (x *MediaEvent) ProtoReflect() protoreflect.Message {
+	mi := &file_common_v1_common_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MediaEvent.ProtoReflect.Descriptor instead.
+func (*MediaEvent) Descriptor() ([]byte, []int) {
+	return file_common_v1_common_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *MediaEvent) GetMedia() *MediaDescriptor {
+	if x != nil {
+		return x.Media
+	}
+	return nil
+}
+
+func (x *MediaEvent) GetDetectedType() MediaType {
+	if x != nil {
+		return x.DetectedType
+	}
+	return MediaType_MEDIA_TYPE_UNSPECIFIED
+}
+
+func (x *MediaEvent) GetDetectedContentType() string {
+	if x != nil {
+		return x.DetectedContentType
+	}
+	return ""
+}
+
+func (x *MediaEvent) GetOffset() uint64 {
+	if x != nil {
+		return x.Offset
+	}
+	return 0
+}
+
+func (x *MediaEvent) GetData() []byte {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
+func (x *MediaEvent) GetEndOfStream() bool {
+	if x != nil {
+		return x.EndOfStream
+	}
+	return false
+}
+
+func (x *MediaEvent) GetReceivedSize() uint64 {
+	if x != nil {
+		return x.ReceivedSize
+	}
+	return 0
+}
+
+func (x *MediaEvent) GetChecksumValid() bool {
+	if x != nil {
+		return x.ChecksumValid
+	}
+	return false
+}
+
+func (x *MediaEvent) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+func (x *MediaEvent) GetObservedAtUnixMs() uint64 {
+	if x != nil {
+		return x.ObservedAtUnixMs
+	}
+	return 0
+}
+
+type WatchMediaRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Types         []MediaType            `protobuf:"varint,1,rep,packed,name=types,proto3,enum=livekalman.common.v1.MediaType" json:"types,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *WatchMediaRequest) Reset() {
+	*x = WatchMediaRequest{}
+	mi := &file_common_v1_common_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WatchMediaRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WatchMediaRequest) ProtoMessage() {}
+
+func (x *WatchMediaRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_common_v1_common_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WatchMediaRequest.ProtoReflect.Descriptor instead.
+func (*WatchMediaRequest) Descriptor() ([]byte, []int) {
+	return file_common_v1_common_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *WatchMediaRequest) GetTypes() []MediaType {
+	if x != nil {
+		return x.Types
+	}
+	return nil
+}
+
 var File_common_v1_common_proto protoreflect.FileDescriptor
 
 const file_common_v1_common_proto_rawDesc = "" +
@@ -567,7 +992,36 @@ const file_common_v1_common_proto_rawDesc = "" +
 	"\x13observed_at_unix_ms\x18\v \x01(\x04R\x10observedAtUnixMs\"3\n" +
 	"\x10WatchNodeRequest\x12\x1f\n" +
 	"\vinterval_ms\x18\x01 \x01(\rR\n" +
-	"intervalMs*g\n" +
+	"intervalMs\"\x9b\x03\n" +
+	"\x0fMediaDescriptor\x12\x1f\n" +
+	"\vtransfer_id\x18\x01 \x01(\tR\n" +
+	"transferId\x12\x1b\n" +
+	"\tfile_name\x18\x02 \x01(\tR\bfileName\x12G\n" +
+	"\x0fmedia_type_hint\x18\x03 \x01(\x0e2\x1f.livekalman.common.v1.MediaTypeR\rmediaTypeHint\x12*\n" +
+	"\x11content_type_hint\x18\x04 \x01(\tR\x0fcontentTypeHint\x12\x1d\n" +
+	"\n" +
+	"total_size\x18\x05 \x01(\x04R\ttotalSize\x12\x14\n" +
+	"\x05crc32\x18\x06 \x01(\rR\x05crc32\x12@\n" +
+	"\n" +
+	"modulation\x18\a \x01(\x0e2 .livekalman.common.v1.ModulationR\n" +
+	"modulation\x12A\n" +
+	"\bencoding\x18\b \x01(\x0e2%.livekalman.common.v1.PayloadEncodingR\bencoding\x12\x1b\n" +
+	"\tshift_key\x18\t \x01(\rR\bshiftKey\"\xa8\x03\n" +
+	"\n" +
+	"MediaEvent\x12;\n" +
+	"\x05media\x18\x01 \x01(\v2%.livekalman.common.v1.MediaDescriptorR\x05media\x12D\n" +
+	"\rdetected_type\x18\x02 \x01(\x0e2\x1f.livekalman.common.v1.MediaTypeR\fdetectedType\x122\n" +
+	"\x15detected_content_type\x18\x03 \x01(\tR\x13detectedContentType\x12\x16\n" +
+	"\x06offset\x18\x04 \x01(\x04R\x06offset\x12\x12\n" +
+	"\x04data\x18\x05 \x01(\fR\x04data\x12\"\n" +
+	"\rend_of_stream\x18\x06 \x01(\bR\vendOfStream\x12#\n" +
+	"\rreceived_size\x18\a \x01(\x04R\freceivedSize\x12%\n" +
+	"\x0echecksum_valid\x18\b \x01(\bR\rchecksumValid\x12\x18\n" +
+	"\amessage\x18\t \x01(\tR\amessage\x12-\n" +
+	"\x13observed_at_unix_ms\x18\n" +
+	" \x01(\x04R\x10observedAtUnixMs\"J\n" +
+	"\x11WatchMediaRequest\x125\n" +
+	"\x05types\x18\x01 \x03(\x0e2\x1f.livekalman.common.v1.MediaTypeR\x05types*g\n" +
 	"\fSampleFormat\x12\x1d\n" +
 	"\x19SAMPLE_FORMAT_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18SAMPLE_FORMAT_FLOAT32_LE\x10\x01\x12\x1a\n" +
@@ -582,11 +1036,28 @@ const file_common_v1_common_proto_rawDesc = "" +
 	"\x15HEALTH_STATE_STARTING\x10\x01\x12\x16\n" +
 	"\x12HEALTH_STATE_READY\x10\x02\x12\x19\n" +
 	"\x15HEALTH_STATE_DEGRADED\x10\x03\x12\x19\n" +
-	"\x15HEALTH_STATE_STOPPING\x10\x042\x88\x02\n" +
+	"\x15HEALTH_STATE_STOPPING\x10\x04*\x7f\n" +
+	"\tMediaType\x12\x1a\n" +
+	"\x16MEDIA_TYPE_UNSPECIFIED\x10\x00\x12\x15\n" +
+	"\x11MEDIA_TYPE_BINARY\x10\x01\x12\x13\n" +
+	"\x0fMEDIA_TYPE_TEXT\x10\x02\x12\x14\n" +
+	"\x10MEDIA_TYPE_IMAGE\x10\x03\x12\x14\n" +
+	"\x10MEDIA_TYPE_AUDIO\x10\x04*=\n" +
+	"\n" +
+	"Modulation\x12\x1a\n" +
+	"\x16MODULATION_UNSPECIFIED\x10\x00\x12\x13\n" +
+	"\x0fMODULATION_BPSK\x10\x01*n\n" +
+	"\x0fPayloadEncoding\x12 \n" +
+	"\x1cPAYLOAD_ENCODING_UNSPECIFIED\x10\x00\x12\x18\n" +
+	"\x14PAYLOAD_ENCODING_RAW\x10\x01\x12\x1f\n" +
+	"\x1bPAYLOAD_ENCODING_BYTE_SHIFT\x10\x022\x88\x02\n" +
 	"\vNodeService\x12J\n" +
 	"\vGetNodeInfo\x12\x1b.livekalman.common.v1.Empty\x1a\x1e.livekalman.common.v1.NodeInfo\x12N\n" +
 	"\rGetNodeStatus\x12\x1b.livekalman.common.v1.Empty\x1a .livekalman.common.v1.NodeStatus\x12]\n" +
-	"\x0fWatchNodeStatus\x12&.livekalman.common.v1.WatchNodeRequest\x1a .livekalman.common.v1.NodeStatus0\x01B@Z>github.com/streaming-live-kalman/filter/gen/common/v1;commonv1b\x06proto3"
+	"\x0fWatchNodeStatus\x12&.livekalman.common.v1.WatchNodeRequest\x1a .livekalman.common.v1.NodeStatus0\x012o\n" +
+	"\x12MediaStreamService\x12Y\n" +
+	"\n" +
+	"WatchMedia\x12'.livekalman.common.v1.WatchMediaRequest\x1a .livekalman.common.v1.MediaEvent0\x01B@Z>github.com/streaming-live-kalman/filter/gen/common/v1;commonv1b\x06proto3"
 
 var (
 	file_common_v1_common_proto_rawDescOnce sync.Once
@@ -600,36 +1071,50 @@ func file_common_v1_common_proto_rawDescGZIP() []byte {
 	return file_common_v1_common_proto_rawDescData
 }
 
-var file_common_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_common_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_common_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
+var file_common_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_common_v1_common_proto_goTypes = []any{
-	(SampleFormat)(0),        // 0: livekalman.common.v1.SampleFormat
-	(NodeRole)(0),            // 1: livekalman.common.v1.NodeRole
-	(HealthState)(0),         // 2: livekalman.common.v1.HealthState
-	(*Empty)(nil),            // 3: livekalman.common.v1.Empty
-	(*Capability)(nil),       // 4: livekalman.common.v1.Capability
-	(*NodeInfo)(nil),         // 5: livekalman.common.v1.NodeInfo
-	(*NodeStatus)(nil),       // 6: livekalman.common.v1.NodeStatus
-	(*WatchNodeRequest)(nil), // 7: livekalman.common.v1.WatchNodeRequest
-	nil,                      // 8: livekalman.common.v1.Capability.AttributesEntry
+	(SampleFormat)(0),         // 0: livekalman.common.v1.SampleFormat
+	(NodeRole)(0),             // 1: livekalman.common.v1.NodeRole
+	(HealthState)(0),          // 2: livekalman.common.v1.HealthState
+	(MediaType)(0),            // 3: livekalman.common.v1.MediaType
+	(Modulation)(0),           // 4: livekalman.common.v1.Modulation
+	(PayloadEncoding)(0),      // 5: livekalman.common.v1.PayloadEncoding
+	(*Empty)(nil),             // 6: livekalman.common.v1.Empty
+	(*Capability)(nil),        // 7: livekalman.common.v1.Capability
+	(*NodeInfo)(nil),          // 8: livekalman.common.v1.NodeInfo
+	(*NodeStatus)(nil),        // 9: livekalman.common.v1.NodeStatus
+	(*WatchNodeRequest)(nil),  // 10: livekalman.common.v1.WatchNodeRequest
+	(*MediaDescriptor)(nil),   // 11: livekalman.common.v1.MediaDescriptor
+	(*MediaEvent)(nil),        // 12: livekalman.common.v1.MediaEvent
+	(*WatchMediaRequest)(nil), // 13: livekalman.common.v1.WatchMediaRequest
+	nil,                       // 14: livekalman.common.v1.Capability.AttributesEntry
 }
 var file_common_v1_common_proto_depIdxs = []int32{
-	8, // 0: livekalman.common.v1.Capability.attributes:type_name -> livekalman.common.v1.Capability.AttributesEntry
-	1, // 1: livekalman.common.v1.NodeInfo.role:type_name -> livekalman.common.v1.NodeRole
-	4, // 2: livekalman.common.v1.NodeInfo.capabilities:type_name -> livekalman.common.v1.Capability
-	1, // 3: livekalman.common.v1.NodeStatus.role:type_name -> livekalman.common.v1.NodeRole
-	2, // 4: livekalman.common.v1.NodeStatus.health:type_name -> livekalman.common.v1.HealthState
-	3, // 5: livekalman.common.v1.NodeService.GetNodeInfo:input_type -> livekalman.common.v1.Empty
-	3, // 6: livekalman.common.v1.NodeService.GetNodeStatus:input_type -> livekalman.common.v1.Empty
-	7, // 7: livekalman.common.v1.NodeService.WatchNodeStatus:input_type -> livekalman.common.v1.WatchNodeRequest
-	5, // 8: livekalman.common.v1.NodeService.GetNodeInfo:output_type -> livekalman.common.v1.NodeInfo
-	6, // 9: livekalman.common.v1.NodeService.GetNodeStatus:output_type -> livekalman.common.v1.NodeStatus
-	6, // 10: livekalman.common.v1.NodeService.WatchNodeStatus:output_type -> livekalman.common.v1.NodeStatus
-	8, // [8:11] is the sub-list for method output_type
-	5, // [5:8] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	14, // 0: livekalman.common.v1.Capability.attributes:type_name -> livekalman.common.v1.Capability.AttributesEntry
+	1,  // 1: livekalman.common.v1.NodeInfo.role:type_name -> livekalman.common.v1.NodeRole
+	7,  // 2: livekalman.common.v1.NodeInfo.capabilities:type_name -> livekalman.common.v1.Capability
+	1,  // 3: livekalman.common.v1.NodeStatus.role:type_name -> livekalman.common.v1.NodeRole
+	2,  // 4: livekalman.common.v1.NodeStatus.health:type_name -> livekalman.common.v1.HealthState
+	3,  // 5: livekalman.common.v1.MediaDescriptor.media_type_hint:type_name -> livekalman.common.v1.MediaType
+	4,  // 6: livekalman.common.v1.MediaDescriptor.modulation:type_name -> livekalman.common.v1.Modulation
+	5,  // 7: livekalman.common.v1.MediaDescriptor.encoding:type_name -> livekalman.common.v1.PayloadEncoding
+	11, // 8: livekalman.common.v1.MediaEvent.media:type_name -> livekalman.common.v1.MediaDescriptor
+	3,  // 9: livekalman.common.v1.MediaEvent.detected_type:type_name -> livekalman.common.v1.MediaType
+	3,  // 10: livekalman.common.v1.WatchMediaRequest.types:type_name -> livekalman.common.v1.MediaType
+	6,  // 11: livekalman.common.v1.NodeService.GetNodeInfo:input_type -> livekalman.common.v1.Empty
+	6,  // 12: livekalman.common.v1.NodeService.GetNodeStatus:input_type -> livekalman.common.v1.Empty
+	10, // 13: livekalman.common.v1.NodeService.WatchNodeStatus:input_type -> livekalman.common.v1.WatchNodeRequest
+	13, // 14: livekalman.common.v1.MediaStreamService.WatchMedia:input_type -> livekalman.common.v1.WatchMediaRequest
+	8,  // 15: livekalman.common.v1.NodeService.GetNodeInfo:output_type -> livekalman.common.v1.NodeInfo
+	9,  // 16: livekalman.common.v1.NodeService.GetNodeStatus:output_type -> livekalman.common.v1.NodeStatus
+	9,  // 17: livekalman.common.v1.NodeService.WatchNodeStatus:output_type -> livekalman.common.v1.NodeStatus
+	12, // 18: livekalman.common.v1.MediaStreamService.WatchMedia:output_type -> livekalman.common.v1.MediaEvent
+	15, // [15:19] is the sub-list for method output_type
+	11, // [11:15] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_common_v1_common_proto_init() }
@@ -642,10 +1127,10 @@ func file_common_v1_common_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_common_v1_common_proto_rawDesc), len(file_common_v1_common_proto_rawDesc)),
-			NumEnums:      3,
-			NumMessages:   6,
+			NumEnums:      6,
+			NumMessages:   9,
 			NumExtensions: 0,
-			NumServices:   1,
+			NumServices:   2,
 		},
 		GoTypes:           file_common_v1_common_proto_goTypes,
 		DependencyIndexes: file_common_v1_common_proto_depIdxs,

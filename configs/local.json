@@ -1,6 +1,7 @@
 {
   "sender": {
     "listen": "127.0.0.1:55051",
+    "httpListen": "127.0.0.1:8081",
     "receiver": "127.0.0.1:55052",
     "runId": "local-demo",
     "sampleRateHz": 48000,
@@ -15,7 +16,7 @@
     "httpListen": "127.0.0.1:8082",
     "controller": "127.0.0.1:55053",
     "queueCapacity": 32,
-    "kalmanQ": 0.20,
+    "kalmanQ": 0.0134,
     "kalmanR": 0.50
   },
   "controller": {
@@ -24,6 +25,8 @@
     "windowSize": 12,
     "decisionCooldownFrames": 64,
     "minKalmanR": 0.02,
-    "maxKalmanR": 4.0
+    "maxKalmanR": 4.0,
+    "policy": "rule",
+    "onnxModel": "ml/models/r_policy.onnx"
   }
 }

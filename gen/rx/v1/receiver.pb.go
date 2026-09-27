@@ -36,8 +36,19 @@ type TxFrame struct {
 	ReferenceBits      []byte                 `protobuf:"bytes,10,opt,name=reference_bits,json=referenceBits,proto3" json:"reference_bits,omitempty"`
 	SampleFormat       v1.SampleFormat        `protobuf:"varint,11,opt,name=sample_format,json=sampleFormat,proto3,enum=livekalman.common.v1.SampleFormat" json:"sample_format,omitempty"`
 	PackedSamples      []byte                 `protobuf:"bytes,12,opt,name=packed_samples,json=packedSamples,proto3" json:"packed_samples,omitempty"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+	// Optional application metadata. Payload bytes are carried by the modulated
+	// samples and reconstructed after the receiver makes BPSK decisions.
+	Media            *v1.MediaDescriptor `protobuf:"bytes,13,opt,name=media,proto3" json:"media,omitempty"`
+	MediaOffset      uint64              `protobuf:"varint,14,opt,name=media_offset,json=mediaOffset,proto3" json:"media_offset,omitempty"`
+	MediaEnd         bool                `protobuf:"varint,15,opt,name=media_end,json=mediaEnd,proto3" json:"media_end,omitempty"`
+	PayloadByteCount uint32              `protobuf:"varint,16,opt,name=payload_byte_count,json=payloadByteCount,proto3" json:"payload_byte_count,omitempty"`
+	// True when the payload bytes were XORed with the per-frame keystream from
+	// shared/dsp.Scramble (keyed by sequence) before modulation, so the channel
+	// bits are balanced for the receiver's DC tracker. The receiver reverses it
+	// after demodulation. Reference bits always describe the transmitted bits.
+	Scrambled     bool `protobuf:"varint,17,opt,name=scrambled,proto3" json:"scrambled,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *TxFrame) Reset() {
@@ -152,6 +163,41 @@ func (x *TxFrame) GetPackedSamples() []byte {
 		return x.PackedSamples
 	}
 	return nil
+}
+
+func (x *TxFrame) GetMedia() *v1.MediaDescriptor {
+	if x != nil {
+		return x.Media
+	}
+	return nil
+}
+
+func (x *TxFrame) GetMediaOffset() uint64 {
+	if x != nil {
+		return x.MediaOffset
+	}
+	return 0
+}
+
+func (x *TxFrame) GetMediaEnd() bool {
+	if x != nil {
+		return x.MediaEnd
+	}
+	return false
+}
+
+func (x *TxFrame) GetPayloadByteCount() uint32 {
+	if x != nil {
+		return x.PayloadByteCount
+	}
+	return 0
+}
+
+func (x *TxFrame) GetScrambled() bool {
+	if x != nil {
+		return x.Scrambled
+	}
+	return false
 }
 
 type RxFeedback struct {
@@ -478,7 +524,7 @@ var File_rx_v1_receiver_proto protoreflect.FileDescriptor
 
 const file_rx_v1_receiver_proto_rawDesc = "" +
 	"\n" +
-	"\x14rx/v1/receiver.proto\x12\x10livekalman.rx.v1\x1a\x16common/v1/common.proto\"\xe5\x03\n" +
+	"\x14rx/v1/receiver.proto\x12\x10livekalman.rx.v1\x1a\x16common/v1/common.proto\"\xae\x05\n" +
 	"\aTxFrame\x12\x15\n" +
 	"\x06run_id\x18\x01 \x01(\tR\x05runId\x12\x1b\n" +
 	"\tstream_id\x18\x02 \x01(\x04R\bstreamId\x12\x1a\n" +
@@ -492,7 +538,12 @@ const file_rx_v1_receiver_proto_rawDesc = "" +
 	"\x0ereference_bits\x18\n" +
 	" \x01(\fR\rreferenceBits\x12G\n" +
 	"\rsample_format\x18\v \x01(\x0e2\".livekalman.common.v1.SampleFormatR\fsampleFormat\x12%\n" +
-	"\x0epacked_samples\x18\f \x01(\fR\rpackedSamples\"\xb0\x02\n" +
+	"\x0epacked_samples\x18\f \x01(\fR\rpackedSamples\x12;\n" +
+	"\x05media\x18\r \x01(\v2%.livekalman.common.v1.MediaDescriptorR\x05media\x12!\n" +
+	"\fmedia_offset\x18\x0e \x01(\x04R\vmediaOffset\x12\x1b\n" +
+	"\tmedia_end\x18\x0f \x01(\bR\bmediaEnd\x12,\n" +
+	"\x12payload_byte_count\x18\x10 \x01(\rR\x10payloadByteCount\x12\x1c\n" +
+	"\tscrambled\x18\x11 \x01(\bR\tscrambled\"\xb0\x02\n" +
 	"\n" +
 	"RxFeedback\x12\x1a\n" +
 	"\bsequence\x18\x01 \x01(\x04R\bsequence\x12\x15\n" +
@@ -544,27 +595,29 @@ func file_rx_v1_receiver_proto_rawDescGZIP() []byte {
 
 var file_rx_v1_receiver_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_rx_v1_receiver_proto_goTypes = []any{
-	(*TxFrame)(nil),      // 0: livekalman.rx.v1.TxFrame
-	(*RxFeedback)(nil),   // 1: livekalman.rx.v1.RxFeedback
-	(*RxConfig)(nil),     // 2: livekalman.rx.v1.RxConfig
-	(*ApplyRxReply)(nil), // 3: livekalman.rx.v1.ApplyRxReply
-	(*RxStatus)(nil),     // 4: livekalman.rx.v1.RxStatus
-	(v1.SampleFormat)(0), // 5: livekalman.common.v1.SampleFormat
-	(*v1.Empty)(nil),     // 6: livekalman.common.v1.Empty
+	(*TxFrame)(nil),            // 0: livekalman.rx.v1.TxFrame
+	(*RxFeedback)(nil),         // 1: livekalman.rx.v1.RxFeedback
+	(*RxConfig)(nil),           // 2: livekalman.rx.v1.RxConfig
+	(*ApplyRxReply)(nil),       // 3: livekalman.rx.v1.ApplyRxReply
+	(*RxStatus)(nil),           // 4: livekalman.rx.v1.RxStatus
+	(v1.SampleFormat)(0),       // 5: livekalman.common.v1.SampleFormat
+	(*v1.MediaDescriptor)(nil), // 6: livekalman.common.v1.MediaDescriptor
+	(*v1.Empty)(nil),           // 7: livekalman.common.v1.Empty
 }
 var file_rx_v1_receiver_proto_depIdxs = []int32{
 	5, // 0: livekalman.rx.v1.TxFrame.sample_format:type_name -> livekalman.common.v1.SampleFormat
-	0, // 1: livekalman.rx.v1.ReceiverService.ProcessSignal:input_type -> livekalman.rx.v1.TxFrame
-	2, // 2: livekalman.rx.v1.ReceiverService.ApplyReceiverConfig:input_type -> livekalman.rx.v1.RxConfig
-	6, // 3: livekalman.rx.v1.ReceiverService.GetRxStatus:input_type -> livekalman.common.v1.Empty
-	1, // 4: livekalman.rx.v1.ReceiverService.ProcessSignal:output_type -> livekalman.rx.v1.RxFeedback
-	3, // 5: livekalman.rx.v1.ReceiverService.ApplyReceiverConfig:output_type -> livekalman.rx.v1.ApplyRxReply
-	4, // 6: livekalman.rx.v1.ReceiverService.GetRxStatus:output_type -> livekalman.rx.v1.RxStatus
-	4, // [4:7] is the sub-list for method output_type
-	1, // [1:4] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	6, // 1: livekalman.rx.v1.TxFrame.media:type_name -> livekalman.common.v1.MediaDescriptor
+	0, // 2: livekalman.rx.v1.ReceiverService.ProcessSignal:input_type -> livekalman.rx.v1.TxFrame
+	2, // 3: livekalman.rx.v1.ReceiverService.ApplyReceiverConfig:input_type -> livekalman.rx.v1.RxConfig
+	7, // 4: livekalman.rx.v1.ReceiverService.GetRxStatus:input_type -> livekalman.common.v1.Empty
+	1, // 5: livekalman.rx.v1.ReceiverService.ProcessSignal:output_type -> livekalman.rx.v1.RxFeedback
+	3, // 6: livekalman.rx.v1.ReceiverService.ApplyReceiverConfig:output_type -> livekalman.rx.v1.ApplyRxReply
+	4, // 7: livekalman.rx.v1.ReceiverService.GetRxStatus:output_type -> livekalman.rx.v1.RxStatus
+	5, // [5:8] is the sub-list for method output_type
+	2, // [2:5] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_rx_v1_receiver_proto_init() }

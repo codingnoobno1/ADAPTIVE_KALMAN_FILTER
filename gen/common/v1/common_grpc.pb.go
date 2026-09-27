@@ -205,3 +205,114 @@ var NodeService_ServiceDesc = grpc.ServiceDesc{
 	},
 	Metadata: "common/v1/common.proto",
 }
+
+const (
+	MediaStreamService_WatchMedia_FullMethodName = "/livekalman.common.v1.MediaStreamService/WatchMedia"
+)
+
+// MediaStreamServiceClient is the client API for MediaStreamService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// MediaStreamService is implemented by the receiver. Every client uses this
+// endpoint and may filter the stream by the automatically detected type.
+type MediaStreamServiceClient interface {
+	WatchMedia(ctx context.Context, in *WatchMediaRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[MediaEvent], error)
+}
+
+type mediaStreamServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewMediaStreamServiceClient(cc grpc.ClientConnInterface) MediaStreamServiceClient {
+	return &mediaStreamServiceClient{cc}
+}
+
+func (c *mediaStreamServiceClient) WatchMedia(ctx context.Context, in *WatchMediaRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[MediaEvent], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &MediaStreamService_ServiceDesc.Streams[0], MediaStreamService_WatchMedia_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[WatchMediaRequest, MediaEvent]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type MediaStreamService_WatchMediaClient = grpc.ServerStreamingClient[MediaEvent]
+
+// MediaStreamServiceServer is the server API for MediaStreamService service.
+// All implementations must embed UnimplementedMediaStreamServiceServer
+// for forward compatibility.
+//
+// MediaStreamService is implemented by the receiver. Every client uses this
+// endpoint and may filter the stream by the automatically detected type.
+type MediaStreamServiceServer interface {
+	WatchMedia(*WatchMediaRequest, grpc.ServerStreamingServer[MediaEvent]) error
+	mustEmbedUnimplementedMediaStreamServiceServer()
+}
+
+// UnimplementedMediaStreamServiceServer must be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedMediaStreamServiceServer struct{}
+
+func (UnimplementedMediaStreamServiceServer) WatchMedia(*WatchMediaRequest, grpc.ServerStreamingServer[MediaEvent]) error {
+	return status.Errorf(codes.Unimplemented, "method WatchMedia not implemented")
+}
+func (UnimplementedMediaStreamServiceServer) mustEmbedUnimplementedMediaStreamServiceServer() {}
+func (UnimplementedMediaStreamServiceServer) testEmbeddedByValue()                            {}
+
+// UnsafeMediaStreamServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to MediaStreamServiceServer will
+// result in compilation errors.
+type UnsafeMediaStreamServiceServer interface {
+	mustEmbedUnimplementedMediaStreamServiceServer()
+}
+
+func RegisterMediaStreamServiceServer(s grpc.ServiceRegistrar, srv MediaStreamServiceServer) {
+	// If the following call pancis, it indicates UnimplementedMediaStreamServiceServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&MediaStreamService_ServiceDesc, srv)
+}
+
+func _MediaStreamService_WatchMedia_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(WatchMediaRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(MediaStreamServiceServer).WatchMedia(m, &grpc.GenericServerStream[WatchMediaRequest, MediaEvent]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type MediaStreamService_WatchMediaServer = grpc.ServerStreamingServer[MediaEvent]
+
+// MediaStreamService_ServiceDesc is the grpc.ServiceDesc for MediaStreamService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var MediaStreamService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "livekalman.common.v1.MediaStreamService",
+	HandlerType: (*MediaStreamServiceServer)(nil),
+	Methods:     []grpc.MethodDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "WatchMedia",
+			Handler:       _MediaStreamService_WatchMedia_Handler,
+			ServerStreams: true,
+		},
+	},
+	Metadata: "common/v1/common.proto",
+}

@@ -14,6 +14,8 @@ import (
 	commonv1 "github.com/streaming-live-kalman/filter/gen/common/v1"
 	controlv1 "github.com/streaming-live-kalman/filter/gen/control/v1"
 	"github.com/streaming-live-kalman/filter/server/controller/core"
+	"github.com/streaming-live-kalman/filter/server/controller/extensions"
+	"github.com/streaming-live-kalman/filter/server/controller/extensions/mlpolicy"
 	"github.com/streaming-live-kalman/filter/shared/config"
 	"github.com/streaming-live-kalman/filter/shared/node"
 	"google.golang.org/grpc"
@@ -34,7 +36,17 @@ func main() {
 		slog.Error("listen", "error", err)
 		os.Exit(1)
 	}
-	svc := core.New(cfg.Controller)
+	var policy extensions.AdaptationPolicy
+	if cfg.Controller.Policy == "onnx" {
+		p, err := mlpolicy.Load(cfg.Controller.OnnxModel, cfg.Controller.MinKalmanR, cfg.Controller.MaxKalmanR, cfg.Controller.WindowSize)
+		if err != nil {
+			slog.Error("load onnx policy", "error", err)
+			os.Exit(1)
+		}
+		policy = p
+	}
+	slog.Info("adaptation policy", "policy", cfg.Controller.Policy, "model", cfg.Controller.OnnxModel)
+	svc := core.New(cfg.Controller, policy)
 	grpcServer := grpc.NewServer()
 	controlv1.RegisterControllerServiceServer(grpcServer, svc)
 	commonv1.RegisterNodeServiceServer(grpcServer, node.New(node.Config{NodeID: "controller-1", DisplayName: "Experiment Controller", Role: commonv1.NodeRole_NODE_ROLE_CONTROLLER, ListenAddress: cfg.Controller.Listen, Capabilities: []*commonv1.Capability{{Name: "adaptive-policy", Version: "v1"}, {Name: "experiment-events", Version: "v1"}, {Name: "dashboard-sse", Version: "v1"}}, Snapshot: svc.NodeSnapshot}))

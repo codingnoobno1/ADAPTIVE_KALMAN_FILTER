@@ -20,6 +20,7 @@ type Client struct {
 	RX                             rxv1.ReceiverServiceClient
 	Controller                     controlv1.ControllerServiceClient
 	TXNode, RXNode, ControllerNode commonv1.NodeServiceClient
+	ReceiverMedia                  commonv1.MediaStreamServiceClient
 	connections                    []*grpc.ClientConn
 }
 
@@ -38,7 +39,7 @@ func Dial(ctx context.Context, endpoints Endpoints) (*Client, error) {
 		}
 		conns = append(conns, conn)
 	}
-	return &Client{TX: txv1.NewTransmitterServiceClient(conns[0]), RX: rxv1.NewReceiverServiceClient(conns[1]), Controller: controlv1.NewControllerServiceClient(conns[2]), TXNode: commonv1.NewNodeServiceClient(conns[0]), RXNode: commonv1.NewNodeServiceClient(conns[1]), ControllerNode: commonv1.NewNodeServiceClient(conns[2]), connections: conns}, nil
+	return &Client{TX: txv1.NewTransmitterServiceClient(conns[0]), RX: rxv1.NewReceiverServiceClient(conns[1]), Controller: controlv1.NewControllerServiceClient(conns[2]), TXNode: commonv1.NewNodeServiceClient(conns[0]), RXNode: commonv1.NewNodeServiceClient(conns[1]), ControllerNode: commonv1.NewNodeServiceClient(conns[2]), ReceiverMedia: commonv1.NewMediaStreamServiceClient(conns[1]), connections: conns}, nil
 }
 
 func (c *Client) Close() error {

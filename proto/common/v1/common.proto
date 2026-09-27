@@ -59,10 +59,71 @@ message NodeStatus {
 
 message WatchNodeRequest { uint32 interval_ms = 1; }
 
+// MediaType is the receiver's content classification. A producer may provide a
+// hint, but the receiver derives the final value from the reconstructed bytes.
+enum MediaType {
+  MEDIA_TYPE_UNSPECIFIED = 0;
+  MEDIA_TYPE_BINARY = 1;
+  MEDIA_TYPE_TEXT = 2;
+  MEDIA_TYPE_IMAGE = 3;
+  MEDIA_TYPE_AUDIO = 4;
+}
+
+// Modulation identifies how payload bits were converted into signal symbols.
+enum Modulation {
+  MODULATION_UNSPECIFIED = 0;
+  MODULATION_BPSK = 1;
+}
+
+// PayloadEncoding is applied to bytes before modulation and reversed only
+// after demodulation. BYTE_SHIFT is useful for teaching, not for security.
+enum PayloadEncoding {
+  PAYLOAD_ENCODING_UNSPECIFIED = 0;
+  PAYLOAD_ENCODING_RAW = 1;
+  PAYLOAD_ENCODING_BYTE_SHIFT = 2;
+}
+
+message MediaDescriptor {
+  string transfer_id = 1;
+  string file_name = 2;
+  MediaType media_type_hint = 3;
+  string content_type_hint = 4;
+  uint64 total_size = 5;
+  uint32 crc32 = 6;
+  Modulation modulation = 7;
+  PayloadEncoding encoding = 8;
+  uint32 shift_key = 9;
+}
+
+// MediaEvent is the one role-neutral output stream for text, image, audio and
+// unknown binary data. Data is decoded application bytes, never signal samples.
+message MediaEvent {
+  MediaDescriptor media = 1;
+  MediaType detected_type = 2;
+  string detected_content_type = 3;
+  uint64 offset = 4;
+  bytes data = 5;
+  bool end_of_stream = 6;
+  uint64 received_size = 7;
+  bool checksum_valid = 8;
+  string message = 9;
+  uint64 observed_at_unix_ms = 10;
+}
+
+message WatchMediaRequest {
+  repeated MediaType types = 1;
+}
+
 // NodeService is implemented by TX, RX and Controller. Clients can discover
 // role/capabilities and monitor health without knowing the role-specific API.
 service NodeService {
   rpc GetNodeInfo(Empty) returns (NodeInfo);
   rpc GetNodeStatus(Empty) returns (NodeStatus);
   rpc WatchNodeStatus(WatchNodeRequest) returns (stream NodeStatus);
+}
+
+// MediaStreamService is implemented by the receiver. Every client uses this
+// endpoint and may filter the stream by the automatically detected type.
+service MediaStreamService {
+  rpc WatchMedia(WatchMediaRequest) returns (stream MediaEvent);
 }

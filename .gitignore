@@ -11,3 +11,6 @@ run/
 .vs/
 *.user
 *.suo
+ml/.venv/
+ml/data/
+__pycache__/

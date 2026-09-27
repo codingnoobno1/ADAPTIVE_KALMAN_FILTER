@@ -18,6 +18,17 @@ message TxFrame {
   bytes reference_bits = 10;
   livekalman.common.v1.SampleFormat sample_format = 11;
   bytes packed_samples = 12;
+  // Optional application metadata. Payload bytes are carried by the modulated
+  // samples and reconstructed after the receiver makes BPSK decisions.
+  livekalman.common.v1.MediaDescriptor media = 13;
+  uint64 media_offset = 14;
+  bool media_end = 15;
+  uint32 payload_byte_count = 16;
+  // True when the payload bytes were XORed with the per-frame keystream from
+  // shared/dsp.Scramble (keyed by sequence) before modulation, so the channel
+  // bits are balanced for the receiver's DC tracker. The receiver reverses it
+  // after demodulation. Reference bits always describe the transmitted bits.
+  bool scrambled = 17;
 }
 
 message RxFeedback {
@@ -59,4 +70,3 @@ service ReceiverService {
   rpc ApplyReceiverConfig(RxConfig) returns (ApplyRxReply);
   rpc GetRxStatus(livekalman.common.v1.Empty) returns (RxStatus);
 }
-

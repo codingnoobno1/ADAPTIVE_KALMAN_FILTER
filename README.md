@@ -90,3 +90,36 @@ See [architecture](docs/architecture.md) for lifecycle, state, and security boun
 The algorithm is an executable research baseline, not a claim of an optimal Kalman state model. Tune `Q`, `R`, symbol timing, and synchronization against controlled seeds before comparing fixed and adaptive runs.
 
 See [Extending the platform](docs/extending.md) before adding new modulation schemes, hardware sources, DSP algorithms or controller policies.
+
+## Receiver implementation status
+
+The Receiver currently supports real-sample BPSK using repeated `float32` plus
+packed little-endian `float32` and `int16` samples. Its core validation rejects
+malformed identities/metadata, incomplete symbols, non-finite samples,
+reference-bit length mismatches, and non-finite or non-positive Kalman Q/R.
+Reference bits are optional outside simulation. Decoded text, image and audio
+payload chunks are published by the common media stream.
+QPSK, 8-PSK, complex I/Q framing, and AI Q/R inference are not implemented;
+they require an agreed protobuf/DSP extension and controlled evaluation.
+See [Device 2 status](docs/IMPLEMENTATION_STATUS.md).
+
+## ML adaptation policy
+
+The Receiver's Kalman filter tracks the channel's DC drift. The Controller sets
+its tracking ratio Q/R with a fixed rule, or with a trained ONNX model that runs
+in pure Go (no cgo); set `"policy": "onnx"` in the controller config. See
+[ML policy](docs/ml-policy.md) for the design, training, and simulated and live
+results.
+
+## Sending text, images and audio
+
+The Sender can modulate real files onto the link (about 750 B/s):
+
+```powershell
+.\bin\sender.exe -send examples\media\kalman.bmp
+curl.exe -X POST --data-binary "@examples\media\tone.wav" "http://127.0.0.1:8081/api/v1/transfers?name=tone.wav"
+```
+
+The Receiver streams reassembled, CRC-checked files on `GET :8082/api/v1/media`
+and `WatchMedia`. `configs/local-impaired.json` adds fading, drift and noise
+bursts. See [file transfer](docs/file-transfer.md).

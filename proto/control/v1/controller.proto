@@ -15,6 +15,11 @@ message ReceiverMetrics {
   uint64 active_config_version = 9;
   uint32 queue_depth = 10;
   uint64 observed_at_unix_ms = 11;
+  // Raw frame sample mean: a filter-independent view of DC drift, used as an
+  // ML policy feature (balanced BPSK symbols average to zero).
+  float frame_mean = 12;
+  // The receiver Kalman filter's tracked DC offset after this frame.
+  float dc_estimate = 13;
 }
 
 message PolicyDecision {

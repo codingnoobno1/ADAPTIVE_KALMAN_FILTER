@@ -34,8 +34,13 @@ type ReceiverMetrics struct {
 	ActiveConfigVersion uint64                 `protobuf:"varint,9,opt,name=active_config_version,json=activeConfigVersion,proto3" json:"active_config_version,omitempty"`
 	QueueDepth          uint32                 `protobuf:"varint,10,opt,name=queue_depth,json=queueDepth,proto3" json:"queue_depth,omitempty"`
 	ObservedAtUnixMs    uint64                 `protobuf:"varint,11,opt,name=observed_at_unix_ms,json=observedAtUnixMs,proto3" json:"observed_at_unix_ms,omitempty"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	// Raw frame sample mean: a filter-independent view of DC drift, used as an
+	// ML policy feature (balanced BPSK symbols average to zero).
+	FrameMean float32 `protobuf:"fixed32,12,opt,name=frame_mean,json=frameMean,proto3" json:"frame_mean,omitempty"`
+	// The receiver Kalman filter's tracked DC offset after this frame.
+	DcEstimate    float32 `protobuf:"fixed32,13,opt,name=dc_estimate,json=dcEstimate,proto3" json:"dc_estimate,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ReceiverMetrics) Reset() {
@@ -141,6 +146,20 @@ func (x *ReceiverMetrics) GetQueueDepth() uint32 {
 func (x *ReceiverMetrics) GetObservedAtUnixMs() uint64 {
 	if x != nil {
 		return x.ObservedAtUnixMs
+	}
+	return 0
+}
+
+func (x *ReceiverMetrics) GetFrameMean() float32 {
+	if x != nil {
+		return x.FrameMean
+	}
+	return 0
+}
+
+func (x *ReceiverMetrics) GetDcEstimate() float32 {
+	if x != nil {
+		return x.DcEstimate
 	}
 	return 0
 }
@@ -489,7 +508,7 @@ var File_control_v1_controller_proto protoreflect.FileDescriptor
 
 const file_control_v1_controller_proto_rawDesc = "" +
 	"\n" +
-	"\x1bcontrol/v1/controller.proto\x12\x15livekalman.control.v1\"\xfb\x02\n" +
+	"\x1bcontrol/v1/controller.proto\x12\x15livekalman.control.v1\"\xbb\x03\n" +
 	"\x0fReceiverMetrics\x12\x15\n" +
 	"\x06run_id\x18\x01 \x01(\tR\x05runId\x12\x1a\n" +
 	"\bsequence\x18\x02 \x01(\x04R\bsequence\x12\x15\n" +
@@ -505,7 +524,11 @@ const file_control_v1_controller_proto_rawDesc = "" +
 	"\vqueue_depth\x18\n" +
 	" \x01(\rR\n" +
 	"queueDepth\x12-\n" +
-	"\x13observed_at_unix_ms\x18\v \x01(\x04R\x10observedAtUnixMs\"\x9a\x02\n" +
+	"\x13observed_at_unix_ms\x18\v \x01(\x04R\x10observedAtUnixMs\x12\x1d\n" +
+	"\n" +
+	"frame_mean\x18\f \x01(\x02R\tframeMean\x12\x1f\n" +
+	"\vdc_estimate\x18\r \x01(\x02R\n" +
+	"dcEstimate\"\x9a\x02\n" +
 	"\x0ePolicyDecision\x12\x1d\n" +
 	"\n" +
 	"command_id\x18\x01 \x01(\x04R\tcommandId\x12)\n" +

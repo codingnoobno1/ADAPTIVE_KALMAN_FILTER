@@ -1,0 +1,2 @@
+Adaptive Kalman filtering over a BPSK link.
+If you can read this, the demodulator recovered every bit.

@@ -40,7 +40,8 @@ func main() {
 	svc := core.New(cfg.Receiver)
 	gs := grpc.NewServer()
 	rxv1.RegisterReceiverServiceServer(gs, svc)
-	commonv1.RegisterNodeServiceServer(gs, node.New(node.Config{NodeID: "receiver-1", DisplayName: "Kalman DSP Receiver", Role: commonv1.NodeRole_NODE_ROLE_RECEIVER, ListenAddress: cfg.Receiver.Listen, Capabilities: []*commonv1.Capability{{Name: "bpsk-demodulation", Version: "v1"}, {Name: "kalman-scalar", Version: "v1"}, {Name: "esp32-protobuf-ingest", Version: "v1"}}, Snapshot: svc.NodeSnapshot}))
+	commonv1.RegisterMediaStreamServiceServer(gs, svc)
+	commonv1.RegisterNodeServiceServer(gs, node.New(node.Config{NodeID: "receiver-1", DisplayName: "Kalman DSP Receiver", Role: commonv1.NodeRole_NODE_ROLE_RECEIVER, ListenAddress: cfg.Receiver.Listen, Capabilities: []*commonv1.Capability{{Name: "bpsk-demodulation", Version: "v1"}, {Name: "kalman-scalar", Version: "v1"}, {Name: "auto-media-detection", Version: "v1"}, {Name: "common-media-stream", Version: "v1"}, {Name: "esp32-protobuf-ingest", Version: "v1"}}, Snapshot: svc.NodeSnapshot}))
 	hs := &http.Server{Addr: cfg.Receiver.HTTPListen, Handler: svc.HTTPHandler(), ReadHeaderTimeout: 5 * time.Second}
 	go runAdapt(ctx, cfg.Receiver.Controller, svc)
 	go func() {

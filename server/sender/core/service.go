@@ -13,6 +13,7 @@ import (
 	rxv1 "github.com/streaming-live-kalman/filter/gen/rx/v1"
 	txv1 "github.com/streaming-live-kalman/filter/gen/tx/v1"
 	"github.com/streaming-live-kalman/filter/shared/config"
+	"github.com/streaming-live-kalman/filter/shared/dsp"
 	"github.com/streaming-live-kalman/filter/shared/node"
 )
 
@@ -26,6 +27,12 @@ type Server struct {
 	running  bool
 	subs     map[uint64]chan *txv1.TxEvent
 	nextSub  uint64
+
+	// File transfers modulated onto the signal (see media.go).
+	queue        []*transfer
+	current      *transfer
+	recent       []TransferStatus
+	nextTransfer uint64
 }
 
 func (s *Server) NodeSnapshot() node.Snapshot {
@@ -95,12 +102,16 @@ func (s *Server) RunStream(ctx context.Context, client rxv1.ReceiverServiceClien
 		}
 	}()
 	rng := rand.New(rand.NewSource(s.cfg.Seed))
+	// One simulated channel per stream: fading phase and DC drift persist
+	// across frames. All-zero settings are the original ideal AWGN channel.
+	channel := &dsp.Channel{FadingDepth: s.cfg.FadingDepth, FadingPeriodSamples: s.cfg.FadingPeriodFrames * float64(s.cfg.SamplesPerFrame), DriftStddev: s.cfg.DriftStddev, DriftReversion: s.cfg.DriftReversion, BurstProbability: s.cfg.BurstProbability, BurstNoiseMultiplier: s.cfg.BurstNoiseMultiplier}
 	ticker := time.NewTicker(time.Duration(float64(time.Second) * float64(s.cfg.SamplesPerFrame) / float64(s.cfg.SampleRateHz)))
 	defer ticker.Stop()
 	streamID := uint64(time.Now().UnixNano())
 	sampleIndex := uint64(0)
 	s.mu.Lock()
 	s.running = true
+	s.restartActiveLocked()
 	s.mu.Unlock()
 	defer func() { s.mu.Lock(); s.running = false; s.mu.Unlock() }()
 	for {
@@ -123,8 +134,17 @@ func (s *Server) RunStream(ctx context.Context, client rxv1.ReceiverServiceClien
 				s.publishLocked(&txv1.TxEvent{Sequence: seq, Description: fmt.Sprintf("applied TX config v%d", s.active.Version)})
 			}
 			active := frameParameters{version: s.active.Version, amplitude: s.active.Amplitude, noiseStddev: s.active.NoiseStddev}
+			payload, media, offset, end := s.nextPayloadLocked(seq)
 			s.mu.Unlock()
-			frame := generateFrame(s.cfg, active, streamID, seq, sampleIndex, rng)
+			if media != nil {
+				// Balance the channel bits for the receiver's DC tracker.
+				payload = append([]byte(nil), payload...)
+				dsp.Scramble(payload, seq)
+			}
+			frame := generateFrame(s.cfg, active, streamID, seq, sampleIndex, rng, channel, payload)
+			if media != nil {
+				frame.Media, frame.MediaOffset, frame.MediaEnd, frame.PayloadByteCount, frame.Scrambled = media, offset, end, uint32(len(payload)), true
+			}
 			sampleIndex += uint64(len(frame.Samples))
 			if err := stream.Send(frame); err != nil {
 				return err
@@ -133,23 +153,9 @@ func (s *Server) RunStream(ctx context.Context, client rxv1.ReceiverServiceClien
 	}
 }
 
-func generateFrame(cfg config.Sender, active frameParameters, streamID, seq, first uint64, rng *rand.Rand) *rxv1.TxFrame {
+func generateFrame(cfg config.Sender, active frameParameters, streamID, seq, first uint64, rng *rand.Rand, channel *dsp.Channel, payload []byte) *rxv1.TxFrame {
 	symbols := cfg.SamplesPerFrame / int(cfg.SamplesPerSymbol)
-	bits := make([]byte, (symbols+7)/8)
-	samples := make([]float32, 0, symbols*int(cfg.SamplesPerSymbol))
-	for i := 0; i < symbols; i++ {
-		one := rng.Intn(2) == 1
-		if one {
-			bits[i/8] |= 1 << uint(i%8)
-		}
-		ideal := -active.amplitude
-		if one {
-			ideal = active.amplitude
-		}
-		for j := uint32(0); j < cfg.SamplesPerSymbol; j++ {
-			samples = append(samples, ideal+float32(rng.NormFloat64()*float64(active.noiseStddev)))
-		}
-	}
+	samples, bits := channel.FrameWithPayload(rng, payload, symbols, int(cfg.SamplesPerSymbol), active.amplitude, float64(active.noiseStddev))
 	return &rxv1.TxFrame{RunId: cfg.RunID, StreamId: streamID, Sequence: seq, FirstSampleIndex: first, SampleRateHz: cfg.SampleRateHz, SamplesPerSymbol: cfg.SamplesPerSymbol, CaptureTimestampUs: uint64(time.Now().UnixMicro()), ConfigVersion: active.version, Samples: samples, ReferenceBits: bits, SampleFormat: 1}
 }
 
