@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, master]
+    branches: [main, master, 'fix/**']
   pull_request:
     branches: [main, master]
   workflow_dispatch:
@@ -24,6 +24,9 @@ env:
   BUF_VERSION: '1.50.0'
   PYTHON_VERSION: '3.12'
   DOTNET_VERSION: '10.0.x'
+  # Pinned so CI matches the development SDK; 'stable' moved past 3.47 and
+  # started flagging package:flutter/material.dart as deprecated (material_ui).
+  FLUTTER_VERSION: '3.47.5'
   MAUI_WINDOWS_TFM: 'net10.0-windows10.0.19041.0'
 
 jobs:
@@ -148,6 +151,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
 
       - name: Setup Python ${{ env.PYTHON_VERSION }} (for nanopb)
@@ -325,6 +329,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
 
       - name: Analyze Dart livekalman_sdk
@@ -333,12 +338,36 @@ jobs:
           dart pub get
           dart analyze --fatal-infos
 
-      - name: Analyze & test Flutter signal_monitor app
+      - name: Fetch Flutter signal_monitor dependencies
         working-directory: apps/flutter/signal_monitor
+        run: flutter pub get
+
+      # Analyze and test run as separate steps. On failure, the tail of the log
+      # is re-emitted as one annotation so the error is visible in the run
+      # summary (job logs are only readable by repository admins).
+      - name: Analyze Flutter signal_monitor app
+        working-directory: apps/flutter/signal_monitor
+        shell: bash
         run: |
-          flutter pub get
-          flutter analyze
-          flutter test
+          set -o pipefail
+          log="$RUNNER_TEMP/flutter-analyze.log"
+          if ! flutter analyze 2>&1 | tee "$log"; then
+            msg="$(tail -n 40 "$log" | sed -e 's/%/%25/g' -e 's/\r//g' | awk '{printf "%s%%0A", $0}')"
+            echo "::error title=flutter analyze failed (${RUNNER_OS})::${msg}"
+            exit 1
+          fi
+
+      - name: Test Flutter signal_monitor app
+        working-directory: apps/flutter/signal_monitor
+        shell: bash
+        run: |
+          set -o pipefail
+          log="$RUNNER_TEMP/flutter-test.log"
+          if ! flutter test --reporter expanded 2>&1 | tee "$log"; then
+            msg="$(grep -v '^[0-9][0-9]:[0-9][0-9] +[0-9]*: ' "$log" | tail -n 60 | sed -e 's/%/%25/g' -e 's/\r//g' | awk '{printf "%s%%0A", $0}')"
+            echo "::error title=flutter test failed (${RUNNER_OS})::${msg}"
+            exit 1
+          fi
 
       - name: Build Flutter Windows desktop app (Debug)
         if: runner.os == 'Windows'
