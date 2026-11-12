@@ -408,7 +408,7 @@ class _ParametersTab extends StatelessWidget {
                     crossAxisCount: cols,
                     mainAxisSpacing: 10,
                     crossAxisSpacing: 10,
-                    mainAxisExtent: 128,
+                    mainAxisExtent: 156,
                   ),
                   delegate: SliverChildBuilderDelegate(
                     (context, idx) =>
