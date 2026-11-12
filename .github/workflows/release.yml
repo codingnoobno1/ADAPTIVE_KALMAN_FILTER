@@ -152,12 +152,62 @@ jobs:
           if-no-files-found: error
 
   # ---------------------------------------------------------------------------
-  # 3. Publish GitHub Release (Tags Only)
+  # 3. Android Mobile App Release Bundles (Kalman Parameter Lab APK & AAB)
+  # ---------------------------------------------------------------------------
+  build-android-mobile:
+    name: Build Android Mobile Bundles (Kalman Mobile)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Flutter stable
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Build & stage Android Release APKs & AppBundle
+        env:
+          VERSION_TAG: ${{ github.ref_type == 'tag' && github.ref_name || inputs.version_label || 'snapshot' }}
+        run: |
+          mkdir -p release-android
+          pushd apps/flutter/kalman_mobile
+          flutter pub get
+          flutter build apk --release --split-per-abi
+          flutter build appbundle --release
+          popd
+          for abi in arm64-v8a armeabi-v7a x86_64; do
+            src="apps/flutter/kalman_mobile/build/app/outputs/flutter-apk/app-${abi}-release.apk"
+            if [ -f "$src" ]; then
+              cp "$src" "release-android/livekalman-mobile-${VERSION_TAG}-android-${abi}.apk"
+            fi
+          done
+          cp apps/flutter/kalman_mobile/build/app/outputs/bundle/release/app-release.aab \
+            "release-android/livekalman-mobile-${VERSION_TAG}-android.aab"
+
+      - name: Upload Android mobile release bundles
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-mobile-bundles
+          path: release-android/*
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------------------
+  # 4. Publish GitHub Release (Tags Only)
   # ---------------------------------------------------------------------------
   publish-release:
     name: Publish GitHub Release
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [build-lab-bundles, build-windows-dashboards]
+    needs: [build-lab-bundles, build-windows-dashboards, build-android-mobile]
     runs-on: ubuntu-latest
     permissions:
       contents: write

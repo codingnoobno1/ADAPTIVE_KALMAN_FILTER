@@ -1,0 +1,218 @@
+name: Mobile App CI/CD
+
+on:
+  push:
+    branches: [main, master, 'feature/**', 'fix/**']
+    paths:
+      - 'apps/flutter/kalman_mobile/**'
+      - 'sdk/dart/livekalman_sdk/**'
+      - 'docs/mobile/**'
+      - '.github/workflows/mobile-ci.yml'
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'apps/flutter/kalman_mobile/**'
+      - 'sdk/dart/livekalman_sdk/**'
+      - 'docs/mobile/**'
+      - '.github/workflows/mobile-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mobile-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  # Matches main CI SDK pin (see .github/workflows/ci.yml)
+  FLUTTER_VERSION: '3.47.5'
+  JAVA_VERSION: '17'
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # 1. Dart SDK Contract Check, Static Analysis & Mobile Unit/Widget Test Suite
+  # ---------------------------------------------------------------------------
+  mobile-lint-and-test:
+    name: Mobile Lint, DSP Engine & Widget Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter ${{ env.FLUTTER_VERSION }}
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Verify shared Dart gRPC SDK (livekalman_sdk)
+        working-directory: sdk/dart/livekalman_sdk
+        run: |
+          dart pub get
+          dart analyze --fatal-infos
+          dart test
+
+      - name: Fetch kalman_mobile dependencies
+        working-directory: apps/flutter/kalman_mobile
+        run: flutter pub get
+
+      - name: Static analysis (flutter analyze --fatal-infos)
+        working-directory: apps/flutter/kalman_mobile
+        shell: bash
+        run: |
+          set -o pipefail
+          log="$RUNNER_TEMP/kalman-mobile-analyze.log"
+          if ! flutter analyze --fatal-infos 2>&1 | tee "$log"; then
+            msg="$(tail -n 40 "$log" | sed -e 's/%/%25/g' -e 's/\r//g' | awk '{printf "%s%%0A", $0}')"
+            echo "::error title=kalman_mobile analyze failed::${msg}"
+            exit 1
+          fi
+
+      - name: Run Kalman parameter engine & mobile viewport widget tests with coverage
+        working-directory: apps/flutter/kalman_mobile
+        shell: bash
+        run: |
+          set -o pipefail
+          log="$RUNNER_TEMP/kalman-mobile-test.log"
+          if ! flutter test --coverage --reporter expanded 2>&1 | tee "$log"; then
+            msg="$(grep -v '^[0-9][0-9]:[0-9][0-9] +[0-9]*: ' "$log" | tail -n 60 | sed -e 's/%/%25/g' -e 's/\r//g' | awk '{printf "%s%%0A", $0}')"
+            echo "::error title=kalman_mobile tests failed::${msg}"
+            exit 1
+          fi
+          {
+            echo "### Kalman Mobile Test Suite"
+            echo ""
+            echo "- Shared SDK (\`sdk/dart/livekalman_sdk\`): passed"
+            echo "- Static analysis (\`flutter analyze --fatal-infos\`): zero issues"
+            echo "- Unit & responsive widget tests: passed with LCOV coverage"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload mobile LCOV coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: kalman-mobile-coverage
+          path: apps/flutter/kalman_mobile/coverage/lcov.info
+          if-no-files-found: error
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------
+  # 2. Android Debug APK, Split-ABI Release APKs & Play Store AppBundle (AAB)
+  # ---------------------------------------------------------------------------
+  mobile-android-build:
+    name: Build Android APK & AppBundle
+    runs-on: ubuntu-latest
+    needs: mobile-lint-and-test
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java ${{ env.JAVA_VERSION }} (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Cache Gradle packages & wrapper
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-mobile-${{ runner.os }}-${{ hashFiles('apps/flutter/kalman_mobile/android/**/*.kts', 'apps/flutter/kalman_mobile/android/**/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-mobile-${{ runner.os }}-
+
+      - name: Setup Flutter ${{ env.FLUTTER_VERSION }}
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Fetch kalman_mobile dependencies
+        working-directory: apps/flutter/kalman_mobile
+        run: flutter pub get
+
+      - name: Build Android Debug APK
+        working-directory: apps/flutter/kalman_mobile
+        run: flutter build apk --debug
+
+      - name: Build Android Split-per-ABI Release APKs & AppBundle (AAB)
+        working-directory: apps/flutter/kalman_mobile
+        run: |
+          flutter build apk --release --split-per-abi
+          flutter build appbundle --release
+
+      - name: Stage mobile build artifacts & compute SHA-256 checksums
+        run: |
+          mkdir -p dist-mobile/debug dist-mobile/release
+          cp apps/flutter/kalman_mobile/build/app/outputs/flutter-apk/app-debug.apk \
+            dist-mobile/debug/kalman-mobile-debug.apk
+          for abi in arm64-v8a armeabi-v7a x86_64; do
+            src="apps/flutter/kalman_mobile/build/app/outputs/flutter-apk/app-${abi}-release.apk"
+            if [ -f "$src" ]; then
+              cp "$src" "dist-mobile/release/kalman-mobile-${abi}-release.apk"
+            fi
+          done
+          cp apps/flutter/kalman_mobile/build/app/outputs/bundle/release/app-release.aab \
+            dist-mobile/release/kalman-mobile-release.aab
+          (cd dist-mobile/release && sha256sum * > SHA256SUMS.txt)
+          {
+            echo "### Android Build Artifacts (\`SHA-256\`)"
+            echo '```text'
+            cat dist-mobile/release/SHA256SUMS.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Android Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: kalman-mobile-android-debug-apk
+          path: dist-mobile/debug/*
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload Android Release APKs & AAB Bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: kalman-mobile-android-release-bundle
+          path: dist-mobile/release/*
+          if-no-files-found: error
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------
+  # 3. Mobile CI/CD Status Gate
+  # ---------------------------------------------------------------------------
+  mobile-ci-gate:
+    name: Mobile CI Gate
+    runs-on: ubuntu-latest
+    if: always()
+    needs:
+      - mobile-lint-and-test
+      - mobile-android-build
+    steps:
+      - name: Enforce mobile CI/CD pipeline results
+        env:
+          R_TEST: ${{ needs.mobile-lint-and-test.result }}
+          R_BUILD: ${{ needs.mobile-android-build.result }}
+        run: |
+          {
+            echo "## Mobile App CI/CD Summary"
+            echo ""
+            echo "| Stage | Status |"
+            echo "| :--- | :--- |"
+            echo "| Mobile Lint, DSP Engine & Widget Tests | \`${R_TEST}\` |"
+            echo "| Build Android APK & AppBundle | \`${R_BUILD}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          for result in "$R_TEST" "$R_BUILD"; do
+            if [ "$result" != "success" ]; then
+              echo "::error::Mobile CI/CD stage failed (status: ${result})."
+              exit 1
+            fi
+          done
+          echo "Mobile App CI/CD pipeline succeeded."

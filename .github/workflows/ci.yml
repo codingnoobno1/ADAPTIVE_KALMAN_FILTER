@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, master, 'fix/**']
+    branches: [main, master, 'feature/**', 'fix/**']
   pull_request:
     branches: [main, master]
   workflow_dispatch:
@@ -375,6 +375,34 @@ jobs:
           if ! flutter test --reporter expanded 2>&1 | tee "$log"; then
             msg="$(grep -v '^[0-9][0-9]:[0-9][0-9] +[0-9]*: ' "$log" | tail -n 60 | sed -e 's/%/%25/g' -e 's/\r//g' | awk '{printf "%s%%0A", $0}')"
             echo "::error title=flutter test failed (${RUNNER_OS})::${msg}"
+            exit 1
+          fi
+
+      - name: Fetch Flutter kalman_mobile dependencies
+        working-directory: apps/flutter/kalman_mobile
+        run: flutter pub get
+
+      - name: Analyze Flutter kalman_mobile app
+        working-directory: apps/flutter/kalman_mobile
+        shell: bash
+        run: |
+          set -o pipefail
+          log="$RUNNER_TEMP/kalman-mobile-analyze.log"
+          if ! flutter analyze --fatal-infos 2>&1 | tee "$log"; then
+            msg="$(tail -n 40 "$log" | sed -e 's/%/%25/g' -e 's/\r//g' | awk '{printf "%s%%0A", $0}')"
+            echo "::error title=kalman_mobile analyze failed (${RUNNER_OS})::${msg}"
+            exit 1
+          fi
+
+      - name: Test Flutter kalman_mobile app
+        working-directory: apps/flutter/kalman_mobile
+        shell: bash
+        run: |
+          set -o pipefail
+          log="$RUNNER_TEMP/kalman-mobile-test.log"
+          if ! flutter test --reporter expanded 2>&1 | tee "$log"; then
+            msg="$(grep -v '^[0-9][0-9]:[0-9][0-9] +[0-9]*: ' "$log" | tail -n 60 | sed -e 's/%/%25/g' -e 's/\r//g' | awk '{printf "%s%%0A", $0}')"
+            echo "::error title=kalman_mobile test failed (${RUNNER_OS})::${msg}"
             exit 1
           fi
 
