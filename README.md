@@ -26,14 +26,14 @@ proto/            coordinated cross-team gRPC/Protobuf v1 contracts
 gen/go/           generated Go protobuf & gRPC bindings
 ml/               Python MLP training, ONNX verification, 6,000-channel dataset & models
 results/          reproducible benchmark CSV tables, E2E summary & visual figures
-apps/             Flutter (desktop/mobile/web) and .NET MAUI Blazor Hybrid monitors
+apps/             Flutter (signal_monitor + kalman_mobile) and .NET MAUI Blazor Hybrid monitors
 sdk/dart/         reusable Dart gRPC/SSE client SDK (livekalman_sdk)
 examples/esp32/   PlatformIO ESP32 Nanopb library + native C11 host test harness
 scripts/          portable PowerShell build, codegen, local CI & multi-role runners
-.github/workflows CI verification DAG (ci.yml) and release bundler (release.yml)
+.github/workflows CI verification DAG (ci.yml), mobile CI/CD (mobile-ci.yml) & release bundler (release.yml)
 ```
 
-Each server's `main.go` is intentionally small and imports its base requirements. Required behavior lives in `core/`; optional hardware, AI, UI-export and policy features belong behind interfaces in `extensions/`. See [team workflow](docs/team-workflow.md), [ML policy](ml/README.md), and [experimental results](results/README.md).
+Each server's `main.go` is intentionally small and imports its base requirements. Required behavior lives in `core/`; optional hardware, AI, UI-export and policy features belong behind interfaces in `extensions/`. See [team workflow](docs/team-workflow.md), [ML policy](ml/README.md), [experimental results](results/README.md), and [mobile app design](docs/mobile/README.md).
 
 For faster later runs:
 
