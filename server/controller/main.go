@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -16,6 +17,7 @@ import (
 	"github.com/streaming-live-kalman/filter/server/controller/core"
 	"github.com/streaming-live-kalman/filter/server/controller/extensions"
 	"github.com/streaming-live-kalman/filter/server/controller/extensions/mlpolicy"
+	"github.com/streaming-live-kalman/filter/server/controller/extensions/qualitymodel"
 	"github.com/streaming-live-kalman/filter/shared/config"
 	"github.com/streaming-live-kalman/filter/shared/node"
 	"google.golang.org/grpc"
@@ -47,9 +49,34 @@ func main() {
 	}
 	slog.Info("adaptation policy", "policy", cfg.Controller.Policy, "model", cfg.Controller.OnnxModel)
 	svc := core.New(cfg.Controller, policy)
+	if cfg.Controller.QualityModel != "" {
+		qm, err := qualitymodel.Load(cfg.Controller.QualityModel)
+		if err != nil {
+			// Not fatal: the data path and adaptation keep working; only the
+			// ML prediction is missing and the monitor reports it as null.
+			slog.Error("channel-quality model unavailable; publishing measured classes only", "error", err)
+		} else {
+			svc.SetQualityPredictor(qm)
+			slog.Info("channel-quality model loaded", "model", cfg.Controller.QualityModel, "version", qm.Version)
+		}
+	}
+	if cfg.Controller.MetricsLog != "" {
+		if err := os.MkdirAll(filepath.Dir(cfg.Controller.MetricsLog), 0o755); err != nil {
+			slog.Error("metrics log directory", "error", err)
+			os.Exit(1)
+		}
+		f, err := os.OpenFile(cfg.Controller.MetricsLog, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+		if err != nil {
+			slog.Error("open metrics log", "error", err)
+			os.Exit(1)
+		}
+		defer f.Close()
+		svc.SetMetricsRecorder(f)
+		slog.Info("recording receiver metrics", "path", cfg.Controller.MetricsLog)
+	}
 	grpcServer := grpc.NewServer()
 	controlv1.RegisterControllerServiceServer(grpcServer, svc)
-	commonv1.RegisterNodeServiceServer(grpcServer, node.New(node.Config{NodeID: "controller-1", DisplayName: "Experiment Controller", Role: commonv1.NodeRole_NODE_ROLE_CONTROLLER, ListenAddress: cfg.Controller.Listen, Capabilities: []*commonv1.Capability{{Name: "adaptive-policy", Version: "v1"}, {Name: "experiment-events", Version: "v1"}, {Name: "dashboard-sse", Version: "v1"}}, Snapshot: svc.NodeSnapshot}))
+	commonv1.RegisterNodeServiceServer(grpcServer, node.New(node.Config{NodeID: "controller-1", DisplayName: "Experiment Controller", Role: commonv1.NodeRole_NODE_ROLE_CONTROLLER, ListenAddress: cfg.Controller.Listen, Capabilities: []*commonv1.Capability{{Name: "adaptive-policy", Version: "v1"}, {Name: "experiment-events", Version: "v1"}, {Name: "dashboard-sse", Version: "v1"}, {Name: "channel-quality-monitor", Version: "v1"}}, Snapshot: svc.NodeSnapshot}))
 	httpServer := &http.Server{Addr: cfg.Controller.HTTPListen, Handler: svc.HTTPHandler(), ReadHeaderTimeout: 5 * time.Second}
 	go func() {
 		slog.Info("controller HTTP/SSE listening", "address", cfg.Controller.HTTPListen)

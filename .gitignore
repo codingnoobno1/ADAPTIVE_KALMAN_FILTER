@@ -26,3 +26,8 @@ tools/
 /*.docx
 docs/slide-assets/
 docs/report-assets/prior-evidence/
+
+# Channel-quality ML: regenerated deterministically by cmd/qualitygen (hash pinned
+# in ml/models/quality_report.json); live metrics logs are local recordings.
+ml/data/quality_dataset.csv
+ml/data/live_metrics*.jsonl

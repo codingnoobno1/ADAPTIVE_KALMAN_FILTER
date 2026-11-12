@@ -90,7 +90,7 @@ jobs:
             GOOS=linux   GOARCH=amd64 go build -trimpath -o "dist/linux-amd64/${role}"       "./server/${role}"
             GOOS=windows GOARCH=amd64 go build -trimpath -o "dist/windows-amd64/${role}.exe" "./server/${role}"
           done
-          for tool in labctl datagen mediagen; do
+          for tool in labctl datagen mediagen qualitygen imgquality; do
             GOOS=linux   GOARCH=amd64 go build -trimpath -o "dist/linux-amd64/${tool}"       "./cmd/${tool}"
             GOOS=windows GOARCH=amd64 go build -trimpath -o "dist/windows-amd64/${tool}.exe" "./cmd/${tool}"
           done
@@ -310,6 +310,14 @@ jobs:
           LK_TEST_ONNX_MODEL=/tmp/ml-smoke/models/r_policy.onnx \
             go test -v ./server/controller/extensions/mlpolicy
 
+      - name: Smoke-test qualitygen -> train_quality.py -> ONNX (channel-quality model)
+        run: |
+          mkdir -p /tmp/quality-smoke
+          go run ./cmd/qualitygen -scenarios 80 -windows 10 -out /tmp/quality-smoke/quality.csv
+          python ml/train_quality.py --data /tmp/quality-smoke/quality.csv --out /tmp/quality-smoke/models
+          python ml/quality_reference.py
+          go test -v ./server/controller/extensions/qualitymodel ./shared/quality
+
   # ---------------------------------------------------------------------------
   # 5. Dart gRPC SDK & Flutter Unified 3-Role App (Linux + Windows Desktop)
   # ---------------------------------------------------------------------------
@@ -337,6 +345,7 @@ jobs:
         run: |
           dart pub get
           dart analyze --fatal-infos
+          dart test
 
       - name: Fetch Flutter signal_monitor dependencies
         working-directory: apps/flutter/signal_monitor

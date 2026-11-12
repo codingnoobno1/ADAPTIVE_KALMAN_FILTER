@@ -44,6 +44,9 @@ const ReceiverMetrics$json = {
     },
     {'1': 'frame_mean', '3': 12, '4': 1, '5': 2, '10': 'frameMean'},
     {'1': 'dc_estimate', '3': 13, '4': 1, '5': 2, '10': 'dcEstimate'},
+    {'1': 'active_kalman_q', '3': 14, '4': 1, '5': 2, '10': 'activeKalmanQ'},
+    {'1': 'active_kalman_r', '3': 15, '4': 1, '5': 2, '10': 'activeKalmanR'},
+    {'1': 'sequence_gaps', '3': 16, '4': 1, '5': 4, '10': 'sequenceGaps'},
   ],
 };
 
@@ -56,7 +59,56 @@ final $typed_data.Uint8List receiverMetricsDescriptor = $convert.base64Decode(
     'dGVuY3lfbXMYCCABKAFSCWxhdGVuY3lNcxIyChVhY3RpdmVfY29uZmlnX3ZlcnNpb24YCSABKA'
     'RSE2FjdGl2ZUNvbmZpZ1ZlcnNpb24SHwoLcXVldWVfZGVwdGgYCiABKA1SCnF1ZXVlRGVwdGgS'
     'LQoTb2JzZXJ2ZWRfYXRfdW5peF9tcxgLIAEoBFIQb2JzZXJ2ZWRBdFVuaXhNcxIdCgpmcmFtZV'
-    '9tZWFuGAwgASgCUglmcmFtZU1lYW4SHwoLZGNfZXN0aW1hdGUYDSABKAJSCmRjRXN0aW1hdGU=');
+    '9tZWFuGAwgASgCUglmcmFtZU1lYW4SHwoLZGNfZXN0aW1hdGUYDSABKAJSCmRjRXN0aW1hdGUS'
+    'JgoPYWN0aXZlX2thbG1hbl9xGA4gASgCUg1hY3RpdmVLYWxtYW5REiYKD2FjdGl2ZV9rYWxtYW'
+    '5fchgPIAEoAlINYWN0aXZlS2FsbWFuUhIjCg1zZXF1ZW5jZV9nYXBzGBAgASgEUgxzZXF1ZW5j'
+    'ZUdhcHM=');
+
+@$core.Deprecated('Use channelAssessmentDescriptor instead')
+const ChannelAssessment$json = {
+  '1': 'ChannelAssessment',
+  '2': [
+    {
+      '1': 'window_first_sequence',
+      '3': 1,
+      '4': 1,
+      '5': 4,
+      '10': 'windowFirstSequence'
+    },
+    {
+      '1': 'window_last_sequence',
+      '3': 2,
+      '4': 1,
+      '5': 4,
+      '10': 'windowLastSequence'
+    },
+    {'1': 'measured_class', '3': 3, '4': 1, '5': 9, '10': 'measuredClass'},
+    {'1': 'predicted_class', '3': 4, '4': 1, '5': 9, '10': 'predictedClass'},
+    {'1': 'confidence', '3': 5, '4': 1, '5': 2, '10': 'confidence'},
+    {
+      '1': 'class_probabilities',
+      '3': 6,
+      '4': 3,
+      '5': 2,
+      '10': 'classProbabilities'
+    },
+    {'1': 'features', '3': 7, '4': 3, '5': 2, '10': 'features'},
+    {'1': 'feature_names', '3': 8, '4': 3, '5': 9, '10': 'featureNames'},
+    {'1': 'model_version', '3': 9, '4': 1, '5': 9, '10': 'modelVersion'},
+    {'1': 'horizon_frames', '3': 10, '4': 1, '5': 13, '10': 'horizonFrames'},
+  ],
+};
+
+/// Descriptor for `ChannelAssessment`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List channelAssessmentDescriptor = $convert.base64Decode(
+    'ChFDaGFubmVsQXNzZXNzbWVudBIyChV3aW5kb3dfZmlyc3Rfc2VxdWVuY2UYASABKARSE3dpbm'
+    'Rvd0ZpcnN0U2VxdWVuY2USMAoUd2luZG93X2xhc3Rfc2VxdWVuY2UYAiABKARSEndpbmRvd0xh'
+    'c3RTZXF1ZW5jZRIlCg5tZWFzdXJlZF9jbGFzcxgDIAEoCVINbWVhc3VyZWRDbGFzcxInCg9wcm'
+    'VkaWN0ZWRfY2xhc3MYBCABKAlSDnByZWRpY3RlZENsYXNzEh4KCmNvbmZpZGVuY2UYBSABKAJS'
+    'CmNvbmZpZGVuY2USLwoTY2xhc3NfcHJvYmFiaWxpdGllcxgGIAMoAlISY2xhc3NQcm9iYWJpbG'
+    'l0aWVzEhoKCGZlYXR1cmVzGAcgAygCUghmZWF0dXJlcxIjCg1mZWF0dXJlX25hbWVzGAggAygJ'
+    'UgxmZWF0dXJlTmFtZXMSIwoNbW9kZWxfdmVyc2lvbhgJIAEoCVIMbW9kZWxWZXJzaW9uEiUKDm'
+    'hvcml6b25fZnJhbWVzGAogASgNUg1ob3Jpem9uRnJhbWVz');
 
 @$core.Deprecated('Use policyDecisionDescriptor instead')
 const PolicyDecision$json = {
@@ -79,6 +131,7 @@ const PolicyDecision$json = {
     {'1': 'features', '3': 9, '4': 3, '5': 2, '10': 'features'},
     {'1': 'predicted_rho', '3': 10, '4': 1, '5': 2, '10': 'predictedRho'},
     {'1': 'observed_ber', '3': 11, '4': 1, '5': 2, '10': 'observedBer'},
+    {'1': 'sent_to_receiver', '3': 12, '4': 1, '5': 8, '10': 'sentToReceiver'},
   ],
 };
 
@@ -91,7 +144,8 @@ final $typed_data.Uint8List policyDecisionDescriptor = $convert.base64Decode(
     'YW5SEh8KC3Jlc2V0X3N0YXRlGAYgASgIUgpyZXNldFN0YXRlEhYKBnJlYXNvbhgHIAEoCVIGcm'
     'Vhc29uEhYKBnBvbGljeRgIIAEoCVIGcG9saWN5EhoKCGZlYXR1cmVzGAkgAygCUghmZWF0dXJl'
     'cxIjCg1wcmVkaWN0ZWRfcmhvGAogASgCUgxwcmVkaWN0ZWRSaG8SIQoMb2JzZXJ2ZWRfYmVyGA'
-    'sgASgCUgtvYnNlcnZlZEJlcg==');
+    'sgASgCUgtvYnNlcnZlZEJlchIoChBzZW50X3RvX3JlY2VpdmVyGAwgASgIUg5zZW50VG9SZWNl'
+    'aXZlcg==');
 
 @$core.Deprecated('Use watchRequestDescriptor instead')
 const WatchRequest$json = {
@@ -136,6 +190,14 @@ const ExperimentEvent$json = {
       '5': 4,
       '10': 'emittedAtUnixMs'
     },
+    {
+      '1': 'assessment',
+      '3': 8,
+      '4': 1,
+      '5': 11,
+      '6': '.livekalman.control.v1.ChannelAssessment',
+      '10': 'assessment'
+    },
   ],
 };
 
@@ -146,7 +208,8 @@ final $typed_data.Uint8List experimentEventDescriptor = $convert.base64Decode(
     'ZGVzY3JpcHRpb24SQAoHbWV0cmljcxgFIAEoCzImLmxpdmVrYWxtYW4uY29udHJvbC52MS5SZW'
     'NlaXZlck1ldHJpY3NSB21ldHJpY3MSQQoIZGVjaXNpb24YBiABKAsyJS5saXZla2FsbWFuLmNv'
     'bnRyb2wudjEuUG9saWN5RGVjaXNpb25SCGRlY2lzaW9uEisKEmVtaXR0ZWRfYXRfdW5peF9tcx'
-    'gHIAEoBFIPZW1pdHRlZEF0VW5peE1z');
+    'gHIAEoBFIPZW1pdHRlZEF0VW5peE1zEkgKCmFzc2Vzc21lbnQYCCABKAsyKC5saXZla2FsbWFu'
+    'LmNvbnRyb2wudjEuQ2hhbm5lbEFzc2Vzc21lbnRSCmFzc2Vzc21lbnQ=');
 
 @$core.Deprecated('Use experimentStateRequestDescriptor instead')
 const ExperimentStateRequest$json = {

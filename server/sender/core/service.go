@@ -153,8 +153,15 @@ func (s *Server) RunStream(ctx context.Context, client rxv1.ReceiverServiceClien
 			if err := stream.Send(frame); err != nil {
 				return err
 			}
-			if media != nil {
-				trace := txTrace(frame, original, encoded, payload, active.amplitude, active.noiseStddev)
+			// Every frame is traced (idle frames carry their random reference
+			// bits) so dashboards can probe the live signal at any time.
+			// Subscribers use bounded channels and drop when slow.
+			bitsSent := payload
+			if media == nil {
+				bitsSent = frame.ReferenceBits
+			}
+			{
+				trace := txTrace(frame, original, encoded, bitsSent, active.amplitude, active.noiseStddev)
 				s.mu.Lock()
 				s.publishLocked(&txv1.TxEvent{Sequence: seq, Description: fmt.Sprintf("gRPC frame %d sent", seq), Trace: trace})
 				s.mu.Unlock()
@@ -196,7 +203,7 @@ func txTrace(frame *rxv1.TxFrame, original, encoded, scrambled []byte, amplitude
 	if len(frame.Samples) < noisyCount {
 		noisyCount = len(frame.Samples)
 	}
-	return &txv1.TxFrameTrace{Sequence: frame.Sequence, TransferId: frame.Media.TransferId, FileName: frame.Media.FileName, MediaOffset: frame.MediaOffset, TotalBytes: frame.Media.TotalSize, OriginalBytes: original, EncodedBytes: encoded, ScrambledBytes: append([]byte(nil), scrambled...), PayloadBits: bits.String(), CleanSymbols: clean, NoisySamples: append([]float32(nil), frame.Samples[:noisyCount]...), NoiseStddev: noise, GrpcSent: true, ObservedAtUnixMs: uint64(time.Now().UnixMilli())}
+	return &txv1.TxFrameTrace{Sequence: frame.Sequence, TransferId: frame.GetMedia().GetTransferId(), FileName: frame.GetMedia().GetFileName(), MediaOffset: frame.MediaOffset, TotalBytes: frame.GetMedia().GetTotalSize(), OriginalBytes: original, EncodedBytes: encoded, ScrambledBytes: append([]byte(nil), scrambled...), PayloadBits: bits.String(), CleanSymbols: clean, NoisySamples: append([]float32(nil), frame.Samples[:noisyCount]...), NoiseStddev: noise, GrpcSent: true, ObservedAtUnixMs: uint64(time.Now().UnixMilli())}
 }
 
 func generateFrame(cfg config.Sender, active frameParameters, streamID, seq, first uint64, rng *rand.Rand, channel *dsp.Channel, payload []byte) *rxv1.TxFrame {

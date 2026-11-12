@@ -32,6 +32,9 @@ class ReceiverMetrics extends $pb.GeneratedMessage {
     $fixnum.Int64? observedAtUnixMs,
     $core.double? frameMean,
     $core.double? dcEstimate,
+    $core.double? activeKalmanQ,
+    $core.double? activeKalmanR,
+    $fixnum.Int64? sequenceGaps,
   }) {
     final result = ReceiverMetrics._();
     if (runId != null) result.runId = runId;
@@ -48,6 +51,9 @@ class ReceiverMetrics extends $pb.GeneratedMessage {
     if (observedAtUnixMs != null) result.observedAtUnixMs = observedAtUnixMs;
     if (frameMean != null) result.frameMean = frameMean;
     if (dcEstimate != null) result.dcEstimate = dcEstimate;
+    if (activeKalmanQ != null) result.activeKalmanQ = activeKalmanQ;
+    if (activeKalmanR != null) result.activeKalmanR = activeKalmanR;
+    if (sequenceGaps != null) result.sequenceGaps = sequenceGaps;
     return result;
   }
 
@@ -90,6 +96,13 @@ class ReceiverMetrics extends $pb.GeneratedMessage {
         defaultOrMaker: $fixnum.Int64.ZERO)
     ..aD(12, _omitFieldNames ? '' : 'frameMean', fieldType: $pb.PbFieldType.OF)
     ..aD(13, _omitFieldNames ? '' : 'dcEstimate', fieldType: $pb.PbFieldType.OF)
+    ..aD(14, _omitFieldNames ? '' : 'activeKalmanQ',
+        fieldType: $pb.PbFieldType.OF)
+    ..aD(15, _omitFieldNames ? '' : 'activeKalmanR',
+        fieldType: $pb.PbFieldType.OF)
+    ..a<$fixnum.Int64>(
+        16, _omitFieldNames ? '' : 'sequenceGaps', $pb.PbFieldType.OU6,
+        defaultOrMaker: $fixnum.Int64.ZERO)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -233,6 +246,199 @@ class ReceiverMetrics extends $pb.GeneratedMessage {
   $core.bool hasDcEstimate() => $_has(12);
   @$pb.TagNumber(13)
   void clearDcEstimate() => $_clearField(13);
+
+  /// Kalman Q and R that actually processed this frame (the applied values,
+  /// as opposed to PolicyDecision's recommended values).
+  @$pb.TagNumber(14)
+  $core.double get activeKalmanQ => $_getN(13);
+  @$pb.TagNumber(14)
+  set activeKalmanQ($core.double value) => $_setFloat(13, value);
+  @$pb.TagNumber(14)
+  $core.bool hasActiveKalmanQ() => $_has(13);
+  @$pb.TagNumber(14)
+  void clearActiveKalmanQ() => $_clearField(14);
+
+  @$pb.TagNumber(15)
+  $core.double get activeKalmanR => $_getN(14);
+  @$pb.TagNumber(15)
+  set activeKalmanR($core.double value) => $_setFloat(14, value);
+  @$pb.TagNumber(15)
+  $core.bool hasActiveKalmanR() => $_has(14);
+  @$pb.TagNumber(15)
+  void clearActiveKalmanR() => $_clearField(15);
+
+  /// Cumulative sequence gaps (lost or reordered frames) seen by the receiver.
+  @$pb.TagNumber(16)
+  $fixnum.Int64 get sequenceGaps => $_getI64(15);
+  @$pb.TagNumber(16)
+  set sequenceGaps($fixnum.Int64 value) => $_setInt64(15, value);
+  @$pb.TagNumber(16)
+  $core.bool hasSequenceGaps() => $_has(15);
+  @$pb.TagNumber(16)
+  void clearSequenceGaps() => $_clearField(16);
+}
+
+/// ChannelAssessment separates what was measured from what the ML model
+/// predicts. Classes: "good", "moderate", "poor", "unstable"; an empty
+/// predicted_class means no model is loaded.
+class ChannelAssessment extends $pb.GeneratedMessage {
+  factory ChannelAssessment({
+    $fixnum.Int64? windowFirstSequence,
+    $fixnum.Int64? windowLastSequence,
+    $core.String? measuredClass,
+    $core.String? predictedClass,
+    $core.double? confidence,
+    $core.Iterable<$core.double>? classProbabilities,
+    $core.Iterable<$core.double>? features,
+    $core.Iterable<$core.String>? featureNames,
+    $core.String? modelVersion,
+    $core.int? horizonFrames,
+  }) {
+    final result = ChannelAssessment._();
+    if (windowFirstSequence != null)
+      result.windowFirstSequence = windowFirstSequence;
+    if (windowLastSequence != null)
+      result.windowLastSequence = windowLastSequence;
+    if (measuredClass != null) result.measuredClass = measuredClass;
+    if (predictedClass != null) result.predictedClass = predictedClass;
+    if (confidence != null) result.confidence = confidence;
+    if (classProbabilities != null)
+      result.classProbabilities.addAll(classProbabilities);
+    if (features != null) result.features.addAll(features);
+    if (featureNames != null) result.featureNames.addAll(featureNames);
+    if (modelVersion != null) result.modelVersion = modelVersion;
+    if (horizonFrames != null) result.horizonFrames = horizonFrames;
+    return result;
+  }
+
+  ChannelAssessment._();
+
+  factory ChannelAssessment.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ChannelAssessment()..mergeFromBuffer(data, registry);
+  factory ChannelAssessment.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ChannelAssessment()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ChannelAssessment',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'livekalman.control.v1'),
+      createEmptyInstance: ChannelAssessment.$_createMessage)
+    ..a<$fixnum.Int64>(
+        1, _omitFieldNames ? '' : 'windowFirstSequence', $pb.PbFieldType.OU6,
+        defaultOrMaker: $fixnum.Int64.ZERO)
+    ..a<$fixnum.Int64>(
+        2, _omitFieldNames ? '' : 'windowLastSequence', $pb.PbFieldType.OU6,
+        defaultOrMaker: $fixnum.Int64.ZERO)
+    ..aOS(3, _omitFieldNames ? '' : 'measuredClass')
+    ..aOS(4, _omitFieldNames ? '' : 'predictedClass')
+    ..aD(5, _omitFieldNames ? '' : 'confidence', fieldType: $pb.PbFieldType.OF)
+    ..p<$core.double>(
+        6, _omitFieldNames ? '' : 'classProbabilities', $pb.PbFieldType.KF)
+    ..p<$core.double>(7, _omitFieldNames ? '' : 'features', $pb.PbFieldType.KF)
+    ..pPS(8, _omitFieldNames ? '' : 'featureNames')
+    ..aOS(9, _omitFieldNames ? '' : 'modelVersion')
+    ..aI(10, _omitFieldNames ? '' : 'horizonFrames',
+        fieldType: $pb.PbFieldType.OU3)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ChannelAssessment clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ChannelAssessment copyWith(void Function(ChannelAssessment) updates) =>
+      super.copyWith((message) => updates(message as ChannelAssessment))
+          as ChannelAssessment;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use ChannelAssessment() / ChannelAssessment.new instead')
+  static ChannelAssessment create() => ChannelAssessment._();
+  static $pb.GeneratedMessage $_createMessage() => ChannelAssessment._();
+  @$core.override
+  ChannelAssessment createEmptyInstance() => ChannelAssessment._();
+  @$core.pragma('dart2js:noInline')
+  static ChannelAssessment getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ChannelAssessment>(
+          ChannelAssessment.$_createMessage);
+  static ChannelAssessment? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $fixnum.Int64 get windowFirstSequence => $_getI64(0);
+  @$pb.TagNumber(1)
+  set windowFirstSequence($fixnum.Int64 value) => $_setInt64(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasWindowFirstSequence() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearWindowFirstSequence() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $fixnum.Int64 get windowLastSequence => $_getI64(1);
+  @$pb.TagNumber(2)
+  set windowLastSequence($fixnum.Int64 value) => $_setInt64(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasWindowLastSequence() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearWindowLastSequence() => $_clearField(2);
+
+  /// Rule-based class of the window that has just been measured.
+  @$pb.TagNumber(3)
+  $core.String get measuredClass => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set measuredClass($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasMeasuredClass() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearMeasuredClass() => $_clearField(3);
+
+  /// Model prediction for the next window of the same length.
+  @$pb.TagNumber(4)
+  $core.String get predictedClass => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set predictedClass($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasPredictedClass() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearPredictedClass() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.double get confidence => $_getN(4);
+  @$pb.TagNumber(5)
+  set confidence($core.double value) => $_setFloat(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasConfidence() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearConfidence() => $_clearField(5);
+
+  /// Probabilities in the order good, moderate, poor, unstable.
+  @$pb.TagNumber(6)
+  $pb.PbList<$core.double> get classProbabilities => $_getList(5);
+
+  @$pb.TagNumber(7)
+  $pb.PbList<$core.double> get features => $_getList(6);
+
+  @$pb.TagNumber(8)
+  $pb.PbList<$core.String> get featureNames => $_getList(7);
+
+  @$pb.TagNumber(9)
+  $core.String get modelVersion => $_getSZ(8);
+  @$pb.TagNumber(9)
+  set modelVersion($core.String value) => $_setString(8, value);
+  @$pb.TagNumber(9)
+  $core.bool hasModelVersion() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearModelVersion() => $_clearField(9);
+
+  @$pb.TagNumber(10)
+  $core.int get horizonFrames => $_getIZ(9);
+  @$pb.TagNumber(10)
+  set horizonFrames($core.int value) => $_setUnsignedInt32(9, value);
+  @$pb.TagNumber(10)
+  $core.bool hasHorizonFrames() => $_has(9);
+  @$pb.TagNumber(10)
+  void clearHorizonFrames() => $_clearField(10);
 }
 
 class PolicyDecision extends $pb.GeneratedMessage {
@@ -248,6 +454,7 @@ class PolicyDecision extends $pb.GeneratedMessage {
     $core.Iterable<$core.double>? features,
     $core.double? predictedRho,
     $core.double? observedBer,
+    $core.bool? sentToReceiver,
   }) {
     final result = PolicyDecision._();
     if (commandId != null) result.commandId = commandId;
@@ -261,6 +468,7 @@ class PolicyDecision extends $pb.GeneratedMessage {
     if (features != null) result.features.addAll(features);
     if (predictedRho != null) result.predictedRho = predictedRho;
     if (observedBer != null) result.observedBer = observedBer;
+    if (sentToReceiver != null) result.sentToReceiver = sentToReceiver;
     return result;
   }
 
@@ -299,6 +507,7 @@ class PolicyDecision extends $pb.GeneratedMessage {
         fieldType: $pb.PbFieldType.OF)
     ..aD(11, _omitFieldNames ? '' : 'observedBer',
         fieldType: $pb.PbFieldType.OF)
+    ..aOB(12, _omitFieldNames ? '' : 'sentToReceiver')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -415,6 +624,17 @@ class PolicyDecision extends $pb.GeneratedMessage {
   $core.bool hasObservedBer() => $_has(10);
   @$pb.TagNumber(11)
   void clearObservedBer() => $_clearField(11);
+
+  /// False when the controller runs in recommend-only mode: the decision was
+  /// published for operators but not sent to the receiver.
+  @$pb.TagNumber(12)
+  $core.bool get sentToReceiver => $_getBF(11);
+  @$pb.TagNumber(12)
+  set sentToReceiver($core.bool value) => $_setBool(11, value);
+  @$pb.TagNumber(12)
+  $core.bool hasSentToReceiver() => $_has(11);
+  @$pb.TagNumber(12)
+  void clearSentToReceiver() => $_clearField(12);
 }
 
 class WatchRequest extends $pb.GeneratedMessage {
@@ -484,6 +704,7 @@ class ExperimentEvent extends $pb.GeneratedMessage {
     ReceiverMetrics? metrics,
     PolicyDecision? decision,
     $fixnum.Int64? emittedAtUnixMs,
+    ChannelAssessment? assessment,
   }) {
     final result = ExperimentEvent._();
     if (runId != null) result.runId = runId;
@@ -493,6 +714,7 @@ class ExperimentEvent extends $pb.GeneratedMessage {
     if (metrics != null) result.metrics = metrics;
     if (decision != null) result.decision = decision;
     if (emittedAtUnixMs != null) result.emittedAtUnixMs = emittedAtUnixMs;
+    if (assessment != null) result.assessment = assessment;
     return result;
   }
 
@@ -523,6 +745,8 @@ class ExperimentEvent extends $pb.GeneratedMessage {
     ..a<$fixnum.Int64>(
         7, _omitFieldNames ? '' : 'emittedAtUnixMs', $pb.PbFieldType.OU6,
         defaultOrMaker: $fixnum.Int64.ZERO)
+    ..aOM<ChannelAssessment>(8, _omitFieldNames ? '' : 'assessment',
+        subBuilder: ChannelAssessment.$_createMessage)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -613,6 +837,17 @@ class ExperimentEvent extends $pb.GeneratedMessage {
   $core.bool hasEmittedAtUnixMs() => $_has(6);
   @$pb.TagNumber(7)
   void clearEmittedAtUnixMs() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  ChannelAssessment get assessment => $_getN(7);
+  @$pb.TagNumber(8)
+  set assessment(ChannelAssessment value) => $_setField(8, value);
+  @$pb.TagNumber(8)
+  $core.bool hasAssessment() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearAssessment() => $_clearField(8);
+  @$pb.TagNumber(8)
+  ChannelAssessment ensureAssessment() => $_ensure(7);
 }
 
 class ExperimentStateRequest extends $pb.GeneratedMessage {

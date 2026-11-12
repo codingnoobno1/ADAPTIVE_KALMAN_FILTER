@@ -25,45 +25,55 @@ namespace Livekalman.Control.V1 {
       byte[] descriptorData = global::System.Convert.FromBase64String(
           string.Concat(
             "Chtjb250cm9sL3YxL2NvbnRyb2xsZXIucHJvdG8SFWxpdmVrYWxtYW4uY29u",
-            "dHJvbC52MSKhAgoPUmVjZWl2ZXJNZXRyaWNzEg4KBnJ1bl9pZBgBIAEoCRIQ",
+            "dHJvbC52MSLqAgoPUmVjZWl2ZXJNZXRyaWNzEg4KBnJ1bl9pZBgBIAEoCRIQ",
             "CghzZXF1ZW5jZRgCIAEoBBIOCgZzbnJfZGIYAyABKAISFgoObm9pc2VfdmFy",
             "aWFuY2UYBCABKAISFQoNY29tcGFyZWRfYml0cxgFIAEoBBISCgpiaXRfZXJy",
             "b3JzGAYgASgEEgsKA2JlchgHIAEoAhISCgpsYXRlbmN5X21zGAggASgBEh0K",
             "FWFjdGl2ZV9jb25maWdfdmVyc2lvbhgJIAEoBBITCgtxdWV1ZV9kZXB0aBgK",
             "IAEoDRIbChNvYnNlcnZlZF9hdF91bml4X21zGAsgASgEEhIKCmZyYW1lX21l",
-            "YW4YDCABKAISEwoLZGNfZXN0aW1hdGUYDSABKAIihAIKDlBvbGljeURlY2lz",
-            "aW9uEhIKCmNvbW1hbmRfaWQYASABKAQSGAoQcHJvcG9zZWRfdmVyc2lvbhgC",
-            "IAEoBBIaChJlZmZlY3RpdmVfc2VxdWVuY2UYAyABKAQSGQoRcHJvcG9zZWRf",
-            "a2FsbWFuX3EYBCABKAISGQoRcHJvcG9zZWRfa2FsbWFuX3IYBSABKAISEwoL",
-            "cmVzZXRfc3RhdGUYBiABKAgSDgoGcmVhc29uGAcgASgJEg4KBnBvbGljeRgI",
-            "IAEoCRIQCghmZWF0dXJlcxgJIAMoAhIVCg1wcmVkaWN0ZWRfcmhvGAogASgC",
-            "EhQKDG9ic2VydmVkX2JlchgLIAEoAiIeCgxXYXRjaFJlcXVlc3QSDgoGcnVu",
-            "X2lkGAEgASgJIuQBCg9FeHBlcmltZW50RXZlbnQSDgoGcnVuX2lkGAEgASgJ",
-            "EhAKCHNlcXVlbmNlGAIgASgEEgwKBGtpbmQYAyABKAkSEwoLZGVzY3JpcHRp",
-            "b24YBCABKAkSNwoHbWV0cmljcxgFIAEoCzImLmxpdmVrYWxtYW4uY29udHJv",
-            "bC52MS5SZWNlaXZlck1ldHJpY3MSNwoIZGVjaXNpb24YBiABKAsyJS5saXZl",
-            "a2FsbWFuLmNvbnRyb2wudjEuUG9saWN5RGVjaXNpb24SGgoSZW1pdHRlZF9h",
-            "dF91bml4X21zGAcgASgEIigKFkV4cGVyaW1lbnRTdGF0ZVJlcXVlc3QSDgoG",
-            "cnVuX2lkGAEgASgJIokBCg9FeHBlcmltZW50U3RhdGUSDgoGcnVuX2lkGAEg",
-            "ASgJEg4KBmFjdGl2ZRgCIAEoCBI2CgZsYXRlc3QYAyABKAsyJi5saXZla2Fs",
-            "bWFuLmNvbnRyb2wudjEuUmVjZWl2ZXJNZXRyaWNzEh4KFmRlc2lyZWRfY29u",
-            "ZmlnX3ZlcnNpb24YBCABKAQyvgIKEUNvbnRyb2xsZXJTZXJ2aWNlEloKBUFk",
-            "YXB0EiYubGl2ZWthbG1hbi5jb250cm9sLnYxLlJlY2VpdmVyTWV0cmljcxol",
-            "LmxpdmVrYWxtYW4uY29udHJvbC52MS5Qb2xpY3lEZWNpc2lvbigBMAESYAoP",
-            "V2F0Y2hFeHBlcmltZW50EiMubGl2ZWthbG1hbi5jb250cm9sLnYxLldhdGNo",
-            "UmVxdWVzdBomLmxpdmVrYWxtYW4uY29udHJvbC52MS5FeHBlcmltZW50RXZl",
-            "bnQwARJrChJHZXRFeHBlcmltZW50U3RhdGUSLS5saXZla2FsbWFuLmNvbnRy",
-            "b2wudjEuRXhwZXJpbWVudFN0YXRlUmVxdWVzdBomLmxpdmVrYWxtYW4uY29u",
-            "dHJvbC52MS5FeHBlcmltZW50U3RhdGVCQlpAZ2l0aHViLmNvbS9zdHJlYW1p",
-            "bmctbGl2ZS1rYWxtYW4vZmlsdGVyL2dlbi9jb250cm9sL3YxO2NvbnRyb2x2",
-            "MWIGcHJvdG8z"));
+            "YW4YDCABKAISEwoLZGNfZXN0aW1hdGUYDSABKAISFwoPYWN0aXZlX2thbG1h",
+            "bl9xGA4gASgCEhcKD2FjdGl2ZV9rYWxtYW5fchgPIAEoAhIVCg1zZXF1ZW5j",
+            "ZV9nYXBzGBAgASgEIooCChFDaGFubmVsQXNzZXNzbWVudBIdChV3aW5kb3df",
+            "Zmlyc3Rfc2VxdWVuY2UYASABKAQSHAoUd2luZG93X2xhc3Rfc2VxdWVuY2UY",
+            "AiABKAQSFgoObWVhc3VyZWRfY2xhc3MYAyABKAkSFwoPcHJlZGljdGVkX2Ns",
+            "YXNzGAQgASgJEhIKCmNvbmZpZGVuY2UYBSABKAISGwoTY2xhc3NfcHJvYmFi",
+            "aWxpdGllcxgGIAMoAhIQCghmZWF0dXJlcxgHIAMoAhIVCg1mZWF0dXJlX25h",
+            "bWVzGAggAygJEhUKDW1vZGVsX3ZlcnNpb24YCSABKAkSFgoOaG9yaXpvbl9m",
+            "cmFtZXMYCiABKA0ingIKDlBvbGljeURlY2lzaW9uEhIKCmNvbW1hbmRfaWQY",
+            "ASABKAQSGAoQcHJvcG9zZWRfdmVyc2lvbhgCIAEoBBIaChJlZmZlY3RpdmVf",
+            "c2VxdWVuY2UYAyABKAQSGQoRcHJvcG9zZWRfa2FsbWFuX3EYBCABKAISGQoR",
+            "cHJvcG9zZWRfa2FsbWFuX3IYBSABKAISEwoLcmVzZXRfc3RhdGUYBiABKAgS",
+            "DgoGcmVhc29uGAcgASgJEg4KBnBvbGljeRgIIAEoCRIQCghmZWF0dXJlcxgJ",
+            "IAMoAhIVCg1wcmVkaWN0ZWRfcmhvGAogASgCEhQKDG9ic2VydmVkX2JlchgL",
+            "IAEoAhIYChBzZW50X3RvX3JlY2VpdmVyGAwgASgIIh4KDFdhdGNoUmVxdWVz",
+            "dBIOCgZydW5faWQYASABKAkiogIKD0V4cGVyaW1lbnRFdmVudBIOCgZydW5f",
+            "aWQYASABKAkSEAoIc2VxdWVuY2UYAiABKAQSDAoEa2luZBgDIAEoCRITCgtk",
+            "ZXNjcmlwdGlvbhgEIAEoCRI3CgdtZXRyaWNzGAUgASgLMiYubGl2ZWthbG1h",
+            "bi5jb250cm9sLnYxLlJlY2VpdmVyTWV0cmljcxI3CghkZWNpc2lvbhgGIAEo",
+            "CzIlLmxpdmVrYWxtYW4uY29udHJvbC52MS5Qb2xpY3lEZWNpc2lvbhIaChJl",
+            "bWl0dGVkX2F0X3VuaXhfbXMYByABKAQSPAoKYXNzZXNzbWVudBgIIAEoCzIo",
+            "LmxpdmVrYWxtYW4uY29udHJvbC52MS5DaGFubmVsQXNzZXNzbWVudCIoChZF",
+            "eHBlcmltZW50U3RhdGVSZXF1ZXN0Eg4KBnJ1bl9pZBgBIAEoCSKJAQoPRXhw",
+            "ZXJpbWVudFN0YXRlEg4KBnJ1bl9pZBgBIAEoCRIOCgZhY3RpdmUYAiABKAgS",
+            "NgoGbGF0ZXN0GAMgASgLMiYubGl2ZWthbG1hbi5jb250cm9sLnYxLlJlY2Vp",
+            "dmVyTWV0cmljcxIeChZkZXNpcmVkX2NvbmZpZ192ZXJzaW9uGAQgASgEMr4C",
+            "ChFDb250cm9sbGVyU2VydmljZRJaCgVBZGFwdBImLmxpdmVrYWxtYW4uY29u",
+            "dHJvbC52MS5SZWNlaXZlck1ldHJpY3MaJS5saXZla2FsbWFuLmNvbnRyb2wu",
+            "djEuUG9saWN5RGVjaXNpb24oATABEmAKD1dhdGNoRXhwZXJpbWVudBIjLmxp",
+            "dmVrYWxtYW4uY29udHJvbC52MS5XYXRjaFJlcXVlc3QaJi5saXZla2FsbWFu",
+            "LmNvbnRyb2wudjEuRXhwZXJpbWVudEV2ZW50MAESawoSR2V0RXhwZXJpbWVu",
+            "dFN0YXRlEi0ubGl2ZWthbG1hbi5jb250cm9sLnYxLkV4cGVyaW1lbnRTdGF0",
+            "ZVJlcXVlc3QaJi5saXZla2FsbWFuLmNvbnRyb2wudjEuRXhwZXJpbWVudFN0",
+            "YXRlQkJaQGdpdGh1Yi5jb20vc3RyZWFtaW5nLWxpdmUta2FsbWFuL2ZpbHRl",
+            "ci9nZW4vY29udHJvbC92MTtjb250cm9sdjFiBnByb3RvMw=="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { },
           new pbr::GeneratedClrTypeInfo(null, null, new pbr::GeneratedClrTypeInfo[] {
-            new pbr::GeneratedClrTypeInfo(typeof(global::Livekalman.Control.V1.ReceiverMetrics), global::Livekalman.Control.V1.ReceiverMetrics.Parser, new[]{ "RunId", "Sequence", "SnrDb", "NoiseVariance", "ComparedBits", "BitErrors", "Ber", "LatencyMs", "ActiveConfigVersion", "QueueDepth", "ObservedAtUnixMs", "FrameMean", "DcEstimate" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Livekalman.Control.V1.PolicyDecision), global::Livekalman.Control.V1.PolicyDecision.Parser, new[]{ "CommandId", "ProposedVersion", "EffectiveSequence", "ProposedKalmanQ", "ProposedKalmanR", "ResetState", "Reason", "Policy", "Features", "PredictedRho", "ObservedBer" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::Livekalman.Control.V1.ReceiverMetrics), global::Livekalman.Control.V1.ReceiverMetrics.Parser, new[]{ "RunId", "Sequence", "SnrDb", "NoiseVariance", "ComparedBits", "BitErrors", "Ber", "LatencyMs", "ActiveConfigVersion", "QueueDepth", "ObservedAtUnixMs", "FrameMean", "DcEstimate", "ActiveKalmanQ", "ActiveKalmanR", "SequenceGaps" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::Livekalman.Control.V1.ChannelAssessment), global::Livekalman.Control.V1.ChannelAssessment.Parser, new[]{ "WindowFirstSequence", "WindowLastSequence", "MeasuredClass", "PredictedClass", "Confidence", "ClassProbabilities", "Features", "FeatureNames", "ModelVersion", "HorizonFrames" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::Livekalman.Control.V1.PolicyDecision), global::Livekalman.Control.V1.PolicyDecision.Parser, new[]{ "CommandId", "ProposedVersion", "EffectiveSequence", "ProposedKalmanQ", "ProposedKalmanR", "ResetState", "Reason", "Policy", "Features", "PredictedRho", "ObservedBer", "SentToReceiver" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Livekalman.Control.V1.WatchRequest), global::Livekalman.Control.V1.WatchRequest.Parser, new[]{ "RunId" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Livekalman.Control.V1.ExperimentEvent), global::Livekalman.Control.V1.ExperimentEvent.Parser, new[]{ "RunId", "Sequence", "Kind", "Description", "Metrics", "Decision", "EmittedAtUnixMs" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::Livekalman.Control.V1.ExperimentEvent), global::Livekalman.Control.V1.ExperimentEvent.Parser, new[]{ "RunId", "Sequence", "Kind", "Description", "Metrics", "Decision", "EmittedAtUnixMs", "Assessment" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Livekalman.Control.V1.ExperimentStateRequest), global::Livekalman.Control.V1.ExperimentStateRequest.Parser, new[]{ "RunId" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Livekalman.Control.V1.ExperimentState), global::Livekalman.Control.V1.ExperimentState.Parser, new[]{ "RunId", "Active", "Latest", "DesiredConfigVersion" }, null, null, null, null)
           }));
@@ -120,6 +130,9 @@ namespace Livekalman.Control.V1 {
       observedAtUnixMs_ = other.observedAtUnixMs_;
       frameMean_ = other.frameMean_;
       dcEstimate_ = other.dcEstimate_;
+      activeKalmanQ_ = other.activeKalmanQ_;
+      activeKalmanR_ = other.activeKalmanR_;
+      sequenceGaps_ = other.sequenceGaps_;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -292,6 +305,49 @@ namespace Livekalman.Control.V1 {
       }
     }
 
+    /// <summary>Field number for the "active_kalman_q" field.</summary>
+    public const int ActiveKalmanQFieldNumber = 14;
+    private float activeKalmanQ_;
+    /// <summary>
+    /// Kalman Q and R that actually processed this frame (the applied values,
+    /// as opposed to PolicyDecision's recommended values).
+    /// </summary>
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public float ActiveKalmanQ {
+      get { return activeKalmanQ_; }
+      set {
+        activeKalmanQ_ = value;
+      }
+    }
+
+    /// <summary>Field number for the "active_kalman_r" field.</summary>
+    public const int ActiveKalmanRFieldNumber = 15;
+    private float activeKalmanR_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public float ActiveKalmanR {
+      get { return activeKalmanR_; }
+      set {
+        activeKalmanR_ = value;
+      }
+    }
+
+    /// <summary>Field number for the "sequence_gaps" field.</summary>
+    public const int SequenceGapsFieldNumber = 16;
+    private ulong sequenceGaps_;
+    /// <summary>
+    /// Cumulative sequence gaps (lost or reordered frames) seen by the receiver.
+    /// </summary>
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public ulong SequenceGaps {
+      get { return sequenceGaps_; }
+      set {
+        sequenceGaps_ = value;
+      }
+    }
+
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override bool Equals(object other) {
@@ -320,6 +376,9 @@ namespace Livekalman.Control.V1 {
       if (ObservedAtUnixMs != other.ObservedAtUnixMs) return false;
       if (!pbc::ProtobufEqualityComparers.BitwiseSingleEqualityComparer.Equals(FrameMean, other.FrameMean)) return false;
       if (!pbc::ProtobufEqualityComparers.BitwiseSingleEqualityComparer.Equals(DcEstimate, other.DcEstimate)) return false;
+      if (!pbc::ProtobufEqualityComparers.BitwiseSingleEqualityComparer.Equals(ActiveKalmanQ, other.ActiveKalmanQ)) return false;
+      if (!pbc::ProtobufEqualityComparers.BitwiseSingleEqualityComparer.Equals(ActiveKalmanR, other.ActiveKalmanR)) return false;
+      if (SequenceGaps != other.SequenceGaps) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -340,6 +399,9 @@ namespace Livekalman.Control.V1 {
       if (ObservedAtUnixMs != 0UL) hash ^= ObservedAtUnixMs.GetHashCode();
       if (FrameMean != 0F) hash ^= pbc::ProtobufEqualityComparers.BitwiseSingleEqualityComparer.GetHashCode(FrameMean);
       if (DcEstimate != 0F) hash ^= pbc::ProtobufEqualityComparers.BitwiseSingleEqualityComparer.GetHashCode(DcEstimate);
+      if (ActiveKalmanQ != 0F) hash ^= pbc::ProtobufEqualityComparers.BitwiseSingleEqualityComparer.GetHashCode(ActiveKalmanQ);
+      if (ActiveKalmanR != 0F) hash ^= pbc::ProtobufEqualityComparers.BitwiseSingleEqualityComparer.GetHashCode(ActiveKalmanR);
+      if (SequenceGaps != 0UL) hash ^= SequenceGaps.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -410,6 +472,18 @@ namespace Livekalman.Control.V1 {
         output.WriteRawTag(109);
         output.WriteFloat(DcEstimate);
       }
+      if (ActiveKalmanQ != 0F) {
+        output.WriteRawTag(117);
+        output.WriteFloat(ActiveKalmanQ);
+      }
+      if (ActiveKalmanR != 0F) {
+        output.WriteRawTag(125);
+        output.WriteFloat(ActiveKalmanR);
+      }
+      if (SequenceGaps != 0UL) {
+        output.WriteRawTag(128, 1);
+        output.WriteUInt64(SequenceGaps);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
       }
@@ -472,6 +546,18 @@ namespace Livekalman.Control.V1 {
         output.WriteRawTag(109);
         output.WriteFloat(DcEstimate);
       }
+      if (ActiveKalmanQ != 0F) {
+        output.WriteRawTag(117);
+        output.WriteFloat(ActiveKalmanQ);
+      }
+      if (ActiveKalmanR != 0F) {
+        output.WriteRawTag(125);
+        output.WriteFloat(ActiveKalmanR);
+      }
+      if (SequenceGaps != 0UL) {
+        output.WriteRawTag(128, 1);
+        output.WriteUInt64(SequenceGaps);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(ref output);
       }
@@ -520,6 +606,15 @@ namespace Livekalman.Control.V1 {
       }
       if (DcEstimate != 0F) {
         size += 1 + 4;
+      }
+      if (ActiveKalmanQ != 0F) {
+        size += 1 + 4;
+      }
+      if (ActiveKalmanR != 0F) {
+        size += 1 + 4;
+      }
+      if (SequenceGaps != 0UL) {
+        size += 2 + pb::CodedOutputStream.ComputeUInt64Size(SequenceGaps);
       }
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
@@ -571,6 +666,15 @@ namespace Livekalman.Control.V1 {
       }
       if (other.DcEstimate != 0F) {
         DcEstimate = other.DcEstimate;
+      }
+      if (other.ActiveKalmanQ != 0F) {
+        ActiveKalmanQ = other.ActiveKalmanQ;
+      }
+      if (other.ActiveKalmanR != 0F) {
+        ActiveKalmanR = other.ActiveKalmanR;
+      }
+      if (other.SequenceGaps != 0UL) {
+        SequenceGaps = other.SequenceGaps;
       }
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
@@ -641,6 +745,18 @@ namespace Livekalman.Control.V1 {
           }
           case 109: {
             DcEstimate = input.ReadFloat();
+            break;
+          }
+          case 117: {
+            ActiveKalmanQ = input.ReadFloat();
+            break;
+          }
+          case 125: {
+            ActiveKalmanR = input.ReadFloat();
+            break;
+          }
+          case 128: {
+            SequenceGaps = input.ReadUInt64();
             break;
           }
         }
@@ -714,6 +830,534 @@ namespace Livekalman.Control.V1 {
             DcEstimate = input.ReadFloat();
             break;
           }
+          case 117: {
+            ActiveKalmanQ = input.ReadFloat();
+            break;
+          }
+          case 125: {
+            ActiveKalmanR = input.ReadFloat();
+            break;
+          }
+          case 128: {
+            SequenceGaps = input.ReadUInt64();
+            break;
+          }
+        }
+      }
+    }
+    #endif
+
+  }
+
+  /// <summary>
+  /// ChannelAssessment separates what was measured from what the ML model
+  /// predicts. Classes: "good", "moderate", "poor", "unstable"; an empty
+  /// predicted_class means no model is loaded.
+  /// </summary>
+  [global::System.Diagnostics.DebuggerDisplayAttribute("{ToString(),nq}")]
+  public sealed partial class ChannelAssessment : pb::IMessage<ChannelAssessment>
+  #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      , pb::IBufferMessage
+  #endif
+  {
+    private static readonly pb::MessageParser<ChannelAssessment> _parser = new pb::MessageParser<ChannelAssessment>(() => new ChannelAssessment());
+    private pb::UnknownFieldSet _unknownFields;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public static pb::MessageParser<ChannelAssessment> Parser { get { return _parser; } }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public static pbr::MessageDescriptor Descriptor {
+      get { return global::Livekalman.Control.V1.ControllerReflection.Descriptor.MessageTypes[1]; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    pbr::MessageDescriptor pb::IMessage.Descriptor {
+      get { return Descriptor; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public ChannelAssessment() {
+      OnConstruction();
+    }
+
+    partial void OnConstruction();
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public ChannelAssessment(ChannelAssessment other) : this() {
+      windowFirstSequence_ = other.windowFirstSequence_;
+      windowLastSequence_ = other.windowLastSequence_;
+      measuredClass_ = other.measuredClass_;
+      predictedClass_ = other.predictedClass_;
+      confidence_ = other.confidence_;
+      classProbabilities_ = other.classProbabilities_.Clone();
+      features_ = other.features_.Clone();
+      featureNames_ = other.featureNames_.Clone();
+      modelVersion_ = other.modelVersion_;
+      horizonFrames_ = other.horizonFrames_;
+      _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public ChannelAssessment Clone() {
+      return new ChannelAssessment(this);
+    }
+
+    /// <summary>Field number for the "window_first_sequence" field.</summary>
+    public const int WindowFirstSequenceFieldNumber = 1;
+    private ulong windowFirstSequence_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public ulong WindowFirstSequence {
+      get { return windowFirstSequence_; }
+      set {
+        windowFirstSequence_ = value;
+      }
+    }
+
+    /// <summary>Field number for the "window_last_sequence" field.</summary>
+    public const int WindowLastSequenceFieldNumber = 2;
+    private ulong windowLastSequence_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public ulong WindowLastSequence {
+      get { return windowLastSequence_; }
+      set {
+        windowLastSequence_ = value;
+      }
+    }
+
+    /// <summary>Field number for the "measured_class" field.</summary>
+    public const int MeasuredClassFieldNumber = 3;
+    private string measuredClass_ = "";
+    /// <summary>
+    /// Rule-based class of the window that has just been measured.
+    /// </summary>
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public string MeasuredClass {
+      get { return measuredClass_; }
+      set {
+        measuredClass_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+      }
+    }
+
+    /// <summary>Field number for the "predicted_class" field.</summary>
+    public const int PredictedClassFieldNumber = 4;
+    private string predictedClass_ = "";
+    /// <summary>
+    /// Model prediction for the next window of the same length.
+    /// </summary>
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public string PredictedClass {
+      get { return predictedClass_; }
+      set {
+        predictedClass_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+      }
+    }
+
+    /// <summary>Field number for the "confidence" field.</summary>
+    public const int ConfidenceFieldNumber = 5;
+    private float confidence_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public float Confidence {
+      get { return confidence_; }
+      set {
+        confidence_ = value;
+      }
+    }
+
+    /// <summary>Field number for the "class_probabilities" field.</summary>
+    public const int ClassProbabilitiesFieldNumber = 6;
+    private static readonly pb::FieldCodec<float> _repeated_classProbabilities_codec
+        = pb::FieldCodec.ForFloat(50);
+    private readonly pbc::RepeatedField<float> classProbabilities_ = new pbc::RepeatedField<float>();
+    /// <summary>
+    /// Probabilities in the order good, moderate, poor, unstable.
+    /// </summary>
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public pbc::RepeatedField<float> ClassProbabilities {
+      get { return classProbabilities_; }
+    }
+
+    /// <summary>Field number for the "features" field.</summary>
+    public const int FeaturesFieldNumber = 7;
+    private static readonly pb::FieldCodec<float> _repeated_features_codec
+        = pb::FieldCodec.ForFloat(58);
+    private readonly pbc::RepeatedField<float> features_ = new pbc::RepeatedField<float>();
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public pbc::RepeatedField<float> Features {
+      get { return features_; }
+    }
+
+    /// <summary>Field number for the "feature_names" field.</summary>
+    public const int FeatureNamesFieldNumber = 8;
+    private static readonly pb::FieldCodec<string> _repeated_featureNames_codec
+        = pb::FieldCodec.ForString(66);
+    private readonly pbc::RepeatedField<string> featureNames_ = new pbc::RepeatedField<string>();
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public pbc::RepeatedField<string> FeatureNames {
+      get { return featureNames_; }
+    }
+
+    /// <summary>Field number for the "model_version" field.</summary>
+    public const int ModelVersionFieldNumber = 9;
+    private string modelVersion_ = "";
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public string ModelVersion {
+      get { return modelVersion_; }
+      set {
+        modelVersion_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+      }
+    }
+
+    /// <summary>Field number for the "horizon_frames" field.</summary>
+    public const int HorizonFramesFieldNumber = 10;
+    private uint horizonFrames_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public uint HorizonFrames {
+      get { return horizonFrames_; }
+      set {
+        horizonFrames_ = value;
+      }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override bool Equals(object other) {
+      return Equals(other as ChannelAssessment);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public bool Equals(ChannelAssessment other) {
+      if (ReferenceEquals(other, null)) {
+        return false;
+      }
+      if (ReferenceEquals(other, this)) {
+        return true;
+      }
+      if (WindowFirstSequence != other.WindowFirstSequence) return false;
+      if (WindowLastSequence != other.WindowLastSequence) return false;
+      if (MeasuredClass != other.MeasuredClass) return false;
+      if (PredictedClass != other.PredictedClass) return false;
+      if (!pbc::ProtobufEqualityComparers.BitwiseSingleEqualityComparer.Equals(Confidence, other.Confidence)) return false;
+      if(!classProbabilities_.Equals(other.classProbabilities_)) return false;
+      if(!features_.Equals(other.features_)) return false;
+      if(!featureNames_.Equals(other.featureNames_)) return false;
+      if (ModelVersion != other.ModelVersion) return false;
+      if (HorizonFrames != other.HorizonFrames) return false;
+      return Equals(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override int GetHashCode() {
+      int hash = 1;
+      if (WindowFirstSequence != 0UL) hash ^= WindowFirstSequence.GetHashCode();
+      if (WindowLastSequence != 0UL) hash ^= WindowLastSequence.GetHashCode();
+      if (MeasuredClass.Length != 0) hash ^= MeasuredClass.GetHashCode();
+      if (PredictedClass.Length != 0) hash ^= PredictedClass.GetHashCode();
+      if (Confidence != 0F) hash ^= pbc::ProtobufEqualityComparers.BitwiseSingleEqualityComparer.GetHashCode(Confidence);
+      hash ^= classProbabilities_.GetHashCode();
+      hash ^= features_.GetHashCode();
+      hash ^= featureNames_.GetHashCode();
+      if (ModelVersion.Length != 0) hash ^= ModelVersion.GetHashCode();
+      if (HorizonFrames != 0) hash ^= HorizonFrames.GetHashCode();
+      if (_unknownFields != null) {
+        hash ^= _unknownFields.GetHashCode();
+      }
+      return hash;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override string ToString() {
+      return pb::JsonFormatter.ToDiagnosticString(this);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void WriteTo(pb::CodedOutputStream output) {
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      output.WriteRawMessage(this);
+    #else
+      if (WindowFirstSequence != 0UL) {
+        output.WriteRawTag(8);
+        output.WriteUInt64(WindowFirstSequence);
+      }
+      if (WindowLastSequence != 0UL) {
+        output.WriteRawTag(16);
+        output.WriteUInt64(WindowLastSequence);
+      }
+      if (MeasuredClass.Length != 0) {
+        output.WriteRawTag(26);
+        output.WriteString(MeasuredClass);
+      }
+      if (PredictedClass.Length != 0) {
+        output.WriteRawTag(34);
+        output.WriteString(PredictedClass);
+      }
+      if (Confidence != 0F) {
+        output.WriteRawTag(45);
+        output.WriteFloat(Confidence);
+      }
+      classProbabilities_.WriteTo(output, _repeated_classProbabilities_codec);
+      features_.WriteTo(output, _repeated_features_codec);
+      featureNames_.WriteTo(output, _repeated_featureNames_codec);
+      if (ModelVersion.Length != 0) {
+        output.WriteRawTag(74);
+        output.WriteString(ModelVersion);
+      }
+      if (HorizonFrames != 0) {
+        output.WriteRawTag(80);
+        output.WriteUInt32(HorizonFrames);
+      }
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(output);
+      }
+    #endif
+    }
+
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    void pb::IBufferMessage.InternalWriteTo(ref pb::WriteContext output) {
+      if (WindowFirstSequence != 0UL) {
+        output.WriteRawTag(8);
+        output.WriteUInt64(WindowFirstSequence);
+      }
+      if (WindowLastSequence != 0UL) {
+        output.WriteRawTag(16);
+        output.WriteUInt64(WindowLastSequence);
+      }
+      if (MeasuredClass.Length != 0) {
+        output.WriteRawTag(26);
+        output.WriteString(MeasuredClass);
+      }
+      if (PredictedClass.Length != 0) {
+        output.WriteRawTag(34);
+        output.WriteString(PredictedClass);
+      }
+      if (Confidence != 0F) {
+        output.WriteRawTag(45);
+        output.WriteFloat(Confidence);
+      }
+      classProbabilities_.WriteTo(ref output, _repeated_classProbabilities_codec);
+      features_.WriteTo(ref output, _repeated_features_codec);
+      featureNames_.WriteTo(ref output, _repeated_featureNames_codec);
+      if (ModelVersion.Length != 0) {
+        output.WriteRawTag(74);
+        output.WriteString(ModelVersion);
+      }
+      if (HorizonFrames != 0) {
+        output.WriteRawTag(80);
+        output.WriteUInt32(HorizonFrames);
+      }
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(ref output);
+      }
+    }
+    #endif
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public int CalculateSize() {
+      int size = 0;
+      if (WindowFirstSequence != 0UL) {
+        size += 1 + pb::CodedOutputStream.ComputeUInt64Size(WindowFirstSequence);
+      }
+      if (WindowLastSequence != 0UL) {
+        size += 1 + pb::CodedOutputStream.ComputeUInt64Size(WindowLastSequence);
+      }
+      if (MeasuredClass.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeStringSize(MeasuredClass);
+      }
+      if (PredictedClass.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeStringSize(PredictedClass);
+      }
+      if (Confidence != 0F) {
+        size += 1 + 4;
+      }
+      size += classProbabilities_.CalculateSize(_repeated_classProbabilities_codec);
+      size += features_.CalculateSize(_repeated_features_codec);
+      size += featureNames_.CalculateSize(_repeated_featureNames_codec);
+      if (ModelVersion.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeStringSize(ModelVersion);
+      }
+      if (HorizonFrames != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeUInt32Size(HorizonFrames);
+      }
+      if (_unknownFields != null) {
+        size += _unknownFields.CalculateSize();
+      }
+      return size;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void MergeFrom(ChannelAssessment other) {
+      if (other == null) {
+        return;
+      }
+      if (other.WindowFirstSequence != 0UL) {
+        WindowFirstSequence = other.WindowFirstSequence;
+      }
+      if (other.WindowLastSequence != 0UL) {
+        WindowLastSequence = other.WindowLastSequence;
+      }
+      if (other.MeasuredClass.Length != 0) {
+        MeasuredClass = other.MeasuredClass;
+      }
+      if (other.PredictedClass.Length != 0) {
+        PredictedClass = other.PredictedClass;
+      }
+      if (other.Confidence != 0F) {
+        Confidence = other.Confidence;
+      }
+      classProbabilities_.Add(other.classProbabilities_);
+      features_.Add(other.features_);
+      featureNames_.Add(other.featureNames_);
+      if (other.ModelVersion.Length != 0) {
+        ModelVersion = other.ModelVersion;
+      }
+      if (other.HorizonFrames != 0) {
+        HorizonFrames = other.HorizonFrames;
+      }
+      _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void MergeFrom(pb::CodedInputStream input) {
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      input.ReadRawMessage(this);
+    #else
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+      if ((tag & 7) == 4) {
+        // Abort on any end group tag.
+        return;
+      }
+      switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
+            break;
+          case 8: {
+            WindowFirstSequence = input.ReadUInt64();
+            break;
+          }
+          case 16: {
+            WindowLastSequence = input.ReadUInt64();
+            break;
+          }
+          case 26: {
+            MeasuredClass = input.ReadString();
+            break;
+          }
+          case 34: {
+            PredictedClass = input.ReadString();
+            break;
+          }
+          case 45: {
+            Confidence = input.ReadFloat();
+            break;
+          }
+          case 50:
+          case 53: {
+            classProbabilities_.AddEntriesFrom(input, _repeated_classProbabilities_codec);
+            break;
+          }
+          case 58:
+          case 61: {
+            features_.AddEntriesFrom(input, _repeated_features_codec);
+            break;
+          }
+          case 66: {
+            featureNames_.AddEntriesFrom(input, _repeated_featureNames_codec);
+            break;
+          }
+          case 74: {
+            ModelVersion = input.ReadString();
+            break;
+          }
+          case 80: {
+            HorizonFrames = input.ReadUInt32();
+            break;
+          }
+        }
+      }
+    #endif
+    }
+
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    void pb::IBufferMessage.InternalMergeFrom(ref pb::ParseContext input) {
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+      if ((tag & 7) == 4) {
+        // Abort on any end group tag.
+        return;
+      }
+      switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
+            break;
+          case 8: {
+            WindowFirstSequence = input.ReadUInt64();
+            break;
+          }
+          case 16: {
+            WindowLastSequence = input.ReadUInt64();
+            break;
+          }
+          case 26: {
+            MeasuredClass = input.ReadString();
+            break;
+          }
+          case 34: {
+            PredictedClass = input.ReadString();
+            break;
+          }
+          case 45: {
+            Confidence = input.ReadFloat();
+            break;
+          }
+          case 50:
+          case 53: {
+            classProbabilities_.AddEntriesFrom(ref input, _repeated_classProbabilities_codec);
+            break;
+          }
+          case 58:
+          case 61: {
+            features_.AddEntriesFrom(ref input, _repeated_features_codec);
+            break;
+          }
+          case 66: {
+            featureNames_.AddEntriesFrom(ref input, _repeated_featureNames_codec);
+            break;
+          }
+          case 74: {
+            ModelVersion = input.ReadString();
+            break;
+          }
+          case 80: {
+            HorizonFrames = input.ReadUInt32();
+            break;
+          }
         }
       }
     }
@@ -736,7 +1380,7 @@ namespace Livekalman.Control.V1 {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Livekalman.Control.V1.ControllerReflection.Descriptor.MessageTypes[1]; }
+      get { return global::Livekalman.Control.V1.ControllerReflection.Descriptor.MessageTypes[2]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -767,6 +1411,7 @@ namespace Livekalman.Control.V1 {
       features_ = other.features_.Clone();
       predictedRho_ = other.predictedRho_;
       observedBer_ = other.observedBer_;
+      sentToReceiver_ = other.sentToReceiver_;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -907,6 +1552,22 @@ namespace Livekalman.Control.V1 {
       }
     }
 
+    /// <summary>Field number for the "sent_to_receiver" field.</summary>
+    public const int SentToReceiverFieldNumber = 12;
+    private bool sentToReceiver_;
+    /// <summary>
+    /// False when the controller runs in recommend-only mode: the decision was
+    /// published for operators but not sent to the receiver.
+    /// </summary>
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public bool SentToReceiver {
+      get { return sentToReceiver_; }
+      set {
+        sentToReceiver_ = value;
+      }
+    }
+
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override bool Equals(object other) {
@@ -933,6 +1594,7 @@ namespace Livekalman.Control.V1 {
       if(!features_.Equals(other.features_)) return false;
       if (!pbc::ProtobufEqualityComparers.BitwiseSingleEqualityComparer.Equals(PredictedRho, other.PredictedRho)) return false;
       if (!pbc::ProtobufEqualityComparers.BitwiseSingleEqualityComparer.Equals(ObservedBer, other.ObservedBer)) return false;
+      if (SentToReceiver != other.SentToReceiver) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -951,6 +1613,7 @@ namespace Livekalman.Control.V1 {
       hash ^= features_.GetHashCode();
       if (PredictedRho != 0F) hash ^= pbc::ProtobufEqualityComparers.BitwiseSingleEqualityComparer.GetHashCode(PredictedRho);
       if (ObservedBer != 0F) hash ^= pbc::ProtobufEqualityComparers.BitwiseSingleEqualityComparer.GetHashCode(ObservedBer);
+      if (SentToReceiver != false) hash ^= SentToReceiver.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -1010,6 +1673,10 @@ namespace Livekalman.Control.V1 {
         output.WriteRawTag(93);
         output.WriteFloat(ObservedBer);
       }
+      if (SentToReceiver != false) {
+        output.WriteRawTag(96);
+        output.WriteBool(SentToReceiver);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
       }
@@ -1061,6 +1728,10 @@ namespace Livekalman.Control.V1 {
         output.WriteRawTag(93);
         output.WriteFloat(ObservedBer);
       }
+      if (SentToReceiver != false) {
+        output.WriteRawTag(96);
+        output.WriteBool(SentToReceiver);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(ref output);
       }
@@ -1101,6 +1772,9 @@ namespace Livekalman.Control.V1 {
       }
       if (ObservedBer != 0F) {
         size += 1 + 4;
+      }
+      if (SentToReceiver != false) {
+        size += 1 + 1;
       }
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
@@ -1144,6 +1818,9 @@ namespace Livekalman.Control.V1 {
       }
       if (other.ObservedBer != 0F) {
         ObservedBer = other.ObservedBer;
+      }
+      if (other.SentToReceiver != false) {
+        SentToReceiver = other.SentToReceiver;
       }
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
@@ -1207,6 +1884,10 @@ namespace Livekalman.Control.V1 {
           }
           case 93: {
             ObservedBer = input.ReadFloat();
+            break;
+          }
+          case 96: {
+            SentToReceiver = input.ReadBool();
             break;
           }
         }
@@ -1273,6 +1954,10 @@ namespace Livekalman.Control.V1 {
             ObservedBer = input.ReadFloat();
             break;
           }
+          case 96: {
+            SentToReceiver = input.ReadBool();
+            break;
+          }
         }
       }
     }
@@ -1295,7 +1980,7 @@ namespace Livekalman.Control.V1 {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Livekalman.Control.V1.ControllerReflection.Descriptor.MessageTypes[2]; }
+      get { return global::Livekalman.Control.V1.ControllerReflection.Descriptor.MessageTypes[3]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -1493,7 +2178,7 @@ namespace Livekalman.Control.V1 {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Livekalman.Control.V1.ControllerReflection.Descriptor.MessageTypes[3]; }
+      get { return global::Livekalman.Control.V1.ControllerReflection.Descriptor.MessageTypes[4]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -1520,6 +2205,7 @@ namespace Livekalman.Control.V1 {
       metrics_ = other.metrics_ != null ? other.metrics_.Clone() : null;
       decision_ = other.decision_ != null ? other.decision_.Clone() : null;
       emittedAtUnixMs_ = other.emittedAtUnixMs_;
+      assessment_ = other.assessment_ != null ? other.assessment_.Clone() : null;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -1613,6 +2299,18 @@ namespace Livekalman.Control.V1 {
       }
     }
 
+    /// <summary>Field number for the "assessment" field.</summary>
+    public const int AssessmentFieldNumber = 8;
+    private global::Livekalman.Control.V1.ChannelAssessment assessment_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public global::Livekalman.Control.V1.ChannelAssessment Assessment {
+      get { return assessment_; }
+      set {
+        assessment_ = value;
+      }
+    }
+
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override bool Equals(object other) {
@@ -1635,6 +2333,7 @@ namespace Livekalman.Control.V1 {
       if (!object.Equals(Metrics, other.Metrics)) return false;
       if (!object.Equals(Decision, other.Decision)) return false;
       if (EmittedAtUnixMs != other.EmittedAtUnixMs) return false;
+      if (!object.Equals(Assessment, other.Assessment)) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -1649,6 +2348,7 @@ namespace Livekalman.Control.V1 {
       if (metrics_ != null) hash ^= Metrics.GetHashCode();
       if (decision_ != null) hash ^= Decision.GetHashCode();
       if (EmittedAtUnixMs != 0UL) hash ^= EmittedAtUnixMs.GetHashCode();
+      if (assessment_ != null) hash ^= Assessment.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -1695,6 +2395,10 @@ namespace Livekalman.Control.V1 {
         output.WriteRawTag(56);
         output.WriteUInt64(EmittedAtUnixMs);
       }
+      if (assessment_ != null) {
+        output.WriteRawTag(66);
+        output.WriteMessage(Assessment);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
       }
@@ -1733,6 +2437,10 @@ namespace Livekalman.Control.V1 {
         output.WriteRawTag(56);
         output.WriteUInt64(EmittedAtUnixMs);
       }
+      if (assessment_ != null) {
+        output.WriteRawTag(66);
+        output.WriteMessage(Assessment);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(ref output);
       }
@@ -1763,6 +2471,9 @@ namespace Livekalman.Control.V1 {
       }
       if (EmittedAtUnixMs != 0UL) {
         size += 1 + pb::CodedOutputStream.ComputeUInt64Size(EmittedAtUnixMs);
+      }
+      if (assessment_ != null) {
+        size += 1 + pb::CodedOutputStream.ComputeMessageSize(Assessment);
       }
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
@@ -1802,6 +2513,12 @@ namespace Livekalman.Control.V1 {
       }
       if (other.EmittedAtUnixMs != 0UL) {
         EmittedAtUnixMs = other.EmittedAtUnixMs;
+      }
+      if (other.assessment_ != null) {
+        if (assessment_ == null) {
+          Assessment = new global::Livekalman.Control.V1.ChannelAssessment();
+        }
+        Assessment.MergeFrom(other.Assessment);
       }
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
@@ -1854,6 +2571,13 @@ namespace Livekalman.Control.V1 {
           }
           case 56: {
             EmittedAtUnixMs = input.ReadUInt64();
+            break;
+          }
+          case 66: {
+            if (assessment_ == null) {
+              Assessment = new global::Livekalman.Control.V1.ChannelAssessment();
+            }
+            input.ReadMessage(Assessment);
             break;
           }
         }
@@ -1909,6 +2633,13 @@ namespace Livekalman.Control.V1 {
             EmittedAtUnixMs = input.ReadUInt64();
             break;
           }
+          case 66: {
+            if (assessment_ == null) {
+              Assessment = new global::Livekalman.Control.V1.ChannelAssessment();
+            }
+            input.ReadMessage(Assessment);
+            break;
+          }
         }
       }
     }
@@ -1931,7 +2662,7 @@ namespace Livekalman.Control.V1 {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Livekalman.Control.V1.ControllerReflection.Descriptor.MessageTypes[4]; }
+      get { return global::Livekalman.Control.V1.ControllerReflection.Descriptor.MessageTypes[5]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -2129,7 +2860,7 @@ namespace Livekalman.Control.V1 {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Livekalman.Control.V1.ControllerReflection.Descriptor.MessageTypes[5]; }
+      get { return global::Livekalman.Control.V1.ControllerReflection.Descriptor.MessageTypes[6]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]

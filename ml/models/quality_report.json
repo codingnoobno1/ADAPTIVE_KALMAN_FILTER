@@ -1,0 +1,276 @@
+{
+  "model_version": "quality-mlp_32x32_relu-20261112-21a8b8a17515",
+  "task": "predict the measured channel class of the next 12-frame window from the current window",
+  "classes": [
+    "good",
+    "moderate",
+    "poor",
+    "unstable"
+  ],
+  "features": [
+    "snr_db_mean",
+    "snr_db_std",
+    "snr_db_trend",
+    "noise_var_mean",
+    "noise_var_std",
+    "ber_mean",
+    "ber_std",
+    "ber_available",
+    "frame_mean_std",
+    "frame_mean_step"
+  ],
+  "chosen_model": "mlp_32x32_relu",
+  "selection_rule": "highest validation macro-F1 among candidates",
+  "beats_persistence_baseline_on_test_macro_f1": true,
+  "validation": {
+    "logistic_regression": {
+      "accuracy": 0.8068965517241379,
+      "macro_f1": 0.7444548314557269,
+      "per_class_f1": {
+        "good": 0.8323138578358996,
+        "moderate": 0.5608032725920417,
+        "poor": 0.9073795180722891,
+        "unstable": 0.6773226773226774
+      },
+      "accuracy_when_class_changes": 0.27210365853658536,
+      "accuracy_when_class_persists": 0.9018678938819708,
+      "confusion_matrix": {
+        "labels": [
+          "good",
+          "moderate",
+          "poor",
+          "unstable"
+        ],
+        "rows_true_cols_pred": [
+          [
+            1973,
+            389,
+            18,
+            227
+          ],
+          [
+            66,
+            754,
+            78,
+            91
+          ],
+          [
+            12,
+            471,
+            3615,
+            67
+          ],
+          [
+            83,
+            86,
+            92,
+            678
+          ]
+        ]
+      }
+    },
+    "mlp_32x32_relu": {
+      "accuracy": 0.861264367816092,
+      "macro_f1": 0.7882105967545923,
+      "per_class_f1": {
+        "good": 0.8838537699923839,
+        "moderate": 0.6387536514118792,
+        "poor": 0.9353992848629321,
+        "unstable": 0.6948356807511737
+      },
+      "accuracy_when_class_changes": 0.22103658536585366,
+      "accuracy_when_class_persists": 0.9749593936112615,
+      "confusion_matrix": {
+        "labels": [
+          "good",
+          "moderate",
+          "poor",
+          "unstable"
+        ],
+        "rows_true_cols_pred": [
+          [
+            2321,
+            163,
+            29,
+            94
+          ],
+          [
+            126,
+            656,
+            153,
+            54
+          ],
+          [
+            29,
+            187,
+            3924,
+            25
+          ],
+          [
+            169,
+            59,
+            119,
+            592
+          ]
+        ]
+      }
+    },
+    "persistence_baseline": {
+      "accuracy": 0.8491954022988506,
+      "macro_f1": 0.7739832363804766,
+      "per_class_f1": {
+        "good": 0.8797709923664122,
+        "moderate": 0.6249369005552751,
+        "poor": 0.9249126190189225,
+        "unstable": 0.6663124335812965
+      },
+      "accuracy_when_class_changes": 0.0,
+      "accuracy_when_class_persists": 1.0,
+      "confusion_matrix": {
+        "labels": [
+          "good",
+          "moderate",
+          "poor",
+          "unstable"
+        ],
+        "rows_true_cols_pred": [
+          [
+            2305,
+            130,
+            33,
+            139
+          ],
+          [
+            154,
+            619,
+            150,
+            66
+          ],
+          [
+            35,
+            182,
+            3837,
+            111
+          ],
+          [
+            139,
+            61,
+            112,
+            627
+          ]
+        ]
+      }
+    }
+  },
+  "test": {
+    "mlp_32x32_relu": {
+      "accuracy": 0.8511494252873564,
+      "macro_f1": 0.7874199461029389,
+      "per_class_f1": {
+        "good": 0.8613965191864122,
+        "moderate": 0.7032574743418117,
+        "poor": 0.9331739390316797,
+        "unstable": 0.6518518518518519
+      },
+      "accuracy_when_class_changes": 0.223943661971831,
+      "accuracy_when_class_persists": 0.973489010989011,
+      "confusion_matrix": {
+        "labels": [
+          "good",
+          "moderate",
+          "poor",
+          "unstable"
+        ],
+        "rows_true_cols_pred": [
+          [
+            2054,
+            132,
+            14,
+            184
+          ],
+          [
+            110,
+            788,
+            151,
+            63
+          ],
+          [
+            20,
+            163,
+            3903,
+            66
+          ],
+          [
+            201,
+            46,
+            145,
+            660
+          ]
+        ]
+      }
+    },
+    "persistence_baseline": {
+      "accuracy": 0.8367816091954023,
+      "macro_f1": 0.7693666418163891,
+      "per_class_f1": {
+        "good": 0.8480933527818295,
+        "moderate": 0.6958855098389982,
+        "poor": 0.9276275912231786,
+        "unstable": 0.6058601134215501
+      },
+      "accuracy_when_class_changes": 0.0,
+      "accuracy_when_class_persists": 1.0,
+      "confusion_matrix": {
+        "labels": [
+          "good",
+          "moderate",
+          "poor",
+          "unstable"
+        ],
+        "rows_true_cols_pred": [
+          [
+            2035,
+            132,
+            16,
+            201
+          ],
+          [
+            149,
+            778,
+            115,
+            70
+          ],
+          [
+            24,
+            150,
+            3826,
+            152
+          ],
+          [
+            207,
+            64,
+            140,
+            641
+          ]
+        ]
+      }
+    }
+  },
+  "onnx_vs_sklearn_max_abs_logit_diff": 1.9073486328125e-06,
+  "training": {
+    "dataset": "ml/data/quality_dataset.csv",
+    "dataset_sha256": "6e6d3967c5394b4b7ddddf68bf592b4b85191b07dc32b5f4a3aca5e324912d9c",
+    "data_source": "simulated (cmd/qualitygen)",
+    "rows": {
+      "train": 40600,
+      "validation": 8700,
+      "test": 8700
+    },
+    "scenarios": 2000,
+    "split": "by scenario 70/15/15",
+    "seed": 20261112,
+    "sklearn": "1.7.2",
+    "trained_at_utc": "2026-11-12T13:38:32+00:00"
+  },
+  "class_rules": "shared/quality/channel.go MeasuredClass (unstable: SNR std > 3 dB or new sequence gap; BER <= 1e-3 good, <= 2e-2 moderate, else poor; SNR bands 10/5 dB when BER is unavailable)"
+}

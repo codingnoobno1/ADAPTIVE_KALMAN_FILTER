@@ -1,6 +1,9 @@
 library;
 
 export 'src/client/live_kalman_client.dart';
+export 'src/monitor/health.dart';
+export 'src/monitor/image_quality.dart';
+export 'src/monitor/monitor_json.dart';
 export 'src/generated/common/v1/common.pb.dart';
 export 'src/generated/common/v1/common.pbgrpc.dart';
 export 'src/generated/control/v1/controller.pb.dart';
