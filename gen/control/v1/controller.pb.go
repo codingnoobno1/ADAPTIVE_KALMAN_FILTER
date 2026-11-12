@@ -38,7 +38,13 @@ type ReceiverMetrics struct {
 	// ML policy feature (balanced BPSK symbols average to zero).
 	FrameMean float32 `protobuf:"fixed32,12,opt,name=frame_mean,json=frameMean,proto3" json:"frame_mean,omitempty"`
 	// The receiver Kalman filter's tracked DC offset after this frame.
-	DcEstimate    float32 `protobuf:"fixed32,13,opt,name=dc_estimate,json=dcEstimate,proto3" json:"dc_estimate,omitempty"`
+	DcEstimate float32 `protobuf:"fixed32,13,opt,name=dc_estimate,json=dcEstimate,proto3" json:"dc_estimate,omitempty"`
+	// Kalman Q and R that actually processed this frame (the applied values,
+	// as opposed to PolicyDecision's recommended values).
+	ActiveKalmanQ float32 `protobuf:"fixed32,14,opt,name=active_kalman_q,json=activeKalmanQ,proto3" json:"active_kalman_q,omitempty"`
+	ActiveKalmanR float32 `protobuf:"fixed32,15,opt,name=active_kalman_r,json=activeKalmanR,proto3" json:"active_kalman_r,omitempty"`
+	// Cumulative sequence gaps (lost or reordered frames) seen by the receiver.
+	SequenceGaps  uint64 `protobuf:"varint,16,opt,name=sequence_gaps,json=sequenceGaps,proto3" json:"sequence_gaps,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -164,6 +170,149 @@ func (x *ReceiverMetrics) GetDcEstimate() float32 {
 	return 0
 }
 
+func (x *ReceiverMetrics) GetActiveKalmanQ() float32 {
+	if x != nil {
+		return x.ActiveKalmanQ
+	}
+	return 0
+}
+
+func (x *ReceiverMetrics) GetActiveKalmanR() float32 {
+	if x != nil {
+		return x.ActiveKalmanR
+	}
+	return 0
+}
+
+func (x *ReceiverMetrics) GetSequenceGaps() uint64 {
+	if x != nil {
+		return x.SequenceGaps
+	}
+	return 0
+}
+
+// ChannelAssessment separates what was measured from what the ML model
+// predicts. Classes: "good", "moderate", "poor", "unstable"; an empty
+// predicted_class means no model is loaded.
+type ChannelAssessment struct {
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	WindowFirstSequence uint64                 `protobuf:"varint,1,opt,name=window_first_sequence,json=windowFirstSequence,proto3" json:"window_first_sequence,omitempty"`
+	WindowLastSequence  uint64                 `protobuf:"varint,2,opt,name=window_last_sequence,json=windowLastSequence,proto3" json:"window_last_sequence,omitempty"`
+	// Rule-based class of the window that has just been measured.
+	MeasuredClass string `protobuf:"bytes,3,opt,name=measured_class,json=measuredClass,proto3" json:"measured_class,omitempty"`
+	// Model prediction for the next window of the same length.
+	PredictedClass string  `protobuf:"bytes,4,opt,name=predicted_class,json=predictedClass,proto3" json:"predicted_class,omitempty"`
+	Confidence     float32 `protobuf:"fixed32,5,opt,name=confidence,proto3" json:"confidence,omitempty"`
+	// Probabilities in the order good, moderate, poor, unstable.
+	ClassProbabilities []float32 `protobuf:"fixed32,6,rep,packed,name=class_probabilities,json=classProbabilities,proto3" json:"class_probabilities,omitempty"`
+	Features           []float32 `protobuf:"fixed32,7,rep,packed,name=features,proto3" json:"features,omitempty"`
+	FeatureNames       []string  `protobuf:"bytes,8,rep,name=feature_names,json=featureNames,proto3" json:"feature_names,omitempty"`
+	ModelVersion       string    `protobuf:"bytes,9,opt,name=model_version,json=modelVersion,proto3" json:"model_version,omitempty"`
+	HorizonFrames      uint32    `protobuf:"varint,10,opt,name=horizon_frames,json=horizonFrames,proto3" json:"horizon_frames,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *ChannelAssessment) Reset() {
+	*x = ChannelAssessment{}
+	mi := &file_control_v1_controller_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ChannelAssessment) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ChannelAssessment) ProtoMessage() {}
+
+func (x *ChannelAssessment) ProtoReflect() protoreflect.Message {
+	mi := &file_control_v1_controller_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ChannelAssessment.ProtoReflect.Descriptor instead.
+func (*ChannelAssessment) Descriptor() ([]byte, []int) {
+	return file_control_v1_controller_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *ChannelAssessment) GetWindowFirstSequence() uint64 {
+	if x != nil {
+		return x.WindowFirstSequence
+	}
+	return 0
+}
+
+func (x *ChannelAssessment) GetWindowLastSequence() uint64 {
+	if x != nil {
+		return x.WindowLastSequence
+	}
+	return 0
+}
+
+func (x *ChannelAssessment) GetMeasuredClass() string {
+	if x != nil {
+		return x.MeasuredClass
+	}
+	return ""
+}
+
+func (x *ChannelAssessment) GetPredictedClass() string {
+	if x != nil {
+		return x.PredictedClass
+	}
+	return ""
+}
+
+func (x *ChannelAssessment) GetConfidence() float32 {
+	if x != nil {
+		return x.Confidence
+	}
+	return 0
+}
+
+func (x *ChannelAssessment) GetClassProbabilities() []float32 {
+	if x != nil {
+		return x.ClassProbabilities
+	}
+	return nil
+}
+
+func (x *ChannelAssessment) GetFeatures() []float32 {
+	if x != nil {
+		return x.Features
+	}
+	return nil
+}
+
+func (x *ChannelAssessment) GetFeatureNames() []string {
+	if x != nil {
+		return x.FeatureNames
+	}
+	return nil
+}
+
+func (x *ChannelAssessment) GetModelVersion() string {
+	if x != nil {
+		return x.ModelVersion
+	}
+	return ""
+}
+
+func (x *ChannelAssessment) GetHorizonFrames() uint32 {
+	if x != nil {
+		return x.HorizonFrames
+	}
+	return 0
+}
+
 type PolicyDecision struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	CommandId         uint64                 `protobuf:"varint,1,opt,name=command_id,json=commandId,proto3" json:"command_id,omitempty"`
@@ -177,13 +326,16 @@ type PolicyDecision struct {
 	Features          []float32              `protobuf:"fixed32,9,rep,packed,name=features,proto3" json:"features,omitempty"`
 	PredictedRho      float32                `protobuf:"fixed32,10,opt,name=predicted_rho,json=predictedRho,proto3" json:"predicted_rho,omitempty"`
 	ObservedBer       float32                `protobuf:"fixed32,11,opt,name=observed_ber,json=observedBer,proto3" json:"observed_ber,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	// False when the controller runs in recommend-only mode: the decision was
+	// published for operators but not sent to the receiver.
+	SentToReceiver bool `protobuf:"varint,12,opt,name=sent_to_receiver,json=sentToReceiver,proto3" json:"sent_to_receiver,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *PolicyDecision) Reset() {
 	*x = PolicyDecision{}
-	mi := &file_control_v1_controller_proto_msgTypes[1]
+	mi := &file_control_v1_controller_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -195,7 +347,7 @@ func (x *PolicyDecision) String() string {
 func (*PolicyDecision) ProtoMessage() {}
 
 func (x *PolicyDecision) ProtoReflect() protoreflect.Message {
-	mi := &file_control_v1_controller_proto_msgTypes[1]
+	mi := &file_control_v1_controller_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -208,7 +360,7 @@ func (x *PolicyDecision) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PolicyDecision.ProtoReflect.Descriptor instead.
 func (*PolicyDecision) Descriptor() ([]byte, []int) {
-	return file_control_v1_controller_proto_rawDescGZIP(), []int{1}
+	return file_control_v1_controller_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *PolicyDecision) GetCommandId() uint64 {
@@ -288,6 +440,13 @@ func (x *PolicyDecision) GetObservedBer() float32 {
 	return 0
 }
 
+func (x *PolicyDecision) GetSentToReceiver() bool {
+	if x != nil {
+		return x.SentToReceiver
+	}
+	return false
+}
+
 type WatchRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	RunId         string                 `protobuf:"bytes,1,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
@@ -297,7 +456,7 @@ type WatchRequest struct {
 
 func (x *WatchRequest) Reset() {
 	*x = WatchRequest{}
-	mi := &file_control_v1_controller_proto_msgTypes[2]
+	mi := &file_control_v1_controller_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -309,7 +468,7 @@ func (x *WatchRequest) String() string {
 func (*WatchRequest) ProtoMessage() {}
 
 func (x *WatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_control_v1_controller_proto_msgTypes[2]
+	mi := &file_control_v1_controller_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -322,7 +481,7 @@ func (x *WatchRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WatchRequest.ProtoReflect.Descriptor instead.
 func (*WatchRequest) Descriptor() ([]byte, []int) {
-	return file_control_v1_controller_proto_rawDescGZIP(), []int{2}
+	return file_control_v1_controller_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *WatchRequest) GetRunId() string {
@@ -341,13 +500,14 @@ type ExperimentEvent struct {
 	Metrics         *ReceiverMetrics       `protobuf:"bytes,5,opt,name=metrics,proto3" json:"metrics,omitempty"`
 	Decision        *PolicyDecision        `protobuf:"bytes,6,opt,name=decision,proto3" json:"decision,omitempty"`
 	EmittedAtUnixMs uint64                 `protobuf:"varint,7,opt,name=emitted_at_unix_ms,json=emittedAtUnixMs,proto3" json:"emitted_at_unix_ms,omitempty"`
+	Assessment      *ChannelAssessment     `protobuf:"bytes,8,opt,name=assessment,proto3" json:"assessment,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
 
 func (x *ExperimentEvent) Reset() {
 	*x = ExperimentEvent{}
-	mi := &file_control_v1_controller_proto_msgTypes[3]
+	mi := &file_control_v1_controller_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -359,7 +519,7 @@ func (x *ExperimentEvent) String() string {
 func (*ExperimentEvent) ProtoMessage() {}
 
 func (x *ExperimentEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_control_v1_controller_proto_msgTypes[3]
+	mi := &file_control_v1_controller_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -372,7 +532,7 @@ func (x *ExperimentEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExperimentEvent.ProtoReflect.Descriptor instead.
 func (*ExperimentEvent) Descriptor() ([]byte, []int) {
-	return file_control_v1_controller_proto_rawDescGZIP(), []int{3}
+	return file_control_v1_controller_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *ExperimentEvent) GetRunId() string {
@@ -424,6 +584,13 @@ func (x *ExperimentEvent) GetEmittedAtUnixMs() uint64 {
 	return 0
 }
 
+func (x *ExperimentEvent) GetAssessment() *ChannelAssessment {
+	if x != nil {
+		return x.Assessment
+	}
+	return nil
+}
+
 type ExperimentStateRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	RunId         string                 `protobuf:"bytes,1,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
@@ -433,7 +600,7 @@ type ExperimentStateRequest struct {
 
 func (x *ExperimentStateRequest) Reset() {
 	*x = ExperimentStateRequest{}
-	mi := &file_control_v1_controller_proto_msgTypes[4]
+	mi := &file_control_v1_controller_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -445,7 +612,7 @@ func (x *ExperimentStateRequest) String() string {
 func (*ExperimentStateRequest) ProtoMessage() {}
 
 func (x *ExperimentStateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_control_v1_controller_proto_msgTypes[4]
+	mi := &file_control_v1_controller_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -458,7 +625,7 @@ func (x *ExperimentStateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExperimentStateRequest.ProtoReflect.Descriptor instead.
 func (*ExperimentStateRequest) Descriptor() ([]byte, []int) {
-	return file_control_v1_controller_proto_rawDescGZIP(), []int{4}
+	return file_control_v1_controller_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ExperimentStateRequest) GetRunId() string {
@@ -480,7 +647,7 @@ type ExperimentState struct {
 
 func (x *ExperimentState) Reset() {
 	*x = ExperimentState{}
-	mi := &file_control_v1_controller_proto_msgTypes[5]
+	mi := &file_control_v1_controller_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -492,7 +659,7 @@ func (x *ExperimentState) String() string {
 func (*ExperimentState) ProtoMessage() {}
 
 func (x *ExperimentState) ProtoReflect() protoreflect.Message {
-	mi := &file_control_v1_controller_proto_msgTypes[5]
+	mi := &file_control_v1_controller_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -505,7 +672,7 @@ func (x *ExperimentState) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExperimentState.ProtoReflect.Descriptor instead.
 func (*ExperimentState) Descriptor() ([]byte, []int) {
-	return file_control_v1_controller_proto_rawDescGZIP(), []int{5}
+	return file_control_v1_controller_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *ExperimentState) GetRunId() string {
@@ -540,7 +707,7 @@ var File_control_v1_controller_proto protoreflect.FileDescriptor
 
 const file_control_v1_controller_proto_rawDesc = "" +
 	"\n" +
-	"\x1bcontrol/v1/controller.proto\x12\x15livekalman.control.v1\"\xbb\x03\n" +
+	"\x1bcontrol/v1/controller.proto\x12\x15livekalman.control.v1\"\xb0\x04\n" +
 	"\x0fReceiverMetrics\x12\x15\n" +
 	"\x06run_id\x18\x01 \x01(\tR\x05runId\x12\x1a\n" +
 	"\bsequence\x18\x02 \x01(\x04R\bsequence\x12\x15\n" +
@@ -560,7 +727,24 @@ const file_control_v1_controller_proto_rawDesc = "" +
 	"\n" +
 	"frame_mean\x18\f \x01(\x02R\tframeMean\x12\x1f\n" +
 	"\vdc_estimate\x18\r \x01(\x02R\n" +
-	"dcEstimate\"\x96\x03\n" +
+	"dcEstimate\x12&\n" +
+	"\x0factive_kalman_q\x18\x0e \x01(\x02R\ractiveKalmanQ\x12&\n" +
+	"\x0factive_kalman_r\x18\x0f \x01(\x02R\ractiveKalmanR\x12#\n" +
+	"\rsequence_gaps\x18\x10 \x01(\x04R\fsequenceGaps\"\xa7\x03\n" +
+	"\x11ChannelAssessment\x122\n" +
+	"\x15window_first_sequence\x18\x01 \x01(\x04R\x13windowFirstSequence\x120\n" +
+	"\x14window_last_sequence\x18\x02 \x01(\x04R\x12windowLastSequence\x12%\n" +
+	"\x0emeasured_class\x18\x03 \x01(\tR\rmeasuredClass\x12'\n" +
+	"\x0fpredicted_class\x18\x04 \x01(\tR\x0epredictedClass\x12\x1e\n" +
+	"\n" +
+	"confidence\x18\x05 \x01(\x02R\n" +
+	"confidence\x12/\n" +
+	"\x13class_probabilities\x18\x06 \x03(\x02R\x12classProbabilities\x12\x1a\n" +
+	"\bfeatures\x18\a \x03(\x02R\bfeatures\x12#\n" +
+	"\rfeature_names\x18\b \x03(\tR\ffeatureNames\x12#\n" +
+	"\rmodel_version\x18\t \x01(\tR\fmodelVersion\x12%\n" +
+	"\x0ehorizon_frames\x18\n" +
+	" \x01(\rR\rhorizonFrames\"\xc0\x03\n" +
 	"\x0ePolicyDecision\x12\x1d\n" +
 	"\n" +
 	"command_id\x18\x01 \x01(\x04R\tcommandId\x12)\n" +
@@ -575,9 +759,10 @@ const file_control_v1_controller_proto_rawDesc = "" +
 	"\bfeatures\x18\t \x03(\x02R\bfeatures\x12#\n" +
 	"\rpredicted_rho\x18\n" +
 	" \x01(\x02R\fpredictedRho\x12!\n" +
-	"\fobserved_ber\x18\v \x01(\x02R\vobservedBer\"%\n" +
+	"\fobserved_ber\x18\v \x01(\x02R\vobservedBer\x12(\n" +
+	"\x10sent_to_receiver\x18\f \x01(\bR\x0esentToReceiver\"%\n" +
 	"\fWatchRequest\x12\x15\n" +
-	"\x06run_id\x18\x01 \x01(\tR\x05runId\"\xac\x02\n" +
+	"\x06run_id\x18\x01 \x01(\tR\x05runId\"\xf6\x02\n" +
 	"\x0fExperimentEvent\x12\x15\n" +
 	"\x06run_id\x18\x01 \x01(\tR\x05runId\x12\x1a\n" +
 	"\bsequence\x18\x02 \x01(\x04R\bsequence\x12\x12\n" +
@@ -585,7 +770,10 @@ const file_control_v1_controller_proto_rawDesc = "" +
 	"\vdescription\x18\x04 \x01(\tR\vdescription\x12@\n" +
 	"\ametrics\x18\x05 \x01(\v2&.livekalman.control.v1.ReceiverMetricsR\ametrics\x12A\n" +
 	"\bdecision\x18\x06 \x01(\v2%.livekalman.control.v1.PolicyDecisionR\bdecision\x12+\n" +
-	"\x12emitted_at_unix_ms\x18\a \x01(\x04R\x0femittedAtUnixMs\"/\n" +
+	"\x12emitted_at_unix_ms\x18\a \x01(\x04R\x0femittedAtUnixMs\x12H\n" +
+	"\n" +
+	"assessment\x18\b \x01(\v2(.livekalman.control.v1.ChannelAssessmentR\n" +
+	"assessment\"/\n" +
 	"\x16ExperimentStateRequest\x12\x15\n" +
 	"\x06run_id\x18\x01 \x01(\tR\x05runId\"\xb6\x01\n" +
 	"\x0fExperimentState\x12\x15\n" +
@@ -610,30 +798,32 @@ func file_control_v1_controller_proto_rawDescGZIP() []byte {
 	return file_control_v1_controller_proto_rawDescData
 }
 
-var file_control_v1_controller_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_control_v1_controller_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_control_v1_controller_proto_goTypes = []any{
 	(*ReceiverMetrics)(nil),        // 0: livekalman.control.v1.ReceiverMetrics
-	(*PolicyDecision)(nil),         // 1: livekalman.control.v1.PolicyDecision
-	(*WatchRequest)(nil),           // 2: livekalman.control.v1.WatchRequest
-	(*ExperimentEvent)(nil),        // 3: livekalman.control.v1.ExperimentEvent
-	(*ExperimentStateRequest)(nil), // 4: livekalman.control.v1.ExperimentStateRequest
-	(*ExperimentState)(nil),        // 5: livekalman.control.v1.ExperimentState
+	(*ChannelAssessment)(nil),      // 1: livekalman.control.v1.ChannelAssessment
+	(*PolicyDecision)(nil),         // 2: livekalman.control.v1.PolicyDecision
+	(*WatchRequest)(nil),           // 3: livekalman.control.v1.WatchRequest
+	(*ExperimentEvent)(nil),        // 4: livekalman.control.v1.ExperimentEvent
+	(*ExperimentStateRequest)(nil), // 5: livekalman.control.v1.ExperimentStateRequest
+	(*ExperimentState)(nil),        // 6: livekalman.control.v1.ExperimentState
 }
 var file_control_v1_controller_proto_depIdxs = []int32{
 	0, // 0: livekalman.control.v1.ExperimentEvent.metrics:type_name -> livekalman.control.v1.ReceiverMetrics
-	1, // 1: livekalman.control.v1.ExperimentEvent.decision:type_name -> livekalman.control.v1.PolicyDecision
-	0, // 2: livekalman.control.v1.ExperimentState.latest:type_name -> livekalman.control.v1.ReceiverMetrics
-	0, // 3: livekalman.control.v1.ControllerService.Adapt:input_type -> livekalman.control.v1.ReceiverMetrics
-	2, // 4: livekalman.control.v1.ControllerService.WatchExperiment:input_type -> livekalman.control.v1.WatchRequest
-	4, // 5: livekalman.control.v1.ControllerService.GetExperimentState:input_type -> livekalman.control.v1.ExperimentStateRequest
-	1, // 6: livekalman.control.v1.ControllerService.Adapt:output_type -> livekalman.control.v1.PolicyDecision
-	3, // 7: livekalman.control.v1.ControllerService.WatchExperiment:output_type -> livekalman.control.v1.ExperimentEvent
-	5, // 8: livekalman.control.v1.ControllerService.GetExperimentState:output_type -> livekalman.control.v1.ExperimentState
-	6, // [6:9] is the sub-list for method output_type
-	3, // [3:6] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	2, // 1: livekalman.control.v1.ExperimentEvent.decision:type_name -> livekalman.control.v1.PolicyDecision
+	1, // 2: livekalman.control.v1.ExperimentEvent.assessment:type_name -> livekalman.control.v1.ChannelAssessment
+	0, // 3: livekalman.control.v1.ExperimentState.latest:type_name -> livekalman.control.v1.ReceiverMetrics
+	0, // 4: livekalman.control.v1.ControllerService.Adapt:input_type -> livekalman.control.v1.ReceiverMetrics
+	3, // 5: livekalman.control.v1.ControllerService.WatchExperiment:input_type -> livekalman.control.v1.WatchRequest
+	5, // 6: livekalman.control.v1.ControllerService.GetExperimentState:input_type -> livekalman.control.v1.ExperimentStateRequest
+	2, // 7: livekalman.control.v1.ControllerService.Adapt:output_type -> livekalman.control.v1.PolicyDecision
+	4, // 8: livekalman.control.v1.ControllerService.WatchExperiment:output_type -> livekalman.control.v1.ExperimentEvent
+	6, // 9: livekalman.control.v1.ControllerService.GetExperimentState:output_type -> livekalman.control.v1.ExperimentState
+	7, // [7:10] is the sub-list for method output_type
+	4, // [4:7] is the sub-list for method input_type
+	4, // [4:4] is the sub-list for extension type_name
+	4, // [4:4] is the sub-list for extension extendee
+	0, // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_control_v1_controller_proto_init() }
@@ -647,7 +837,7 @@ func file_control_v1_controller_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_control_v1_controller_proto_rawDesc), len(file_control_v1_controller_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   6,
+			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

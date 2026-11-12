@@ -62,7 +62,7 @@ void main() {
     );
     expect(find.text('BPSK Signal Generator'), findsOneWidget);
     expect(find.text('SIGNAL CONFIGURATION'), findsOneWidget);
-    expect(find.text('BPSK CONSTELLATION / PREVIEW'), findsOneWidget);
+    expect(find.text('BPSK CONSTELLATION / LIVE SAMPLES'), findsOneWidget);
     expect(find.text('TRANSMISSION STATUS'), findsOneWidget);
     expect(find.text('FILE TRANSMISSION / BPSK QUEUE'), findsOneWidget);
     expect(tester.takeException(), isNull);

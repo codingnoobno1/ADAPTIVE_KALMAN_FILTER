@@ -4,7 +4,9 @@ import '../generated/common/v1/common.pb.dart' as common;
 import '../generated/common/v1/common.pbgrpc.dart' as common_grpc;
 import '../generated/control/v1/controller.pb.dart' as control;
 import '../generated/control/v1/controller.pbgrpc.dart' as control_grpc;
+import '../generated/rx/v1/receiver.pb.dart' as rx;
 import '../generated/rx/v1/receiver.pbgrpc.dart' as rx_grpc;
+import '../generated/tx/v1/transmitter.pb.dart' as tx;
 import '../generated/tx/v1/transmitter.pbgrpc.dart' as tx_grpc;
 
 final class LabEndpoints {
@@ -37,11 +39,24 @@ final class LiveKalmanClient {
       receiverNode = common_grpc.NodeServiceClient(_rxChannel),
       controllerNode = common_grpc.NodeServiceClient(_controllerChannel);
 
-  factory LiveKalmanClient.insecure(LabEndpoints endpoints) {
+  factory LiveKalmanClient.insecure(LabEndpoints endpoints) =>
+      LiveKalmanClient.connect(endpoints, secure: false);
+
+  /// [secure] uses TLS, which is required when the nodes are reached through
+  /// an HTTPS tunnel such as Cloudflare Tunnel (`grpcs://host:443`).
+  factory LiveKalmanClient.connect(
+    LabEndpoints endpoints, {
+    required bool secure,
+  }) {
     ClientChannel channel(String host, int port) => ClientChannel(
       host,
       port: port,
-      options: const ChannelOptions(credentials: ChannelCredentials.insecure()),
+      options: ChannelOptions(
+        credentials: secure
+            ? const ChannelCredentials.secure()
+            : const ChannelCredentials.insecure(),
+        connectionTimeout: const Duration(seconds: 5),
+      ),
     );
     return LiveKalmanClient._(
       channel(endpoints.transmitterHost, endpoints.transmitterPort),
@@ -82,6 +97,50 @@ final class LiveKalmanClient {
     List<common.MediaType> types = const [],
   }) => receiverMedia.watchMedia(common.WatchMediaRequest(types: types));
 
+  /// Live transmitter frame traces (clean symbols, noisy samples, payload bits).
+  Stream<tx.TxEvent> watchTxEvents() =>
+      transmitter.watchTxEvents(common.Empty());
+
+  /// Live receiver frame traces (noisy samples, DC estimate, decisions, BER).
+  Stream<rx.RxFrameTrace> watchFrameTraces() =>
+      receiver.watchFrameTraces(common.Empty());
+
+  /// The three node clients in sender, receiver, controller order.
+  List<common_grpc.NodeServiceClient> get nodes => [
+    transmitterNode,
+    receiverNode,
+    controllerNode,
+  ];
+
+  /// One application-level health probe of every node: GetNodeInfo and
+  /// GetNodeStatus with a deadline. Failures are returned, not thrown, so one
+  /// unreachable node does not hide the state of the others.
+  Future<List<NodeProbe>> probeNodes({
+    Duration timeout = const Duration(seconds: 2),
+  }) => Future.wait([for (final node in nodes) _probe(node, timeout)]);
+
+  static Future<NodeProbe> _probe(
+    common_grpc.NodeServiceClient node,
+    Duration timeout,
+  ) async {
+    final started = DateTime.now();
+    final options = CallOptions(timeout: timeout);
+    try {
+      final info = await node.getNodeInfo(common.Empty(), options: options);
+      final status = await node.getNodeStatus(common.Empty(), options: options);
+      return NodeProbe(
+        info: info,
+        status: status,
+        latency: DateTime.now().difference(started),
+      );
+    } catch (error) {
+      return NodeProbe(
+        error: error,
+        latency: DateTime.now().difference(started),
+      );
+    }
+  }
+
   Future<void> close() async {
     await Future.wait([
       _txChannel.shutdown(),
@@ -89,4 +148,16 @@ final class LiveKalmanClient {
       _controllerChannel.shutdown(),
     ]);
   }
+}
+
+/// Result of one health probe of one node.
+final class NodeProbe {
+  const NodeProbe({this.info, this.status, this.error, required this.latency});
+
+  final common.NodeInfo? info;
+  final common.NodeStatus? status;
+  final Object? error;
+  final Duration latency;
+
+  bool get succeeded => error == null && info != null && status != null;
 }

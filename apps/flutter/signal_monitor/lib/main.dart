@@ -8,6 +8,9 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:livekalman_sdk/livekalman_sdk.dart' as lk;
 
+import 'live_lab.dart';
+import 'live_panels.dart';
+
 Future<void> main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
   final preferences = SetupPreferenceStore();
@@ -744,6 +747,8 @@ class _MonitorPageState extends State<MonitorPage> {
   StreamSubscription<lk.ExperimentEvent>? experimentSubscription;
   StreamSubscription<lk.MediaEvent>? mediaSubscription;
   lk.LiveKalmanClient? grpcClient;
+  LiveLab? lab;
+  final _idle = ValueNotifier<int>(0);
   Timer? statusTimer;
   Timer? transferTimer;
   List<lk.NodeInfo> nodeInfo = const [];
@@ -789,7 +794,7 @@ class _MonitorPageState extends State<MonitorPage> {
       final endpointValue = endpoint.text.trim();
       final uri = Uri.parse(endpointValue);
       widget.onEndpointChanged(endpointValue);
-      if (uri.scheme == 'grpc') {
+      if (uri.scheme == 'grpc' || uri.scheme == 'grpcs') {
         await connectGrpc(uri);
       } else {
         await connectSse(uri);
@@ -834,10 +839,12 @@ class _MonitorPageState extends State<MonitorPage> {
   }
 
   Future<void> connectGrpc(Uri uri) async {
+    final secure = uri.scheme == 'grpcs';
     int port(String name, int fallback) =>
-        int.tryParse(uri.queryParameters[name] ?? '') ?? fallback;
+        int.tryParse(uri.queryParameters[name] ?? '') ??
+        (secure ? 443 : fallback);
     final controllerHost = uri.host;
-    grpcClient = lk.LiveKalmanClient.insecure(
+    grpcClient = lk.LiveKalmanClient.connect(
       lk.LabEndpoints(
         transmitterHost: uri.queryParameters['txHost'] ?? controllerHost,
         receiverHost: uri.queryParameters['rxHost'] ?? controllerHost,
@@ -846,36 +853,45 @@ class _MonitorPageState extends State<MonitorPage> {
         receiverPort: port('rxPort', 55052),
         controllerPort: port('controllerPort', uri.hasPort ? uri.port : 55053),
       ),
+      secure: secure,
     );
-    final discovered = await grpcClient!.discoverNodes();
-    final statuses = await grpcClient!.nodeStatuses();
+    // LiveLab owns every live stream: it probes all nodes each second and
+    // resubscribes with backoff after any error, so a node that restarts is
+    // picked up without pressing CONNECT again.
+    final httpPort = int.tryParse(
+      uri.queryParameters['controllerHttpPort'] ?? '',
+    );
+    lab = LiveLab(
+      grpcClient!,
+      controllerHttp: Uri(
+        scheme: secure ? 'https' : 'http',
+        host: uri.queryParameters['controllerHttpHost'] ?? controllerHost,
+        port: httpPort ?? (secure ? 443 : 8080),
+      ),
+      onExperimentEvent: (event) {
+        recordExperimentEvent(event);
+        if (event.hasMetrics()) recordMetrics(Metrics.fromProto(event.metrics));
+      },
+      onMedia: recordMedia,
+    )..start();
     if (!mounted) return;
     setState(() {
-      nodeInfo = discovered;
-      nodeStatus = statuses;
-      connectionState = 'LIVE / GRPC';
-      connectionDetail = 'All three services discovered';
+      connectionState = secure ? 'LIVE / GRPC+TLS' : 'LIVE / GRPC';
+      connectionDetail = 'Monitoring all nodes; see Connection health below';
     });
-    experimentSubscription = grpcClient!.watchExperiment().listen(
-      (event) {
-        recordExperimentEvent(event);
-        if (event.hasMetrics()) {
-          recordMetrics(Metrics.fromProto(event.metrics));
-        }
-      },
-      onError: (Object error) => streamEnded(error),
-      onDone: () => streamEnded(null),
-    );
-    mediaSubscription = grpcClient!.watchMedia().listen(
-      recordMedia,
-      onError: (Object error) {
-        if (mounted) {
-          setState(() {
-            connectionDetail = 'Media stream: ${friendlyError(error)}';
-          });
-        }
-      },
-    );
+    try {
+      final discovered = await grpcClient!.discoverNodes().timeout(
+        const Duration(seconds: 3),
+      );
+      if (mounted) setState(() => nodeInfo = discovered);
+    } catch (error) {
+      if (mounted) {
+        setState(
+          () => connectionDetail =
+              'Not every node answered discovery yet (${friendlyError(error)}); retrying automatically',
+        );
+      }
+    }
     statusTimer = Timer.periodic(
       const Duration(seconds: 2),
       (_) => refreshNodeStatus(),
@@ -1075,6 +1091,8 @@ class _MonitorPageState extends State<MonitorPage> {
     await sseSubscription?.cancel();
     await experimentSubscription?.cancel();
     await mediaSubscription?.cancel();
+    lab?.dispose();
+    lab = null;
     await grpcClient?.close();
     httpClient?.close();
     sseSubscription = null;
@@ -1098,6 +1116,7 @@ class _MonitorPageState extends State<MonitorPage> {
     unawaited(disconnect(notify: false));
     endpoint.dispose();
     transferPath.dispose();
+    _idle.dispose();
     super.dispose();
   }
 
@@ -1116,15 +1135,20 @@ class _MonitorPageState extends State<MonitorPage> {
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1420),
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(20, 18, 20, 32),
-              children: [
-                header(),
-                const SizedBox(height: 22),
-                ...roleSections(),
-                const SizedBox(height: 18),
-                connectionPanel(),
-              ],
+            child: ListenableBuilder(
+              listenable: lab ?? _idle,
+              builder: (context, _) => ListView(
+                padding: const EdgeInsets.fromLTRB(20, 18, 20, 32),
+                children: [
+                  header(),
+                  const SizedBox(height: 22),
+                  ...roleSections(),
+                  const SizedBox(height: 22),
+                  liveMonitoring(),
+                  const SizedBox(height: 18),
+                  connectionPanel(),
+                ],
+              ),
             ),
           ),
         ),
@@ -1151,6 +1175,14 @@ class _MonitorPageState extends State<MonitorPage> {
         connected: grpcClient != null,
         applying: applyingSenderConfig,
         status: at(nodeStatus, 0),
+        liveSamples: lab == null || lab!.txFrames.isEmpty
+            ? const []
+            : lab!.txFrames.last.value.noisySamples
+                  .map((v) => v.toDouble())
+                  .toList(),
+        liveSequence: lab == null || lab!.txFrames.isEmpty
+            ? null
+            : lab!.txFrames.last.value.sequence.toInt(),
         onAmplitudeChanged: (value) => setState(() => senderAmplitude = value),
         onNoiseChanged: (value) => setState(() => senderNoise = value),
         onSymbolRateChanged: (value) =>
@@ -1516,6 +1548,33 @@ class _MonitorPageState extends State<MonitorPage> {
     },
   );
 
+  Widget liveMonitoring() {
+    final live = lab;
+    if (live == null) {
+      return const AppPanel(
+        padding: EdgeInsets.all(18),
+        child: Text(
+          'Live monitoring (health checks, signal probe, image quality and ML) starts after CONNECT LAB with a grpc:// or grpcs:// endpoint.',
+          key: Key('live-monitoring-idle'),
+          style: TextStyle(color: muted),
+        ),
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SectionHeading(
+          eyebrow: 'LIVE MONITORING',
+          title: 'Connectivity, signal probe and ML',
+          description:
+              'Real data from the running nodes, refreshed automatically.',
+        ),
+        const SizedBox(height: 12),
+        LiveMonitorSection(lab: live, roleIndex: widget.role.index),
+      ],
+    );
+  }
+
   Widget connectionPanel() => AppPanel(
     padding: const EdgeInsets.all(16),
     child: LayoutBuilder(
@@ -1635,6 +1694,8 @@ class SenderWorkspace extends StatelessWidget {
     required this.connected,
     required this.applying,
     required this.status,
+    this.liveSamples = const [],
+    this.liveSequence,
     required this.onAmplitudeChanged,
     required this.onNoiseChanged,
     required this.onSymbolRateChanged,
@@ -1644,15 +1705,17 @@ class SenderWorkspace extends StatelessWidget {
   final double amplitude, noise, symbolRate;
   final bool connected, applying;
   final lk.NodeStatus? status;
+
+  /// Noisy samples of the latest transmitted frame (Sender trace), or empty.
+  final List<double> liveSamples;
+  final int? liveSequence;
   final ValueChanged<double> onAmplitudeChanged;
   final ValueChanged<double> onNoiseChanged;
   final ValueChanged<double> onSymbolRateChanged;
   final VoidCallback onApply;
 
-  List<double> get preview => List.generate(96, (index) {
-    final bit = ((index ~/ 8) % 5 == 1 || (index ~/ 8) % 5 == 2) ? 1.0 : -1.0;
-    return bit * amplitude + math.sin(index * 2.17) * noise * .22;
-  });
+  String get liveLabel =>
+      liveSequence == null ? 'NO LIVE FRAMES YET' : 'FRAME $liveSequence';
 
   @override
   Widget build(BuildContext context) {
@@ -1727,15 +1790,13 @@ class SenderWorkspace extends StatelessWidget {
       children: [
         Row(
           children: [
-            Expanded(
-              child: ConstellationPanel(amplitude: amplitude, noise: noise),
-            ),
+            Expanded(child: ConstellationPanel(samples: liveSamples)),
             const SizedBox(width: 14),
             Expanded(
               child: SignalChart(
-                title: 'TIME-DOMAIN PREVIEW',
-                valueLabel: 'CONFIG PREVIEW',
-                values: preview,
+                title: 'TRANSMITTED SAMPLES (LIVE)',
+                valueLabel: liveLabel,
+                values: liveSamples,
                 color: blue,
               ),
             ),
@@ -1762,12 +1823,12 @@ class SenderWorkspace extends StatelessWidget {
             children: [
               controls,
               const SizedBox(height: 14),
-              ConstellationPanel(amplitude: amplitude, noise: noise),
+              ConstellationPanel(samples: liveSamples),
               const SizedBox(height: 14),
               SignalChart(
-                title: 'TIME-DOMAIN PREVIEW',
-                valueLabel: 'CONFIG PREVIEW',
-                values: preview,
+                title: 'TRANSMITTED SAMPLES (LIVE)',
+                valueLabel: liveLabel,
+                values: liveSamples,
                 color: blue,
               ),
               const SizedBox(height: 14),
@@ -2154,12 +2215,11 @@ class ConfigSlider extends StatelessWidget {
 }
 
 class ConstellationPanel extends StatelessWidget {
-  const ConstellationPanel({
-    super.key,
-    required this.amplitude,
-    required this.noise,
-  });
-  final double amplitude, noise;
+  const ConstellationPanel({super.key, required this.samples});
+
+  /// Noisy samples of the latest transmitted frame. BPSK is real-valued in
+  /// this system, so every point lies on the in-phase axis (Q = 0).
+  final List<double> samples;
 
   @override
   Widget build(BuildContext context) => AppPanel(
@@ -2170,7 +2230,7 @@ class ConstellationPanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'BPSK CONSTELLATION / PREVIEW',
+            'BPSK CONSTELLATION / LIVE SAMPLES',
             style: TextStyle(
               color: muted,
               fontSize: 10,
@@ -2178,12 +2238,24 @@ class ConstellationPanel extends StatelessWidget {
               letterSpacing: 1.2,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 4),
+          const Text(
+            'In-phase value horizontally; vertical position is sample order (Q = 0 for real BPSK).',
+            style: TextStyle(color: muted, fontSize: 10),
+          ),
+          const SizedBox(height: 8),
           Expanded(
-            child: CustomPaint(
-              painter: ConstellationPainter(amplitude, noise),
-              size: Size.infinite,
-            ),
+            child: samples.isEmpty
+                ? const Center(
+                    child: Text(
+                      'No transmitted frames yet',
+                      style: TextStyle(color: muted),
+                    ),
+                  )
+                : CustomPaint(
+                    painter: ConstellationPainter(samples),
+                    size: Size.infinite,
+                  ),
           ),
         ],
       ),
@@ -2451,8 +2523,8 @@ class EventLogPanel extends StatelessWidget {
 }
 
 class ConstellationPainter extends CustomPainter {
-  ConstellationPainter(this.amplitude, this.noise);
-  final double amplitude, noise;
+  ConstellationPainter(this.samples);
+  final List<double> samples;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -2469,33 +2541,24 @@ class ConstellationPainter extends CustomPainter {
       Offset(size.width / 2, size.height),
       grid,
     );
-    final scale = size.width / 5;
-    for (var index = 0; index < 34; index++) {
-      final side = index.isEven ? -1.0 : 1.0;
-      final jitterX = math.sin(index * 4.17) * noise * 4;
-      final jitterY = math.cos(index * 2.31) * noise * 5;
-      final point = Offset(
-        size.width / 2 + side * amplitude * scale + jitterX,
-        size.height / 2 + jitterY,
-      );
+    final peak = samples.fold<double>(1e-9, (m, v) => math.max(m, v.abs()));
+    final scale = (size.width / 2 - 8) / peak;
+    final point = Paint()..color = blue.withValues(alpha: .7);
+    for (var i = 0; i < samples.length; i++) {
+      final y = samples.length == 1
+          ? size.height / 2
+          : 6 + (size.height - 12) * i / (samples.length - 1);
       canvas.drawCircle(
-        point,
+        Offset(size.width / 2 + samples[i] * scale, y),
         2.5,
-        Paint()..color = blue.withValues(alpha: .65),
-      );
-    }
-    for (final side in [-1.0, 1.0]) {
-      canvas.drawCircle(
-        Offset(size.width / 2 + side * amplitude * scale, size.height / 2),
-        6,
-        Paint()..color = mint,
+        point,
       );
     }
   }
 
   @override
   bool shouldRepaint(covariant ConstellationPainter oldDelegate) =>
-      oldDelegate.amplitude != amplitude || oldDelegate.noise != noise;
+      !identical(oldDelegate.samples, samples);
 }
 
 class SectionHeading extends StatelessWidget {

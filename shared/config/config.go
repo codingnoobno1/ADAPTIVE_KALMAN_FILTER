@@ -48,6 +48,18 @@ type Controller struct {
 	Policy string `json:"policy"`
 	// OnnxModel is the model path used when Policy is "onnx".
 	OnnxModel string `json:"onnxModel"`
+	// QualityModel is the optional channel-quality classifier
+	// (ml/models/quality.onnx). Without it only measured classes are shown.
+	QualityModel string `json:"qualityModel"`
+	// RecommendOnly publishes Q/R decisions without sending them to the
+	// receiver, so operators can compare recommendations with applied values.
+	RecommendOnly bool `json:"recommendOnly"`
+	// MetricsLog, when set, appends every ReceiverMetrics as one JSON line so
+	// real runs can become training data (see ml/README.md).
+	MetricsLog string `json:"metricsLog"`
+	// StaleAfterMs marks the data flow inactive when no metrics arrive for this
+	// long (default 2000).
+	StaleAfterMs int `json:"staleAfterMs"`
 }
 
 type All struct {

@@ -171,13 +171,19 @@ func (s *Server) process(f *rxv1.TxFrame, queueDepth uint32) (*rxv1.RxFeedback, 
 		}
 		slog.Info("frame", attrs...)
 	}
-	metrics := &controlv1.ReceiverMetrics{RunId: f.RunId, Sequence: f.Sequence, SnrDb: feedback.SnrDb, NoiseVariance: feedback.NoiseVariance, ComparedBits: m.Compared, BitErrors: m.Errors, Ber: feedback.Ber, LatencyMs: latency, ActiveConfigVersion: s.active.Version, QueueDepth: queueDepth, ObservedAtUnixMs: uint64(time.Now().UnixMilli()), FrameMean: float32(m.FrameMean), DcEstimate: float32(m.DCEstimate)}
-	if f.Media != nil {
+	metrics := &controlv1.ReceiverMetrics{RunId: f.RunId, Sequence: f.Sequence, SnrDb: feedback.SnrDb, NoiseVariance: feedback.NoiseVariance, ComparedBits: m.Compared, BitErrors: m.Errors, Ber: feedback.Ber, LatencyMs: latency, ActiveConfigVersion: s.active.Version, QueueDepth: queueDepth, ObservedAtUnixMs: uint64(time.Now().UnixMilli()), FrameMean: float32(m.FrameMean), DcEstimate: float32(m.DCEstimate), ActiveKalmanQ: s.active.KalmanQ, ActiveKalmanR: s.active.KalmanR, SequenceGaps: s.gaps}
+	// Every frame is traced: idle frames expose their detected bitstream, media
+	// frames their decoded payload. Subscribers drop traces when they are slow.
+	{
+		detected := traceDecoded
+		if f.Media == nil {
+			traceDemodulated, detected = m.Decoded, m.Decoded
+		}
 		noisyCount := 64
 		if len(samples) < noisyCount {
 			noisyCount = len(samples)
 		}
-		s.publishTrace(&rxv1.RxFrameTrace{Sequence: f.Sequence, TransferId: f.Media.TransferId, FileName: f.Media.FileName, MediaOffset: f.MediaOffset, TotalBytes: f.Media.TotalSize, NoisySamples: append([]float32(nil), samples[:noisyCount]...), DcEstimate: float32(m.DCEstimate), DemodulatedBytes: traceDemodulated, DecodedBytes: traceDecoded, DemodulatedBits: byteBits(traceDecoded), BitErrors: m.Errors, ComparedBits: m.Compared, Ber: float32(m.BER), ReceivedBytes: f.MediaOffset + uint64(len(traceDecoded)), ChecksumState: traceChecksum, EndOfStream: f.MediaEnd, ObservedAtUnixMs: uint64(time.Now().UnixMilli())})
+		s.publishTrace(&rxv1.RxFrameTrace{Sequence: f.Sequence, TransferId: f.GetMedia().GetTransferId(), FileName: f.GetMedia().GetFileName(), MediaOffset: f.MediaOffset, TotalBytes: f.GetMedia().GetTotalSize(), NoisySamples: append([]float32(nil), samples[:noisyCount]...), DcEstimate: float32(m.DCEstimate), DemodulatedBytes: traceDemodulated, DecodedBytes: traceDecoded, DemodulatedBits: byteBits(detected), BitErrors: m.Errors, ComparedBits: m.Compared, Ber: float32(m.BER), ReceivedBytes: f.MediaOffset + uint64(len(traceDecoded)), ChecksumState: traceChecksum, EndOfStream: f.MediaEnd, ObservedAtUnixMs: uint64(time.Now().UnixMilli())})
 	}
 	return feedback, metrics, nil
 }

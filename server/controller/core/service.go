@@ -28,6 +28,10 @@ type Server struct {
 	lastDecision map[string]uint64
 	windows      map[string][]*controlv1.ReceiverMetrics
 	policy       extensions.AdaptationPolicy
+	quality      extensions.QualityPredictor
+	runs         map[string]*runState
+	recorderMu   sync.Mutex
+	recorder     *json.Encoder
 }
 
 func (s *Server) NodeSnapshot() node.Snapshot {
@@ -50,10 +54,12 @@ func New(cfg config.Controller, policy extensions.AdaptationPolicy) *Server {
 	if policy == nil {
 		policy = NewRulePolicy(cfg)
 	}
-	return &Server{cfg: cfg, latest: map[string]*controlv1.ReceiverMetrics{}, subs: map[uint64]chan *controlv1.ExperimentEvent{}, lastDecision: map[string]uint64{}, windows: map[string][]*controlv1.ReceiverMetrics{}, policy: policy}
+	return &Server{cfg: cfg, latest: map[string]*controlv1.ReceiverMetrics{}, subs: map[uint64]chan *controlv1.ExperimentEvent{}, lastDecision: map[string]uint64{}, windows: map[string][]*controlv1.ReceiverMetrics{}, policy: policy, runs: map[string]*runState{}}
 }
 
 func (s *Server) Adapt(stream controlv1.ControllerService_AdaptServer) error {
+	seen := map[string]bool{}
+	defer func() { s.streamClosed(seen) }()
 	for {
 		m, err := stream.Recv()
 		if err != nil {
@@ -62,6 +68,9 @@ func (s *Server) Adapt(stream controlv1.ControllerService_AdaptServer) error {
 		if m.RunId == "" {
 			continue
 		}
+		seen[m.RunId] = true
+		s.record(m)
+		assessment := s.observe(m)
 		s.mu.Lock()
 		s.latest[m.RunId] = m
 		last := s.lastDecision[m.RunId]
@@ -73,6 +82,13 @@ func (s *Server) Adapt(stream controlv1.ControllerService_AdaptServer) error {
 		window = append([]*controlv1.ReceiverMetrics(nil), window...)
 		s.mu.Unlock()
 		s.publish(&controlv1.ExperimentEvent{RunId: m.RunId, Sequence: m.Sequence, Kind: "metrics", Description: "receiver metrics", Metrics: m, EmittedAtUnixMs: uint64(time.Now().UnixMilli())})
+		if assessment != nil {
+			desc := "measured " + assessment.MeasuredClass
+			if assessment.PredictedClass != "" {
+				desc += fmt.Sprintf("; predicted next window %s (%.0f%%)", assessment.PredictedClass, 100*assessment.Confidence)
+			}
+			s.publish(&controlv1.ExperimentEvent{RunId: m.RunId, Sequence: m.Sequence, Kind: "assessment", Description: desc, Assessment: assessment, EmittedAtUnixMs: uint64(time.Now().UnixMilli())})
+		}
 		if m.Sequence < last+s.cfg.DecisionCooldownFrames || m.Sequence == 0 {
 			continue
 		}
@@ -87,10 +103,17 @@ func (s *Server) Adapt(stream controlv1.ControllerService_AdaptServer) error {
 		decision.CommandId = s.nextCommand.Add(1)
 		decision.ProposedVersion = m.ActiveConfigVersion + 1
 		decision.EffectiveSequence = m.Sequence + 4
-		if err := stream.Send(decision); err != nil {
-			return err
+		if s.cfg.RecommendOnly {
+			decision.SentToReceiver = false
+			decision.Reason = "recommend-only: " + decision.Reason
+		} else {
+			if err := stream.Send(decision); err != nil {
+				return err
+			}
+			decision.SentToReceiver = true
 		}
-		slog.Info("decision sent", "policy", s.cfg.Policy, "sequence", m.Sequence, "Q", decision.ProposedKalmanQ, "R", decision.ProposedKalmanR, "Q/R", decision.ProposedKalmanQ/decision.ProposedKalmanR, "reason", decision.Reason)
+		s.rememberDecision(m.RunId, decision)
+		slog.Info("decision", "sent", decision.SentToReceiver, "policy", s.cfg.Policy, "sequence", m.Sequence, "Q", decision.ProposedKalmanQ, "R", decision.ProposedKalmanR, "Q/R", decision.ProposedKalmanQ/decision.ProposedKalmanR, "reason", decision.Reason)
 		s.mu.Lock()
 		s.lastDecision[m.RunId] = m.Sequence
 		s.mu.Unlock()
@@ -138,6 +161,7 @@ func (s *Server) HTTPHandler() http.Handler {
 		_ = json.NewEncoder(w).Encode(s.latest)
 	})
 	mux.HandleFunc("/api/v1/events", s.sse)
+	s.registerMonitorRoutes(mux)
 	return cors(mux)
 }
 

@@ -20,6 +20,31 @@ message ReceiverMetrics {
   float frame_mean = 12;
   // The receiver Kalman filter's tracked DC offset after this frame.
   float dc_estimate = 13;
+  // Kalman Q and R that actually processed this frame (the applied values,
+  // as opposed to PolicyDecision's recommended values).
+  float active_kalman_q = 14;
+  float active_kalman_r = 15;
+  // Cumulative sequence gaps (lost or reordered frames) seen by the receiver.
+  uint64 sequence_gaps = 16;
+}
+
+// ChannelAssessment separates what was measured from what the ML model
+// predicts. Classes: "good", "moderate", "poor", "unstable"; an empty
+// predicted_class means no model is loaded.
+message ChannelAssessment {
+  uint64 window_first_sequence = 1;
+  uint64 window_last_sequence = 2;
+  // Rule-based class of the window that has just been measured.
+  string measured_class = 3;
+  // Model prediction for the next window of the same length.
+  string predicted_class = 4;
+  float confidence = 5;
+  // Probabilities in the order good, moderate, poor, unstable.
+  repeated float class_probabilities = 6;
+  repeated float features = 7;
+  repeated string feature_names = 8;
+  string model_version = 9;
+  uint32 horizon_frames = 10;
 }
 
 message PolicyDecision {
@@ -34,6 +59,9 @@ message PolicyDecision {
   repeated float features = 9;
   float predicted_rho = 10;
   float observed_ber = 11;
+  // False when the controller runs in recommend-only mode: the decision was
+  // published for operators but not sent to the receiver.
+  bool sent_to_receiver = 12;
 }
 
 message WatchRequest { string run_id = 1; }
@@ -46,6 +74,7 @@ message ExperimentEvent {
   ReceiverMetrics metrics = 5;
   PolicyDecision decision = 6;
   uint64 emitted_at_unix_ms = 7;
+  ChannelAssessment assessment = 8;
 }
 
 message ExperimentStateRequest { string run_id = 1; }
