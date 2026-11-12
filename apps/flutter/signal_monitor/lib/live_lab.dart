@@ -20,8 +20,16 @@ final class Timed<T> {
   final DateTime receivedAt;
 }
 
+/// Stream status labels shown in the health panel.
+const streamWaiting = 'open, waiting for first message';
+const streamStreaming = 'streaming';
+
 /// State of one auto-reconnecting server stream.
 final class StreamState {
+  StreamState({this.quietReason});
+
+  /// Why this stream can legitimately carry no messages (shown while waiting).
+  final String? quietReason;
   String status = 'not started';
   int attempt = 0;
   int messages = 0;
@@ -134,7 +142,9 @@ class LiveLab extends ChangeNotifier {
     'sender traces': StreamState(),
     'receiver traces': StreamState(),
     'controller events': StreamState(),
-    'receiver media': StreamState(),
+    'receiver media': StreamState(
+      quietReason: 'media is only sent during file transfers',
+    ),
   };
   final txFrames = <Timed<lk.TxFrameTrace>>[];
   final rxFrames = <Timed<lk.RxFrameTrace>>[];
@@ -215,7 +225,7 @@ class LiveLab extends ChangeNotifier {
       sub = open().listen(
         (event) {
           state
-            ..status = 'streaming'
+            ..status = streamStreaming
             ..attempt = 0
             ..messages += 1
             ..lastMessageAt = DateTime.now()
@@ -231,6 +241,11 @@ class LiveLab extends ChangeNotifier {
         cancelOnError: true,
       );
       _subs.add(sub);
+      // The call is open. A server stream sends nothing until it has data,
+      // so "no messages yet" is not a fault (e.g. media between transfers).
+      if (state.status != streamStreaming && state.lastError == null) {
+        state.status = streamWaiting;
+      }
     }
 
     subscribe();

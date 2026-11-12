@@ -70,7 +70,7 @@ class LiveMonitorSection extends StatelessWidget {
       final order = switch (roleIndex) {
         0 => [health, probe, frames],
         1 => [health, probe, frames, images],
-        _ => [health, ml, frames, images],
+        _ => [health, ml, probe, frames, images],
       };
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -116,8 +116,15 @@ class ConnectionHealthPanel extends StatelessWidget {
             children: [
               for (final e in lab.streams.entries)
                 _chip(
-                  '${e.key}: ${e.value.status}${e.value.lastError == null ? '' : ' (${e.value.lastError})'}',
-                  e.value.status == 'streaming' ? mint : amber,
+                  '${e.key}: ${e.value.status}'
+                  '${e.value.status == streamWaiting && e.value.quietReason != null ? ' (${e.value.quietReason})' : ''}'
+                  '${e.value.lastError == null ? '' : ' (${e.value.lastError})'}',
+                  switch (e.value.status) {
+                    streamStreaming => mint,
+                    streamWaiting => blue,
+                    _ => amber,
+                  },
+                  key: Key('stream-${e.key}'),
                 ),
             ],
           ),

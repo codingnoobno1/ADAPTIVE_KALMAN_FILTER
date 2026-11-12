@@ -195,4 +195,27 @@ void main() {
     expect(x.reconstructedComplete, isTrue);
     expect(x.reconstructed, [1, 2, 3, 4, 5]);
   });
+
+  testWidgets('idle media stream is shown as open, not as a fault', (
+    tester,
+  ) async {
+    final lab = idleLab();
+    lab.streams['receiver media']!.status = streamWaiting;
+    lab.streams['sender traces']!.status = streamStreaming;
+    await tester.pumpWidget(host(ConnectionHealthPanel(lab: lab)));
+    expect(
+      find.text(
+        'receiver media: open, waiting for first message (media is only sent during file transfers)',
+      ),
+      findsOneWidget,
+    );
+    expect(find.textContaining('connecting'), findsNothing);
+  });
+
+  testWidgets('controller view includes the signal probe', (tester) async {
+    final lab = idleLab();
+    await tester.pumpWidget(host(LiveMonitorSection(lab: lab, roleIndex: 2)));
+    expect(find.byType(MlPanel), findsOneWidget);
+    expect(find.byType(SignalProbePanel), findsOneWidget);
+  });
 }
