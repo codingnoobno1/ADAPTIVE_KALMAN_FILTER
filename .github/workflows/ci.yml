@@ -24,6 +24,9 @@ env:
   BUF_VERSION: '1.50.0'
   PYTHON_VERSION: '3.12'
   DOTNET_VERSION: '10.0.x'
+  # Pinned so CI matches the development SDK; 'stable' moved past 3.47 and
+  # started flagging package:flutter/material.dart as deprecated (material_ui).
+  FLUTTER_VERSION: '3.47.5'
   MAUI_WINDOWS_TFM: 'net10.0-windows10.0.19041.0'
 
 jobs:
@@ -148,6 +151,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
 
       - name: Setup Python ${{ env.PYTHON_VERSION }} (for nanopb)
@@ -325,6 +329,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
 
       - name: Analyze Dart livekalman_sdk
