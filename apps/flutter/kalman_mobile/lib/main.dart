@@ -89,127 +89,135 @@ class _KalmanMobileShellState extends State<KalmanMobileShell> {
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: widget.controller,
-    builder: (context, _) {
-      final width = MediaQuery.sizeOf(context).width;
-      final isWide = width >= 840;
-      final snap = widget.controller.latest;
+    builder: (context, _) => LayoutBuilder(
+      builder: (context, shellConstraints) {
+        final isWide = shellConstraints.maxWidth >= 840;
+        final snap = widget.controller.latest;
 
-      final pages = <Widget>[
-        _ParametersTab(
-          controller: widget.controller,
-          selectedCategory: _selectedCategory,
-          searchQuery: _searchQuery,
-          onCategoryChanged: (cat) => setState(() => _selectedCategory = cat),
-          onSearchChanged: (q) => setState(() => _searchQuery = q),
-        ),
-        _ChartsTab(controller: widget.controller),
-        _OnDeviceWorkbenchTab(controller: widget.controller),
-        _LiveThreeNodeLinkTab(controller: widget.controller),
-      ];
+        final pages = <Widget>[
+          _ParametersTab(
+            controller: widget.controller,
+            selectedCategory: _selectedCategory,
+            searchQuery: _searchQuery,
+            onCategoryChanged: (cat) => setState(() => _selectedCategory = cat),
+            onSearchChanged: (q) => setState(() => _searchQuery = q),
+          ),
+          _ChartsTab(controller: widget.controller),
+          _OnDeviceWorkbenchTab(controller: widget.controller),
+          _LiveThreeNodeLinkTab(controller: widget.controller),
+        ];
 
-      return Scaffold(
-        appBar: AppBar(
-          backgroundColor: kSurface,
-          elevation: 0,
-          titleSpacing: 14,
-          title: Row(
-            children: [
-              const Icon(Icons.radar_rounded, color: kMint, size: 22),
-              const SizedBox(width: 8),
-              const Expanded(
-                child: Text(
-                  'Kalman Parameter Lab',
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 16.5,
+        return Scaffold(
+          appBar: AppBar(
+            backgroundColor: kSurface,
+            elevation: 0,
+            titleSpacing: 14,
+            title: Row(
+              children: [
+                const Icon(Icons.radar_rounded, color: kMint, size: 22),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text(
+                    'Kalman Parameter Lab',
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 16.5,
+                    ),
                   ),
                 ),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: _SourceBadge(
+                    controller: widget.controller,
+                    snapshot: snap,
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              if (widget.controller.mode == TelemetrySourceMode.onDeviceLab)
+                IconButton(
+                  key: const Key('toggle-playback-btn'),
+                  tooltip: widget.controller.isPlaying ? 'Pause' : 'Play',
+                  onPressed: widget.controller.toggleOnDevicePlayback,
+                  icon: Icon(
+                    widget.controller.isPlaying
+                        ? Icons.pause_circle_filled_rounded
+                        : Icons.play_circle_fill_rounded,
+                    color: kMint,
+                  ),
+                ),
+              IconButton(
+                key: const Key('export-json-btn'),
+                tooltip: 'Inspect JSON Telemetry Snapshot',
+                onPressed: () => _showSnapshotJsonDialog(context, snap),
+                icon: const Icon(Icons.data_object_rounded, color: kBlue),
               ),
-              _SourceBadge(controller: widget.controller, snapshot: snap),
             ],
           ),
-          actions: [
-            if (widget.controller.mode == TelemetrySourceMode.onDeviceLab)
-              IconButton(
-                key: const Key('toggle-playback-btn'),
-                tooltip: widget.controller.isPlaying ? 'Pause' : 'Play',
-                onPressed: widget.controller.toggleOnDevicePlayback,
-                icon: Icon(
-                  widget.controller.isPlaying
-                      ? Icons.pause_circle_filled_rounded
-                      : Icons.play_circle_fill_rounded,
-                  color: kMint,
+          body: isWide
+              ? Row(
+                  children: [
+                    NavigationRail(
+                      backgroundColor: kSurface,
+                      selectedIndex: _tabIndex,
+                      onDestinationSelected: (idx) =>
+                          setState(() => _tabIndex = idx),
+                      labelType: NavigationRailLabelType.all,
+                      destinations: const [
+                        NavigationRailDestination(
+                          icon: Icon(Icons.grid_view_rounded),
+                          label: Text('Parameters'),
+                        ),
+                        NavigationRailDestination(
+                          icon: Icon(Icons.ssid_chart_rounded),
+                          label: Text('Charts'),
+                        ),
+                        NavigationRailDestination(
+                          icon: Icon(Icons.science_rounded),
+                          label: Text('Lab'),
+                        ),
+                        NavigationRailDestination(
+                          icon: Icon(Icons.hub_rounded),
+                          label: Text('Live Link'),
+                        ),
+                      ],
+                    ),
+                    const VerticalDivider(width: 1, color: kLine),
+                    Expanded(child: pages[_tabIndex]),
+                  ],
+                )
+              : pages[_tabIndex],
+          bottomNavigationBar: isWide
+              ? null
+              : NavigationBar(
+                  key: const Key('mobile-bottom-nav'),
+                  selectedIndex: _tabIndex,
+                  onDestinationSelected: (idx) =>
+                      setState(() => _tabIndex = idx),
+                  destinations: const [
+                    NavigationDestination(
+                      icon: Icon(Icons.grid_view_rounded),
+                      label: 'Parameters',
+                    ),
+                    NavigationDestination(
+                      icon: Icon(Icons.ssid_chart_rounded),
+                      label: 'Charts',
+                    ),
+                    NavigationDestination(
+                      icon: Icon(Icons.science_rounded),
+                      label: 'Lab',
+                    ),
+                    NavigationDestination(
+                      icon: Icon(Icons.hub_rounded),
+                      label: 'Live Link',
+                    ),
+                  ],
                 ),
-              ),
-            IconButton(
-              key: const Key('export-json-btn'),
-              tooltip: 'Inspect JSON Telemetry Snapshot',
-              onPressed: () => _showSnapshotJsonDialog(context, snap),
-              icon: const Icon(Icons.data_object_rounded, color: kBlue),
-            ),
-          ],
-        ),
-        body: isWide
-            ? Row(
-                children: [
-                  NavigationRail(
-                    backgroundColor: kSurface,
-                    selectedIndex: _tabIndex,
-                    onDestinationSelected: (idx) =>
-                        setState(() => _tabIndex = idx),
-                    labelType: NavigationRailLabelType.all,
-                    destinations: const [
-                      NavigationRailDestination(
-                        icon: Icon(Icons.grid_view_rounded),
-                        label: Text('Parameters'),
-                      ),
-                      NavigationRailDestination(
-                        icon: Icon(Icons.ssid_chart_rounded),
-                        label: Text('Charts'),
-                      ),
-                      NavigationRailDestination(
-                        icon: Icon(Icons.science_rounded),
-                        label: Text('Lab'),
-                      ),
-                      NavigationRailDestination(
-                        icon: Icon(Icons.hub_rounded),
-                        label: Text('Live Link'),
-                      ),
-                    ],
-                  ),
-                  const VerticalDivider(width: 1, color: kLine),
-                  Expanded(child: pages[_tabIndex]),
-                ],
-              )
-            : pages[_tabIndex],
-        bottomNavigationBar: isWide
-            ? null
-            : NavigationBar(
-                key: const Key('mobile-bottom-nav'),
-                selectedIndex: _tabIndex,
-                onDestinationSelected: (idx) => setState(() => _tabIndex = idx),
-                destinations: const [
-                  NavigationDestination(
-                    icon: Icon(Icons.grid_view_rounded),
-                    label: 'Parameters',
-                  ),
-                  NavigationDestination(
-                    icon: Icon(Icons.ssid_chart_rounded),
-                    label: 'Charts',
-                  ),
-                  NavigationDestination(
-                    icon: Icon(Icons.science_rounded),
-                    label: 'Lab',
-                  ),
-                  NavigationDestination(
-                    icon: Icon(Icons.hub_rounded),
-                    label: 'Live Link',
-                  ),
-                ],
-              ),
-      );
-    },
+        );
+      },
+    ),
   );
 
   void _showSnapshotJsonDialog(
@@ -872,24 +880,39 @@ class _LiveThreeNodeLinkTabState extends State<_LiveThreeNodeLinkTab> {
             children: [
               for (var i = 0; i < 3; i++)
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 5),
+                  padding: const EdgeInsets.symmetric(vertical: 6),
                   child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        Icons.circle,
-                        size: 10,
-                        color: _healthColor(c.nodeHealth[i].link),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Icon(
+                          Icons.circle,
+                          size: 10,
+                          color: _healthColor(c.nodeHealth[i].link),
+                        ),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: Text(
-                          roleNames[i],
-                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              roleNames[i],
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '${c.nodeHealth[i].link.label} · ${c.nodeHealth[i].dataFlow.label}',
+                              style: const TextStyle(
+                                color: kMuted,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                      Text(
-                        '${c.nodeHealth[i].link.label} · ${c.nodeHealth[i].dataFlow.label}',
-                        style: const TextStyle(color: kMuted, fontSize: 12),
                       ),
                     ],
                   ),
@@ -986,36 +1009,38 @@ class _PanelBox extends StatelessWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(15),
-    decoration: BoxDecoration(
-      color: kSurface,
+  Widget build(BuildContext context) => Material(
+    color: kSurface,
+    shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(14),
-      border: Border.all(color: kLine),
+      side: const BorderSide(color: kLine),
     ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(icon, size: 18, color: kMint),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 12.5,
-                  letterSpacing: 0.4,
+    child: Padding(
+      padding: const EdgeInsets.all(15),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 18, color: kMint),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 12.5,
+                    letterSpacing: 0.4,
+                  ),
                 ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        child,
-      ],
+            ],
+          ),
+          const SizedBox(height: 12),
+          child,
+        ],
+      ),
     ),
   );
 }

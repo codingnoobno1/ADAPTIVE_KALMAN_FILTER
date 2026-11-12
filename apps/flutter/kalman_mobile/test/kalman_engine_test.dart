@@ -61,7 +61,9 @@ void main() {
 
   group('processBpskFrame DSP Parity', () {
     test('recovers constant DC offset and achieves zero BER on clean BPSK', () {
-      final filter = ScalarKalmanFilter(q: 0.01, r: 0.1);
+      // Stationary DC offset uses small tracking ratio rho = Q/R = 0.004 so
+      // 8-symbol Rademacher block variance (1/8 = 0.125 V^2) averages cleanly.
+      final filter = ScalarKalmanFilter(q: 0.001, r: 0.25);
       const symbols = 64;
       const sps = 8;
       const dcOffset = 0.65;
@@ -69,9 +71,8 @@ void main() {
       final rng = math.Random(7);
       final samples = <double>[];
 
-      // Run 6 frames so DC tracker locks onto +0.65 V offset
       late BpskFrameMetrics lastMetrics;
-      for (var frame = 0; frame < 6; frame++) {
+      for (var frame = 0; frame < 30; frame++) {
         samples.clear();
         for (var i = 0; i < refBits.length; i++) {
           refBits[i] = 0;
