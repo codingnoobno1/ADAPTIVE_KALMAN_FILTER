@@ -54,6 +54,15 @@ class ReceiverServiceClient extends $grpc.Client {
     return $createUnaryCall(_$getRxStatus, request, options: options);
   }
 
+  $grpc.ResponseStream<$0.RxFrameTrace> watchFrameTraces(
+    $1.Empty request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createStreamingCall(
+        _$watchFrameTraces, $async.Stream.fromIterable([request]),
+        options: options);
+  }
+
   // method descriptors
 
   static final _$processSignal = $grpc.ClientMethod<$0.TxFrame, $0.RxFeedback>(
@@ -69,6 +78,11 @@ class ReceiverServiceClient extends $grpc.Client {
       '/livekalman.rx.v1.ReceiverService/GetRxStatus',
       ($1.Empty value) => value.writeToBuffer(),
       $0.RxStatus.fromBuffer);
+  static final _$watchFrameTraces =
+      $grpc.ClientMethod<$1.Empty, $0.RxFrameTrace>(
+          '/livekalman.rx.v1.ReceiverService/WatchFrameTraces',
+          ($1.Empty value) => value.writeToBuffer(),
+          $0.RxFrameTrace.fromBuffer);
 }
 
 @$pb.GrpcServiceName('livekalman.rx.v1.ReceiverService')
@@ -97,6 +111,13 @@ abstract class ReceiverServiceBase extends $grpc.Service {
         false,
         ($core.List<$core.int> value) => $1.Empty.fromBuffer(value),
         ($0.RxStatus value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$1.Empty, $0.RxFrameTrace>(
+        'WatchFrameTraces',
+        watchFrameTraces_Pre,
+        false,
+        true,
+        ($core.List<$core.int> value) => $1.Empty.fromBuffer(value),
+        ($0.RxFrameTrace value) => value.writeToBuffer()));
   }
 
   $async.Stream<$0.RxFeedback> processSignal(
@@ -116,5 +137,13 @@ abstract class ReceiverServiceBase extends $grpc.Service {
   }
 
   $async.Future<$0.RxStatus> getRxStatus(
+      $grpc.ServiceCall call, $1.Empty request);
+
+  $async.Stream<$0.RxFrameTrace> watchFrameTraces_Pre(
+      $grpc.ServiceCall $call, $async.Future<$1.Empty> $request) async* {
+    yield* watchFrameTraces($call, await $request);
+  }
+
+  $async.Stream<$0.RxFrameTrace> watchFrameTraces(
       $grpc.ServiceCall call, $1.Empty request);
 }

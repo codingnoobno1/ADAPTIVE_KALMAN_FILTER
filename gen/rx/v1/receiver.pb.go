@@ -520,6 +520,180 @@ func (x *RxStatus) GetSequenceGaps() uint64 {
 	return 0
 }
 
+// RxFrameTrace is the Receiver's bounded view of one real protobuf frame after
+// Kalman tracking and BPSK hard decisions.
+type RxFrameTrace struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Sequence         uint64                 `protobuf:"varint,1,opt,name=sequence,proto3" json:"sequence,omitempty"`
+	TransferId       string                 `protobuf:"bytes,2,opt,name=transfer_id,json=transferId,proto3" json:"transfer_id,omitempty"`
+	FileName         string                 `protobuf:"bytes,3,opt,name=file_name,json=fileName,proto3" json:"file_name,omitempty"`
+	MediaOffset      uint64                 `protobuf:"varint,4,opt,name=media_offset,json=mediaOffset,proto3" json:"media_offset,omitempty"`
+	TotalBytes       uint64                 `protobuf:"varint,5,opt,name=total_bytes,json=totalBytes,proto3" json:"total_bytes,omitempty"`
+	NoisySamples     []float32              `protobuf:"fixed32,6,rep,packed,name=noisy_samples,json=noisySamples,proto3" json:"noisy_samples,omitempty"`
+	DcEstimate       float32                `protobuf:"fixed32,7,opt,name=dc_estimate,json=dcEstimate,proto3" json:"dc_estimate,omitempty"`
+	DemodulatedBytes []byte                 `protobuf:"bytes,8,opt,name=demodulated_bytes,json=demodulatedBytes,proto3" json:"demodulated_bytes,omitempty"`
+	DecodedBytes     []byte                 `protobuf:"bytes,9,opt,name=decoded_bytes,json=decodedBytes,proto3" json:"decoded_bytes,omitempty"`
+	DemodulatedBits  string                 `protobuf:"bytes,10,opt,name=demodulated_bits,json=demodulatedBits,proto3" json:"demodulated_bits,omitempty"`
+	BitErrors        uint64                 `protobuf:"varint,11,opt,name=bit_errors,json=bitErrors,proto3" json:"bit_errors,omitempty"`
+	ComparedBits     uint64                 `protobuf:"varint,12,opt,name=compared_bits,json=comparedBits,proto3" json:"compared_bits,omitempty"`
+	Ber              float32                `protobuf:"fixed32,13,opt,name=ber,proto3" json:"ber,omitempty"`
+	ReceivedBytes    uint64                 `protobuf:"varint,14,opt,name=received_bytes,json=receivedBytes,proto3" json:"received_bytes,omitempty"`
+	ChecksumState    string                 `protobuf:"bytes,15,opt,name=checksum_state,json=checksumState,proto3" json:"checksum_state,omitempty"`
+	EndOfStream      bool                   `protobuf:"varint,16,opt,name=end_of_stream,json=endOfStream,proto3" json:"end_of_stream,omitempty"`
+	ObservedAtUnixMs uint64                 `protobuf:"varint,17,opt,name=observed_at_unix_ms,json=observedAtUnixMs,proto3" json:"observed_at_unix_ms,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *RxFrameTrace) Reset() {
+	*x = RxFrameTrace{}
+	mi := &file_rx_v1_receiver_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RxFrameTrace) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RxFrameTrace) ProtoMessage() {}
+
+func (x *RxFrameTrace) ProtoReflect() protoreflect.Message {
+	mi := &file_rx_v1_receiver_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RxFrameTrace.ProtoReflect.Descriptor instead.
+func (*RxFrameTrace) Descriptor() ([]byte, []int) {
+	return file_rx_v1_receiver_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *RxFrameTrace) GetSequence() uint64 {
+	if x != nil {
+		return x.Sequence
+	}
+	return 0
+}
+
+func (x *RxFrameTrace) GetTransferId() string {
+	if x != nil {
+		return x.TransferId
+	}
+	return ""
+}
+
+func (x *RxFrameTrace) GetFileName() string {
+	if x != nil {
+		return x.FileName
+	}
+	return ""
+}
+
+func (x *RxFrameTrace) GetMediaOffset() uint64 {
+	if x != nil {
+		return x.MediaOffset
+	}
+	return 0
+}
+
+func (x *RxFrameTrace) GetTotalBytes() uint64 {
+	if x != nil {
+		return x.TotalBytes
+	}
+	return 0
+}
+
+func (x *RxFrameTrace) GetNoisySamples() []float32 {
+	if x != nil {
+		return x.NoisySamples
+	}
+	return nil
+}
+
+func (x *RxFrameTrace) GetDcEstimate() float32 {
+	if x != nil {
+		return x.DcEstimate
+	}
+	return 0
+}
+
+func (x *RxFrameTrace) GetDemodulatedBytes() []byte {
+	if x != nil {
+		return x.DemodulatedBytes
+	}
+	return nil
+}
+
+func (x *RxFrameTrace) GetDecodedBytes() []byte {
+	if x != nil {
+		return x.DecodedBytes
+	}
+	return nil
+}
+
+func (x *RxFrameTrace) GetDemodulatedBits() string {
+	if x != nil {
+		return x.DemodulatedBits
+	}
+	return ""
+}
+
+func (x *RxFrameTrace) GetBitErrors() uint64 {
+	if x != nil {
+		return x.BitErrors
+	}
+	return 0
+}
+
+func (x *RxFrameTrace) GetComparedBits() uint64 {
+	if x != nil {
+		return x.ComparedBits
+	}
+	return 0
+}
+
+func (x *RxFrameTrace) GetBer() float32 {
+	if x != nil {
+		return x.Ber
+	}
+	return 0
+}
+
+func (x *RxFrameTrace) GetReceivedBytes() uint64 {
+	if x != nil {
+		return x.ReceivedBytes
+	}
+	return 0
+}
+
+func (x *RxFrameTrace) GetChecksumState() string {
+	if x != nil {
+		return x.ChecksumState
+	}
+	return ""
+}
+
+func (x *RxFrameTrace) GetEndOfStream() bool {
+	if x != nil {
+		return x.EndOfStream
+	}
+	return false
+}
+
+func (x *RxFrameTrace) GetObservedAtUnixMs() uint64 {
+	if x != nil {
+		return x.ObservedAtUnixMs
+	}
+	return 0
+}
+
 var File_rx_v1_receiver_proto protoreflect.FileDescriptor
 
 const file_rx_v1_receiver_proto_rawDesc = "" +
@@ -575,11 +749,35 @@ const file_rx_v1_receiver_proto_rawDesc = "" +
 	"\x0eactive_version\x18\x01 \x01(\x04R\ractiveVersion\x12#\n" +
 	"\rstream_active\x18\x02 \x01(\bR\fstreamActive\x12#\n" +
 	"\rlast_sequence\x18\x03 \x01(\x04R\flastSequence\x12#\n" +
-	"\rsequence_gaps\x18\x04 \x01(\x04R\fsequenceGaps2\xfa\x01\n" +
+	"\rsequence_gaps\x18\x04 \x01(\x04R\fsequenceGaps\"\xe6\x04\n" +
+	"\fRxFrameTrace\x12\x1a\n" +
+	"\bsequence\x18\x01 \x01(\x04R\bsequence\x12\x1f\n" +
+	"\vtransfer_id\x18\x02 \x01(\tR\n" +
+	"transferId\x12\x1b\n" +
+	"\tfile_name\x18\x03 \x01(\tR\bfileName\x12!\n" +
+	"\fmedia_offset\x18\x04 \x01(\x04R\vmediaOffset\x12\x1f\n" +
+	"\vtotal_bytes\x18\x05 \x01(\x04R\n" +
+	"totalBytes\x12#\n" +
+	"\rnoisy_samples\x18\x06 \x03(\x02R\fnoisySamples\x12\x1f\n" +
+	"\vdc_estimate\x18\a \x01(\x02R\n" +
+	"dcEstimate\x12+\n" +
+	"\x11demodulated_bytes\x18\b \x01(\fR\x10demodulatedBytes\x12#\n" +
+	"\rdecoded_bytes\x18\t \x01(\fR\fdecodedBytes\x12)\n" +
+	"\x10demodulated_bits\x18\n" +
+	" \x01(\tR\x0fdemodulatedBits\x12\x1d\n" +
+	"\n" +
+	"bit_errors\x18\v \x01(\x04R\tbitErrors\x12#\n" +
+	"\rcompared_bits\x18\f \x01(\x04R\fcomparedBits\x12\x10\n" +
+	"\x03ber\x18\r \x01(\x02R\x03ber\x12%\n" +
+	"\x0ereceived_bytes\x18\x0e \x01(\x04R\rreceivedBytes\x12%\n" +
+	"\x0echecksum_state\x18\x0f \x01(\tR\rchecksumState\x12\"\n" +
+	"\rend_of_stream\x18\x10 \x01(\bR\vendOfStream\x12-\n" +
+	"\x13observed_at_unix_ms\x18\x11 \x01(\x04R\x10observedAtUnixMs2\xcd\x02\n" +
 	"\x0fReceiverService\x12L\n" +
 	"\rProcessSignal\x12\x19.livekalman.rx.v1.TxFrame\x1a\x1c.livekalman.rx.v1.RxFeedback(\x010\x01\x12Q\n" +
 	"\x13ApplyReceiverConfig\x12\x1a.livekalman.rx.v1.RxConfig\x1a\x1e.livekalman.rx.v1.ApplyRxReply\x12F\n" +
-	"\vGetRxStatus\x12\x1b.livekalman.common.v1.Empty\x1a\x1a.livekalman.rx.v1.RxStatusB8Z6github.com/streaming-live-kalman/filter/gen/rx/v1;rxv1b\x06proto3"
+	"\vGetRxStatus\x12\x1b.livekalman.common.v1.Empty\x1a\x1a.livekalman.rx.v1.RxStatus\x12Q\n" +
+	"\x10WatchFrameTraces\x12\x1b.livekalman.common.v1.Empty\x1a\x1e.livekalman.rx.v1.RxFrameTrace0\x01B8Z6github.com/streaming-live-kalman/filter/gen/rx/v1;rxv1b\x06proto3"
 
 var (
 	file_rx_v1_receiver_proto_rawDescOnce sync.Once
@@ -593,28 +791,31 @@ func file_rx_v1_receiver_proto_rawDescGZIP() []byte {
 	return file_rx_v1_receiver_proto_rawDescData
 }
 
-var file_rx_v1_receiver_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_rx_v1_receiver_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_rx_v1_receiver_proto_goTypes = []any{
 	(*TxFrame)(nil),            // 0: livekalman.rx.v1.TxFrame
 	(*RxFeedback)(nil),         // 1: livekalman.rx.v1.RxFeedback
 	(*RxConfig)(nil),           // 2: livekalman.rx.v1.RxConfig
 	(*ApplyRxReply)(nil),       // 3: livekalman.rx.v1.ApplyRxReply
 	(*RxStatus)(nil),           // 4: livekalman.rx.v1.RxStatus
-	(v1.SampleFormat)(0),       // 5: livekalman.common.v1.SampleFormat
-	(*v1.MediaDescriptor)(nil), // 6: livekalman.common.v1.MediaDescriptor
-	(*v1.Empty)(nil),           // 7: livekalman.common.v1.Empty
+	(*RxFrameTrace)(nil),       // 5: livekalman.rx.v1.RxFrameTrace
+	(v1.SampleFormat)(0),       // 6: livekalman.common.v1.SampleFormat
+	(*v1.MediaDescriptor)(nil), // 7: livekalman.common.v1.MediaDescriptor
+	(*v1.Empty)(nil),           // 8: livekalman.common.v1.Empty
 }
 var file_rx_v1_receiver_proto_depIdxs = []int32{
-	5, // 0: livekalman.rx.v1.TxFrame.sample_format:type_name -> livekalman.common.v1.SampleFormat
-	6, // 1: livekalman.rx.v1.TxFrame.media:type_name -> livekalman.common.v1.MediaDescriptor
+	6, // 0: livekalman.rx.v1.TxFrame.sample_format:type_name -> livekalman.common.v1.SampleFormat
+	7, // 1: livekalman.rx.v1.TxFrame.media:type_name -> livekalman.common.v1.MediaDescriptor
 	0, // 2: livekalman.rx.v1.ReceiverService.ProcessSignal:input_type -> livekalman.rx.v1.TxFrame
 	2, // 3: livekalman.rx.v1.ReceiverService.ApplyReceiverConfig:input_type -> livekalman.rx.v1.RxConfig
-	7, // 4: livekalman.rx.v1.ReceiverService.GetRxStatus:input_type -> livekalman.common.v1.Empty
-	1, // 5: livekalman.rx.v1.ReceiverService.ProcessSignal:output_type -> livekalman.rx.v1.RxFeedback
-	3, // 6: livekalman.rx.v1.ReceiverService.ApplyReceiverConfig:output_type -> livekalman.rx.v1.ApplyRxReply
-	4, // 7: livekalman.rx.v1.ReceiverService.GetRxStatus:output_type -> livekalman.rx.v1.RxStatus
-	5, // [5:8] is the sub-list for method output_type
-	2, // [2:5] is the sub-list for method input_type
+	8, // 4: livekalman.rx.v1.ReceiverService.GetRxStatus:input_type -> livekalman.common.v1.Empty
+	8, // 5: livekalman.rx.v1.ReceiverService.WatchFrameTraces:input_type -> livekalman.common.v1.Empty
+	1, // 6: livekalman.rx.v1.ReceiverService.ProcessSignal:output_type -> livekalman.rx.v1.RxFeedback
+	3, // 7: livekalman.rx.v1.ReceiverService.ApplyReceiverConfig:output_type -> livekalman.rx.v1.ApplyRxReply
+	4, // 8: livekalman.rx.v1.ReceiverService.GetRxStatus:output_type -> livekalman.rx.v1.RxStatus
+	5, // 9: livekalman.rx.v1.ReceiverService.WatchFrameTraces:output_type -> livekalman.rx.v1.RxFrameTrace
+	6, // [6:10] is the sub-list for method output_type
+	2, // [2:6] is the sub-list for method input_type
 	2, // [2:2] is the sub-list for extension type_name
 	2, // [2:2] is the sub-list for extension extendee
 	0, // [0:2] is the sub-list for field type_name
@@ -631,7 +832,7 @@ func file_rx_v1_receiver_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_rx_v1_receiver_proto_rawDesc), len(file_rx_v1_receiver_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   5,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

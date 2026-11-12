@@ -1,0 +1,451 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  GO_VERSION: '1.25.1'
+  PROTOC_VERSION: '31.1'
+  PROTOC_GEN_GO_VERSION: 'v1.36.9'
+  PROTOC_GEN_GO_GRPC_VERSION: 'v1.5.1'
+  DART_PROTOC_PLUGIN_VERSION: '25.1.0'
+  NANOPB_VERSION: '0.4.9.1'
+  BUF_VERSION: '1.50.0'
+  PYTHON_VERSION: '3.12'
+  DOTNET_VERSION: '10.0.x'
+  MAUI_WINDOWS_TFM: 'net10.0-windows10.0.19041.0'
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # 1. Go Formatting, Vet, Race Tests, Pure-Go ONNX Parity & Cross-Compilation
+  # ---------------------------------------------------------------------------
+  go-checks:
+    name: Go Servers, DSP & ONNX Unit Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Go ${{ env.GO_VERSION }}
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Check Go formatting (gofmt -s)
+        run: |
+          unformatted="$(gofmt -s -l cmd pkg server shared)"
+          if [ -n "$unformatted" ]; then
+            echo "::error::The following Go files are not formatted with gofmt -s:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: Check go.mod / go.sum hygiene
+        run: |
+          go mod tidy
+          git diff --ignore-cr-at-eol --exit-code -- go.mod go.sum
+
+      - name: Run go vet
+        run: go vet ./...
+
+      - name: Run unit tests with race detector (CGO_ENABLED=1)
+        env:
+          CGO_ENABLED: '1'
+        run: go test -race -timeout 3m ./...
+
+      - name: Run pure-Go static unit tests & coverage (CGO_ENABLED=0)
+        env:
+          CGO_ENABLED: '0'
+        run: |
+          go test -v -coverprofile=coverage.out ./...
+          {
+            echo "### Go Unit Test Coverage (\`CGO_ENABLED=0\`)"
+            echo '```text'
+            go tool cover -func=coverage.out
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Build Linux & Windows server and CLI binaries
+        env:
+          CGO_ENABLED: '0'
+        run: |
+          mkdir -p dist/linux-amd64 dist/windows-amd64
+          for role in controller receiver sender; do
+            GOOS=linux   GOARCH=amd64 go build -trimpath -o "dist/linux-amd64/${role}"       "./server/${role}"
+            GOOS=windows GOARCH=amd64 go build -trimpath -o "dist/windows-amd64/${role}.exe" "./server/${role}"
+          done
+          for tool in labctl datagen mediagen; do
+            GOOS=linux   GOARCH=amd64 go build -trimpath -o "dist/linux-amd64/${tool}"       "./cmd/${tool}"
+            GOOS=windows GOARCH=amd64 go build -trimpath -o "dist/windows-amd64/${tool}.exe" "./cmd/${tool}"
+          done
+
+      - name: Upload Linux binaries for E2E job
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-amd64-bins
+          path: dist/linux-amd64/*
+          if-no-files-found: error
+          retention-days: 5
+
+      - name: Upload Go coverage profile
+        uses: actions/upload-artifact@v4
+        with:
+          name: go-coverage
+          path: coverage.out
+          if-no-files-found: error
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------
+  # 2. Protobuf Schema Lint, Breaking-Change Check & Codegen Zero-Drift Gate
+  # ---------------------------------------------------------------------------
+  proto-drift:
+    name: Protobuf Lint & Multi-Language Drift
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Buf ${{ env.BUF_VERSION }}
+        uses: bufbuild/buf-setup-action@v1
+        with:
+          version: ${{ env.BUF_VERSION }}
+
+      - name: Run buf lint
+        run: buf lint
+
+      - name: Run buf breaking check on pull requests
+        if: github.event_name == 'pull_request'
+        run: |
+          if git cat-file -e "origin/${GITHUB_BASE_REF}:buf.yaml" 2>/dev/null; then
+            buf breaking --against ".git#branch=origin/${GITHUB_BASE_REF}"
+          else
+            echo "Base branch origin/${GITHUB_BASE_REF} has no buf.yaml yet; skipping breaking check."
+          fi
+
+      - name: Setup Go ${{ env.GO_VERSION }}
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Setup Dart / Flutter (for protoc_plugin)
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Setup Python ${{ env.PYTHON_VERSION }} (for nanopb)
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install protoc ${{ env.PROTOC_VERSION }} and language plugins
+        run: |
+          curl -fsSL "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip" -o /tmp/protoc.zip
+          unzip -q /tmp/protoc.zip -d /tmp/protoc
+          echo "/tmp/protoc/bin" >> "$GITHUB_PATH"
+
+          go install "google.golang.org/protobuf/cmd/protoc-gen-go@${PROTOC_GEN_GO_VERSION}"
+          go install "google.golang.org/grpc/cmd/protoc-gen-go-grpc@${PROTOC_GEN_GO_GRPC_VERSION}"
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+          dart pub global activate protoc_plugin "${DART_PROTOC_PLUGIN_VERSION}"
+          echo "$HOME/.pub-cache/bin" >> "$GITHUB_PATH"
+
+          python -m pip install --quiet "nanopb==${NANOPB_VERSION}"
+
+      - name: Regenerate Go, Dart & ESP32 Nanopb bindings and assert zero drift
+        run: |
+          PROTOS="proto/common/v1/common.proto proto/tx/v1/transmitter.proto proto/rx/v1/receiver.proto proto/control/v1/controller.proto"
+
+          protoc -I proto \
+            --go_out=. --go_opt=module=github.com/streaming-live-kalman/filter \
+            --go-grpc_out=. --go-grpc_opt=module=github.com/streaming-live-kalman/filter \
+            $PROTOS
+
+          protoc -I proto \
+            --dart_out=grpc:sdk/dart/livekalman_sdk/lib/src/generated \
+            $PROTOS
+
+          python -m nanopb.generator.nanopb_generator \
+            -I proto \
+            -D examples/esp32/platformio/lib/lk_media \
+            proto/common/v1/common.proto proto/rx/v1/receiver.proto
+
+          git diff --ignore-cr-at-eol --exit-code -- \
+            gen \
+            sdk/dart/livekalman_sdk/lib/src/generated \
+            examples/esp32/platformio/lib/lk_media
+
+          untracked="$(git ls-files --others --exclude-standard -- gen sdk/dart/livekalman_sdk/lib/src/generated examples/esp32/platformio/lib/lk_media)"
+          if [ -n "$untracked" ]; then
+            echo "::error::Untracked generated protobuf files detected:"
+            echo "$untracked"
+            exit 1
+          fi
+
+  # ---------------------------------------------------------------------------
+  # 3. Live 3-Node Stack E2E, ESP32 Nanopb Host-Test & PlatformIO Firmware Build
+  # ---------------------------------------------------------------------------
+  e2e-stack-and-esp32:
+    name: Live 3-Node E2E & ESP32 Firmware/Ingest
+    runs-on: ubuntu-latest
+    needs: go-checks
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Download Linux server & CLI binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-amd64-bins
+          path: bin
+
+      - name: Mark Go binaries executable
+        run: chmod +x bin/*
+
+      - name: Compile ESP32 hosttest (C11 + Nanopb ${{ env.NANOPB_VERSION }} + -Werror)
+        run: |
+          curl -fsSL "https://github.com/nanopb/nanopb/archive/refs/tags/${NANOPB_VERSION}.tar.gz" -o /tmp/nanopb.tar.gz
+          tar -xzf /tmp/nanopb.tar.gz -C /tmp
+          L="examples/esp32/platformio/lib/lk_media"
+          N="/tmp/nanopb-${NANOPB_VERSION}"
+          gcc -std=c11 -Wall -Wextra -Werror -I "$N" -I "$L" \
+            examples/esp32/hosttest/lk_hosttest.c \
+            "$L/lk_media.c" "$L/rx/v1/receiver.pb.c" "$L/common/v1/common.pb.c" \
+            "$N/pb_encode.c" "$N/pb_common.c" \
+            -lm -o /tmp/lk_hosttest
+
+      - name: Run 6-phase 3-node gRPC/HTTP/SSE/ONNX + ESP32 E2E suite
+        run: |
+          python scripts/verify_e2e.py \
+            --root . \
+            --bin-dir bin \
+            --config configs/local-impaired.json \
+            --esp32-hosttest /tmp/lk_hosttest
+
+      - name: Cache PlatformIO packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.platformio
+          key: pio-${{ runner.os }}-${{ hashFiles('examples/esp32/platformio/platformio.ini') }}
+
+      - name: Build ESP32 Arduino firmware (PlatformIO esp32dev)
+        run: |
+          python -m pip install --quiet platformio
+          pio run -d examples/esp32/platformio
+
+  # ---------------------------------------------------------------------------
+  # 4. ML Policy Audit & End-to-End Datagen -> Train -> ONNX -> Go Parity Gate
+  # ---------------------------------------------------------------------------
+  ml-pipeline:
+    name: Python ML Policy & ONNX Export Parity
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Go ${{ env.GO_VERSION }}
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Setup Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache pip wheels
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-ml-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('ml/requirements.txt', 'ml/train.py', 'ml/verify_model.py') }}
+
+      - name: Install ML dependencies
+        run: |
+          python -m pip install --upgrade --quiet pip
+          python -m pip install --quiet -r ml/requirements.txt
+
+      - name: Audit committed r_policy.onnx, golden vectors & dataset results
+        run: |
+          python ml/verify_model.py --models-dir ml/models --min-r2 0.40 --require-drift-gain
+          python ml/export_results.py --check
+
+      - name: Smoke-test datagen -> train.py -> ONNX -> gonnx parity
+        env:
+          CGO_ENABLED: '0'
+        run: |
+          mkdir -p /tmp/ml-smoke/models
+          go run ./cmd/datagen -scenarios 120 -score-frames 24 -out /tmp/ml-smoke/dataset.csv
+          python ml/train.py --data /tmp/ml-smoke/dataset.csv --out /tmp/ml-smoke/models
+          python ml/verify_model.py --models-dir /tmp/ml-smoke/models
+          LK_TEST_ONNX_MODEL=/tmp/ml-smoke/models/r_policy.onnx \
+            go test -v ./server/controller/extensions/mlpolicy
+
+  # ---------------------------------------------------------------------------
+  # 5. Dart gRPC SDK & Flutter Unified 3-Role App (Linux + Windows Desktop)
+  # ---------------------------------------------------------------------------
+  flutter-checks:
+    name: Flutter & Dart SDK (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter stable
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Analyze Dart livekalman_sdk
+        working-directory: sdk/dart/livekalman_sdk
+        run: |
+          dart pub get
+          dart analyze --fatal-infos
+
+      - name: Analyze & test Flutter signal_monitor app
+        working-directory: apps/flutter/signal_monitor
+        run: |
+          flutter pub get
+          flutter analyze
+          flutter test
+
+      - name: Build Flutter Windows desktop app (Debug)
+        if: runner.os == 'Windows'
+        working-directory: apps/flutter/signal_monitor
+        run: flutter build windows --debug
+
+      - name: Upload Flutter Windows debug bundle
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-signal-monitor-windows-debug
+          path: apps/flutter/signal_monitor/build/windows/x64/runner/Debug/**
+          if-no-files-found: error
+          retention-days: 7
+
+  # ---------------------------------------------------------------------------
+  # 6. .NET 10 MAUI Blazor Hybrid Studio (C# Proto Drift + Windows Build)
+  # ---------------------------------------------------------------------------
+  dotnet-maui-windows:
+    name: .NET 10 MAUI Studio (Windows)
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET ${{ env.DOTNET_VERSION }}
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('apps/dotnet/**/*.csproj') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
+
+      - name: Install .NET MAUI Windows workload
+        shell: pwsh
+        run: dotnet workload install maui-windows
+
+      - name: Verify C# Protobuf codegen zero drift (Grpc.Tools)
+        shell: pwsh
+        run: |
+          ./scripts/generate-dotnet.ps1
+          git diff --ignore-cr-at-eol --exit-code -- apps/dotnet/StreamingLiveKalmanFilter.Maui/Generated
+
+      - name: Build Live Kalman Studio (.NET 10 MAUI Windows)
+        shell: pwsh
+        run: |
+          dotnet build apps/dotnet/StreamingLiveKalmanFilter.Maui/StreamingLiveKalmanFilter.Maui.csproj `
+            -p:TargetFrameworks=${{ env.MAUI_WINDOWS_TFM }} `
+            -f ${{ env.MAUI_WINDOWS_TFM }} `
+            -c Release `
+            --nologo
+
+      - name: Upload .NET MAUI Windows build output
+        uses: actions/upload-artifact@v4
+        with:
+          name: dotnet-maui-studio-windows
+          path: apps/dotnet/StreamingLiveKalmanFilter.Maui/bin/Release/${{ env.MAUI_WINDOWS_TFM }}/**
+          if-no-files-found: error
+          retention-days: 7
+
+  # ---------------------------------------------------------------------------
+  # 7. Single Branch-Protection Status Gate
+  # ---------------------------------------------------------------------------
+  ci-gate:
+    name: CI Gate
+    runs-on: ubuntu-latest
+    if: always()
+    needs:
+      - go-checks
+      - proto-drift
+      - e2e-stack-and-esp32
+      - ml-pipeline
+      - flutter-checks
+      - dotnet-maui-windows
+    steps:
+      - name: Summarize & enforce upstream job results
+        env:
+          R_GO: ${{ needs.go-checks.result }}
+          R_PROTO: ${{ needs.proto-drift.result }}
+          R_E2E: ${{ needs.e2e-stack-and-esp32.result }}
+          R_ML: ${{ needs.ml-pipeline.result }}
+          R_FLUTTER: ${{ needs.flutter-checks.result }}
+          R_MAUI: ${{ needs.dotnet-maui-windows.result }}
+        run: |
+          {
+            echo "## Live Kalman CI Pipeline Summary"
+            echo ""
+            echo "| Check Suite | Result |"
+            echo "| :--- | :--- |"
+            echo "| Go Servers, DSP & ONNX Unit Checks | \`${R_GO}\` |"
+            echo "| Protobuf Lint & Multi-Language Drift | \`${R_PROTO}\` |"
+            echo "| Live 3-Node E2E & ESP32 Firmware/Ingest | \`${R_E2E}\` |"
+            echo "| Python ML Policy & ONNX Export Parity | \`${R_ML}\` |"
+            echo "| Flutter & Dart SDK (Linux + Windows) | \`${R_FLUTTER}\` |"
+            echo "| .NET 10 MAUI Studio (Windows) | \`${R_MAUI}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          for result in "$R_GO" "$R_PROTO" "$R_E2E" "$R_ML" "$R_FLUTTER" "$R_MAUI"; do
+            if [ "$result" != "success" ]; then
+              echo "::error::One or more CI jobs did not succeed (saw status: ${result})."
+              exit 1
+            fi
+          done
+          echo "All CI checks passed."

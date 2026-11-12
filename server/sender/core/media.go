@@ -3,6 +3,7 @@ package core
 import (
 	"fmt"
 	"hash/crc32"
+	"log/slog"
 	"mime"
 	"path/filepath"
 	"strings"
@@ -128,6 +129,7 @@ func (s *Server) nextPayloadLocked(sequence uint64) (payload []byte, media *comm
 		}
 		s.current, s.queue = s.queue[0], s.queue[1:]
 		s.current.status.State = "sending"
+		slog.Info("sending file", "file", s.current.status.FileName, "bytes", len(s.current.encoded), "type", s.current.status.ContentType)
 		s.publishLocked(&txv1.TxEvent{Sequence: sequence, Description: "sending " + s.current.status.FileName})
 	}
 	t := s.current
@@ -148,6 +150,7 @@ func (s *Server) nextPayloadLocked(sequence uint64) (payload []byte, media *comm
 			s.recent = s.recent[:recentTransfers]
 		}
 		s.current = nil
+		slog.Info("file sent", "file", t.status.FileName, "bytes", len(t.encoded), "last_sequence", sequence)
 		s.publishLocked(&txv1.TxEvent{Sequence: sequence, Description: fmt.Sprintf("sent %s (%d bytes)", t.status.FileName, len(t.encoded))})
 	}
 	return payload, t.descriptor, offset, end

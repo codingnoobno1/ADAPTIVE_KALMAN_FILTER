@@ -20,9 +20,20 @@ foreach ($name in 'controller','receiver','sender') {
 }
 
 if ($Dashboard -eq 'flutter') {
-    Start-Process -FilePath 'C:\tools\flutter\bin\flutter.bat' -ArgumentList 'run','-d','windows' -WorkingDirectory (Join-Path $root 'apps\flutter\signal_monitor') -WindowStyle Hidden
+    $flutter = @(
+        (Get-Command flutter -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source -ErrorAction SilentlyContinue),
+        'C:\flutter\bin\flutter.bat',
+        'C:\tools\flutter\bin\flutter.bat'
+    ) | Where-Object { $_ -and (Test-Path -LiteralPath $_) } | Select-Object -First 1
+    if (-not $flutter) { throw 'Flutter SDK was not found on PATH, C:\flutter\bin, or C:\tools\flutter\bin.' }
+    Start-Process -FilePath $flutter -ArgumentList 'run','-d','windows' -WorkingDirectory (Join-Path $root 'apps\flutter\signal_monitor') -WindowStyle Hidden
 } elseif ($Dashboard -eq 'maui') {
-    Start-Process -FilePath 'C:\Program Files\dotnet\dotnet.exe' -ArgumentList 'run','-f','net10.0-windows10.0.19041.0','--project',(Join-Path $root 'apps\dotnet\StreamingLiveKalmanFilter.Maui\StreamingLiveKalmanFilter.Maui.csproj') -WorkingDirectory $root -WindowStyle Hidden
+    $dotnet = @(
+        (Get-Command dotnet -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source -ErrorAction SilentlyContinue),
+        'C:\Program Files\dotnet\dotnet.exe'
+    ) | Where-Object { $_ -and (Test-Path -LiteralPath $_) } | Select-Object -First 1
+    if (-not $dotnet) { throw '.NET SDK was not found on PATH or C:\Program Files\dotnet.' }
+    Start-Process -FilePath $dotnet -ArgumentList 'run','-p:TargetFrameworks=net10.0-windows10.0.19041.0','-f','net10.0-windows10.0.19041.0','--project',(Join-Path $root 'apps\dotnet\StreamingLiveKalmanFilter.Maui\StreamingLiveKalmanFilter.Maui.csproj') -WorkingDirectory $root -WindowStyle Hidden
 }
 Write-Host 'Streaming stack is live. Controller dashboard feed: http://127.0.0.1:8080/api/v1/events' -ForegroundColor Green
 Write-Host "Logs: $logs"

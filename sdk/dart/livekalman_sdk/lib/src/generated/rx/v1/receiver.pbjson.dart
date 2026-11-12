@@ -181,3 +181,54 @@ final $typed_data.Uint8List rxStatusDescriptor = $convert.base64Decode(
     'CghSeFN0YXR1cxIlCg5hY3RpdmVfdmVyc2lvbhgBIAEoBFINYWN0aXZlVmVyc2lvbhIjCg1zdH'
     'JlYW1fYWN0aXZlGAIgASgIUgxzdHJlYW1BY3RpdmUSIwoNbGFzdF9zZXF1ZW5jZRgDIAEoBFIM'
     'bGFzdFNlcXVlbmNlEiMKDXNlcXVlbmNlX2dhcHMYBCABKARSDHNlcXVlbmNlR2Fwcw==');
+
+@$core.Deprecated('Use rxFrameTraceDescriptor instead')
+const RxFrameTrace$json = {
+  '1': 'RxFrameTrace',
+  '2': [
+    {'1': 'sequence', '3': 1, '4': 1, '5': 4, '10': 'sequence'},
+    {'1': 'transfer_id', '3': 2, '4': 1, '5': 9, '10': 'transferId'},
+    {'1': 'file_name', '3': 3, '4': 1, '5': 9, '10': 'fileName'},
+    {'1': 'media_offset', '3': 4, '4': 1, '5': 4, '10': 'mediaOffset'},
+    {'1': 'total_bytes', '3': 5, '4': 1, '5': 4, '10': 'totalBytes'},
+    {'1': 'noisy_samples', '3': 6, '4': 3, '5': 2, '10': 'noisySamples'},
+    {'1': 'dc_estimate', '3': 7, '4': 1, '5': 2, '10': 'dcEstimate'},
+    {
+      '1': 'demodulated_bytes',
+      '3': 8,
+      '4': 1,
+      '5': 12,
+      '10': 'demodulatedBytes'
+    },
+    {'1': 'decoded_bytes', '3': 9, '4': 1, '5': 12, '10': 'decodedBytes'},
+    {'1': 'demodulated_bits', '3': 10, '4': 1, '5': 9, '10': 'demodulatedBits'},
+    {'1': 'bit_errors', '3': 11, '4': 1, '5': 4, '10': 'bitErrors'},
+    {'1': 'compared_bits', '3': 12, '4': 1, '5': 4, '10': 'comparedBits'},
+    {'1': 'ber', '3': 13, '4': 1, '5': 2, '10': 'ber'},
+    {'1': 'received_bytes', '3': 14, '4': 1, '5': 4, '10': 'receivedBytes'},
+    {'1': 'checksum_state', '3': 15, '4': 1, '5': 9, '10': 'checksumState'},
+    {'1': 'end_of_stream', '3': 16, '4': 1, '5': 8, '10': 'endOfStream'},
+    {
+      '1': 'observed_at_unix_ms',
+      '3': 17,
+      '4': 1,
+      '5': 4,
+      '10': 'observedAtUnixMs'
+    },
+  ],
+};
+
+/// Descriptor for `RxFrameTrace`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List rxFrameTraceDescriptor = $convert.base64Decode(
+    'CgxSeEZyYW1lVHJhY2USGgoIc2VxdWVuY2UYASABKARSCHNlcXVlbmNlEh8KC3RyYW5zZmVyX2'
+    'lkGAIgASgJUgp0cmFuc2ZlcklkEhsKCWZpbGVfbmFtZRgDIAEoCVIIZmlsZU5hbWUSIQoMbWVk'
+    'aWFfb2Zmc2V0GAQgASgEUgttZWRpYU9mZnNldBIfCgt0b3RhbF9ieXRlcxgFIAEoBFIKdG90YW'
+    'xCeXRlcxIjCg1ub2lzeV9zYW1wbGVzGAYgAygCUgxub2lzeVNhbXBsZXMSHwoLZGNfZXN0aW1h'
+    'dGUYByABKAJSCmRjRXN0aW1hdGUSKwoRZGVtb2R1bGF0ZWRfYnl0ZXMYCCABKAxSEGRlbW9kdW'
+    'xhdGVkQnl0ZXMSIwoNZGVjb2RlZF9ieXRlcxgJIAEoDFIMZGVjb2RlZEJ5dGVzEikKEGRlbW9k'
+    'dWxhdGVkX2JpdHMYCiABKAlSD2RlbW9kdWxhdGVkQml0cxIdCgpiaXRfZXJyb3JzGAsgASgEUg'
+    'liaXRFcnJvcnMSIwoNY29tcGFyZWRfYml0cxgMIAEoBFIMY29tcGFyZWRCaXRzEhAKA2JlchgN'
+    'IAEoAlIDYmVyEiUKDnJlY2VpdmVkX2J5dGVzGA4gASgEUg1yZWNlaXZlZEJ5dGVzEiUKDmNoZW'
+    'Nrc3VtX3N0YXRlGA8gASgJUg1jaGVja3N1bVN0YXRlEiIKDWVuZF9vZl9zdHJlYW0YECABKAhS'
+    'C2VuZE9mU3RyZWFtEi0KE29ic2VydmVkX2F0X3VuaXhfbXMYESABKARSEG9ic2VydmVkQXRVbm'
+    'l4TXM=');

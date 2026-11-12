@@ -754,6 +754,269 @@ class RxStatus extends $pb.GeneratedMessage {
   void clearSequenceGaps() => $_clearField(4);
 }
 
+/// RxFrameTrace is the Receiver's bounded view of one real protobuf frame after
+/// Kalman tracking and BPSK hard decisions.
+class RxFrameTrace extends $pb.GeneratedMessage {
+  factory RxFrameTrace({
+    $fixnum.Int64? sequence,
+    $core.String? transferId,
+    $core.String? fileName,
+    $fixnum.Int64? mediaOffset,
+    $fixnum.Int64? totalBytes,
+    $core.Iterable<$core.double>? noisySamples,
+    $core.double? dcEstimate,
+    $core.List<$core.int>? demodulatedBytes,
+    $core.List<$core.int>? decodedBytes,
+    $core.String? demodulatedBits,
+    $fixnum.Int64? bitErrors,
+    $fixnum.Int64? comparedBits,
+    $core.double? ber,
+    $fixnum.Int64? receivedBytes,
+    $core.String? checksumState,
+    $core.bool? endOfStream,
+    $fixnum.Int64? observedAtUnixMs,
+  }) {
+    final result = RxFrameTrace._();
+    if (sequence != null) result.sequence = sequence;
+    if (transferId != null) result.transferId = transferId;
+    if (fileName != null) result.fileName = fileName;
+    if (mediaOffset != null) result.mediaOffset = mediaOffset;
+    if (totalBytes != null) result.totalBytes = totalBytes;
+    if (noisySamples != null) result.noisySamples.addAll(noisySamples);
+    if (dcEstimate != null) result.dcEstimate = dcEstimate;
+    if (demodulatedBytes != null) result.demodulatedBytes = demodulatedBytes;
+    if (decodedBytes != null) result.decodedBytes = decodedBytes;
+    if (demodulatedBits != null) result.demodulatedBits = demodulatedBits;
+    if (bitErrors != null) result.bitErrors = bitErrors;
+    if (comparedBits != null) result.comparedBits = comparedBits;
+    if (ber != null) result.ber = ber;
+    if (receivedBytes != null) result.receivedBytes = receivedBytes;
+    if (checksumState != null) result.checksumState = checksumState;
+    if (endOfStream != null) result.endOfStream = endOfStream;
+    if (observedAtUnixMs != null) result.observedAtUnixMs = observedAtUnixMs;
+    return result;
+  }
+
+  RxFrameTrace._();
+
+  factory RxFrameTrace.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RxFrameTrace()..mergeFromBuffer(data, registry);
+  factory RxFrameTrace.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RxFrameTrace()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'RxFrameTrace',
+      package:
+          const $pb.PackageName(_omitMessageNames ? '' : 'livekalman.rx.v1'),
+      createEmptyInstance: RxFrameTrace.$_createMessage)
+    ..a<$fixnum.Int64>(
+        1, _omitFieldNames ? '' : 'sequence', $pb.PbFieldType.OU6,
+        defaultOrMaker: $fixnum.Int64.ZERO)
+    ..aOS(2, _omitFieldNames ? '' : 'transferId')
+    ..aOS(3, _omitFieldNames ? '' : 'fileName')
+    ..a<$fixnum.Int64>(
+        4, _omitFieldNames ? '' : 'mediaOffset', $pb.PbFieldType.OU6,
+        defaultOrMaker: $fixnum.Int64.ZERO)
+    ..a<$fixnum.Int64>(
+        5, _omitFieldNames ? '' : 'totalBytes', $pb.PbFieldType.OU6,
+        defaultOrMaker: $fixnum.Int64.ZERO)
+    ..p<$core.double>(
+        6, _omitFieldNames ? '' : 'noisySamples', $pb.PbFieldType.KF)
+    ..aD(7, _omitFieldNames ? '' : 'dcEstimate', fieldType: $pb.PbFieldType.OF)
+    ..a<$core.List<$core.int>>(
+        8, _omitFieldNames ? '' : 'demodulatedBytes', $pb.PbFieldType.OY)
+    ..a<$core.List<$core.int>>(
+        9, _omitFieldNames ? '' : 'decodedBytes', $pb.PbFieldType.OY)
+    ..aOS(10, _omitFieldNames ? '' : 'demodulatedBits')
+    ..a<$fixnum.Int64>(
+        11, _omitFieldNames ? '' : 'bitErrors', $pb.PbFieldType.OU6,
+        defaultOrMaker: $fixnum.Int64.ZERO)
+    ..a<$fixnum.Int64>(
+        12, _omitFieldNames ? '' : 'comparedBits', $pb.PbFieldType.OU6,
+        defaultOrMaker: $fixnum.Int64.ZERO)
+    ..aD(13, _omitFieldNames ? '' : 'ber', fieldType: $pb.PbFieldType.OF)
+    ..a<$fixnum.Int64>(
+        14, _omitFieldNames ? '' : 'receivedBytes', $pb.PbFieldType.OU6,
+        defaultOrMaker: $fixnum.Int64.ZERO)
+    ..aOS(15, _omitFieldNames ? '' : 'checksumState')
+    ..aOB(16, _omitFieldNames ? '' : 'endOfStream')
+    ..a<$fixnum.Int64>(
+        17, _omitFieldNames ? '' : 'observedAtUnixMs', $pb.PbFieldType.OU6,
+        defaultOrMaker: $fixnum.Int64.ZERO)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RxFrameTrace clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RxFrameTrace copyWith(void Function(RxFrameTrace) updates) =>
+      super.copyWith((message) => updates(message as RxFrameTrace))
+          as RxFrameTrace;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use RxFrameTrace() / RxFrameTrace.new instead')
+  static RxFrameTrace create() => RxFrameTrace._();
+  static $pb.GeneratedMessage $_createMessage() => RxFrameTrace._();
+  @$core.override
+  RxFrameTrace createEmptyInstance() => RxFrameTrace._();
+  @$core.pragma('dart2js:noInline')
+  static RxFrameTrace getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<RxFrameTrace>(
+          RxFrameTrace.$_createMessage);
+  static RxFrameTrace? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $fixnum.Int64 get sequence => $_getI64(0);
+  @$pb.TagNumber(1)
+  set sequence($fixnum.Int64 value) => $_setInt64(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasSequence() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearSequence() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get transferId => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set transferId($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasTransferId() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearTransferId() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.String get fileName => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set fileName($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasFileName() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearFileName() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $fixnum.Int64 get mediaOffset => $_getI64(3);
+  @$pb.TagNumber(4)
+  set mediaOffset($fixnum.Int64 value) => $_setInt64(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasMediaOffset() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearMediaOffset() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $fixnum.Int64 get totalBytes => $_getI64(4);
+  @$pb.TagNumber(5)
+  set totalBytes($fixnum.Int64 value) => $_setInt64(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasTotalBytes() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearTotalBytes() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $pb.PbList<$core.double> get noisySamples => $_getList(5);
+
+  @$pb.TagNumber(7)
+  $core.double get dcEstimate => $_getN(6);
+  @$pb.TagNumber(7)
+  set dcEstimate($core.double value) => $_setFloat(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasDcEstimate() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearDcEstimate() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $core.List<$core.int> get demodulatedBytes => $_getN(7);
+  @$pb.TagNumber(8)
+  set demodulatedBytes($core.List<$core.int> value) => $_setBytes(7, value);
+  @$pb.TagNumber(8)
+  $core.bool hasDemodulatedBytes() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearDemodulatedBytes() => $_clearField(8);
+
+  @$pb.TagNumber(9)
+  $core.List<$core.int> get decodedBytes => $_getN(8);
+  @$pb.TagNumber(9)
+  set decodedBytes($core.List<$core.int> value) => $_setBytes(8, value);
+  @$pb.TagNumber(9)
+  $core.bool hasDecodedBytes() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearDecodedBytes() => $_clearField(9);
+
+  @$pb.TagNumber(10)
+  $core.String get demodulatedBits => $_getSZ(9);
+  @$pb.TagNumber(10)
+  set demodulatedBits($core.String value) => $_setString(9, value);
+  @$pb.TagNumber(10)
+  $core.bool hasDemodulatedBits() => $_has(9);
+  @$pb.TagNumber(10)
+  void clearDemodulatedBits() => $_clearField(10);
+
+  @$pb.TagNumber(11)
+  $fixnum.Int64 get bitErrors => $_getI64(10);
+  @$pb.TagNumber(11)
+  set bitErrors($fixnum.Int64 value) => $_setInt64(10, value);
+  @$pb.TagNumber(11)
+  $core.bool hasBitErrors() => $_has(10);
+  @$pb.TagNumber(11)
+  void clearBitErrors() => $_clearField(11);
+
+  @$pb.TagNumber(12)
+  $fixnum.Int64 get comparedBits => $_getI64(11);
+  @$pb.TagNumber(12)
+  set comparedBits($fixnum.Int64 value) => $_setInt64(11, value);
+  @$pb.TagNumber(12)
+  $core.bool hasComparedBits() => $_has(11);
+  @$pb.TagNumber(12)
+  void clearComparedBits() => $_clearField(12);
+
+  @$pb.TagNumber(13)
+  $core.double get ber => $_getN(12);
+  @$pb.TagNumber(13)
+  set ber($core.double value) => $_setFloat(12, value);
+  @$pb.TagNumber(13)
+  $core.bool hasBer() => $_has(12);
+  @$pb.TagNumber(13)
+  void clearBer() => $_clearField(13);
+
+  @$pb.TagNumber(14)
+  $fixnum.Int64 get receivedBytes => $_getI64(13);
+  @$pb.TagNumber(14)
+  set receivedBytes($fixnum.Int64 value) => $_setInt64(13, value);
+  @$pb.TagNumber(14)
+  $core.bool hasReceivedBytes() => $_has(13);
+  @$pb.TagNumber(14)
+  void clearReceivedBytes() => $_clearField(14);
+
+  @$pb.TagNumber(15)
+  $core.String get checksumState => $_getSZ(14);
+  @$pb.TagNumber(15)
+  set checksumState($core.String value) => $_setString(14, value);
+  @$pb.TagNumber(15)
+  $core.bool hasChecksumState() => $_has(14);
+  @$pb.TagNumber(15)
+  void clearChecksumState() => $_clearField(15);
+
+  @$pb.TagNumber(16)
+  $core.bool get endOfStream => $_getBF(15);
+  @$pb.TagNumber(16)
+  set endOfStream($core.bool value) => $_setBool(15, value);
+  @$pb.TagNumber(16)
+  $core.bool hasEndOfStream() => $_has(15);
+  @$pb.TagNumber(16)
+  void clearEndOfStream() => $_clearField(16);
+
+  @$pb.TagNumber(17)
+  $fixnum.Int64 get observedAtUnixMs => $_getI64(16);
+  @$pb.TagNumber(17)
+  set observedAtUnixMs($fixnum.Int64 value) => $_setInt64(16, value);
+  @$pb.TagNumber(17)
+  $core.bool hasObservedAtUnixMs() => $_has(16);
+  @$pb.TagNumber(17)
+  void clearObservedAtUnixMs() => $_clearField(17);
+}
+
 const $core.bool _omitFieldNames =
     $core.bool.fromEnvironment('protobuf.omit_field_names');
 const $core.bool _omitMessageNames =

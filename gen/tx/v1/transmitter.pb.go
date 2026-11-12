@@ -238,6 +238,7 @@ type TxEvent struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Sequence      uint64                 `protobuf:"varint,1,opt,name=sequence,proto3" json:"sequence,omitempty"`
 	Description   string                 `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
+	Trace         *TxFrameTrace          `protobuf:"bytes,3,opt,name=trace,proto3" json:"trace,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -286,6 +287,164 @@ func (x *TxEvent) GetDescription() string {
 	return ""
 }
 
+func (x *TxEvent) GetTrace() *TxFrameTrace {
+	if x != nil {
+		return x.Trace
+	}
+	return nil
+}
+
+// TxFrameTrace is a reduced diagnostic view of a real signal frame. It is
+// intentionally bounded so dashboards never subscribe to the full sample-rate
+// stream used between Sender and Receiver.
+type TxFrameTrace struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Sequence         uint64                 `protobuf:"varint,1,opt,name=sequence,proto3" json:"sequence,omitempty"`
+	TransferId       string                 `protobuf:"bytes,2,opt,name=transfer_id,json=transferId,proto3" json:"transfer_id,omitempty"`
+	FileName         string                 `protobuf:"bytes,3,opt,name=file_name,json=fileName,proto3" json:"file_name,omitempty"`
+	MediaOffset      uint64                 `protobuf:"varint,4,opt,name=media_offset,json=mediaOffset,proto3" json:"media_offset,omitempty"`
+	TotalBytes       uint64                 `protobuf:"varint,5,opt,name=total_bytes,json=totalBytes,proto3" json:"total_bytes,omitempty"`
+	OriginalBytes    []byte                 `protobuf:"bytes,6,opt,name=original_bytes,json=originalBytes,proto3" json:"original_bytes,omitempty"`
+	EncodedBytes     []byte                 `protobuf:"bytes,7,opt,name=encoded_bytes,json=encodedBytes,proto3" json:"encoded_bytes,omitempty"`
+	ScrambledBytes   []byte                 `protobuf:"bytes,8,opt,name=scrambled_bytes,json=scrambledBytes,proto3" json:"scrambled_bytes,omitempty"`
+	PayloadBits      string                 `protobuf:"bytes,9,opt,name=payload_bits,json=payloadBits,proto3" json:"payload_bits,omitempty"`
+	CleanSymbols     []float32              `protobuf:"fixed32,10,rep,packed,name=clean_symbols,json=cleanSymbols,proto3" json:"clean_symbols,omitempty"`
+	NoisySamples     []float32              `protobuf:"fixed32,11,rep,packed,name=noisy_samples,json=noisySamples,proto3" json:"noisy_samples,omitempty"`
+	NoiseStddev      float32                `protobuf:"fixed32,12,opt,name=noise_stddev,json=noiseStddev,proto3" json:"noise_stddev,omitempty"`
+	GrpcSent         bool                   `protobuf:"varint,13,opt,name=grpc_sent,json=grpcSent,proto3" json:"grpc_sent,omitempty"`
+	ObservedAtUnixMs uint64                 `protobuf:"varint,14,opt,name=observed_at_unix_ms,json=observedAtUnixMs,proto3" json:"observed_at_unix_ms,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *TxFrameTrace) Reset() {
+	*x = TxFrameTrace{}
+	mi := &file_tx_v1_transmitter_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TxFrameTrace) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TxFrameTrace) ProtoMessage() {}
+
+func (x *TxFrameTrace) ProtoReflect() protoreflect.Message {
+	mi := &file_tx_v1_transmitter_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TxFrameTrace.ProtoReflect.Descriptor instead.
+func (*TxFrameTrace) Descriptor() ([]byte, []int) {
+	return file_tx_v1_transmitter_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *TxFrameTrace) GetSequence() uint64 {
+	if x != nil {
+		return x.Sequence
+	}
+	return 0
+}
+
+func (x *TxFrameTrace) GetTransferId() string {
+	if x != nil {
+		return x.TransferId
+	}
+	return ""
+}
+
+func (x *TxFrameTrace) GetFileName() string {
+	if x != nil {
+		return x.FileName
+	}
+	return ""
+}
+
+func (x *TxFrameTrace) GetMediaOffset() uint64 {
+	if x != nil {
+		return x.MediaOffset
+	}
+	return 0
+}
+
+func (x *TxFrameTrace) GetTotalBytes() uint64 {
+	if x != nil {
+		return x.TotalBytes
+	}
+	return 0
+}
+
+func (x *TxFrameTrace) GetOriginalBytes() []byte {
+	if x != nil {
+		return x.OriginalBytes
+	}
+	return nil
+}
+
+func (x *TxFrameTrace) GetEncodedBytes() []byte {
+	if x != nil {
+		return x.EncodedBytes
+	}
+	return nil
+}
+
+func (x *TxFrameTrace) GetScrambledBytes() []byte {
+	if x != nil {
+		return x.ScrambledBytes
+	}
+	return nil
+}
+
+func (x *TxFrameTrace) GetPayloadBits() string {
+	if x != nil {
+		return x.PayloadBits
+	}
+	return ""
+}
+
+func (x *TxFrameTrace) GetCleanSymbols() []float32 {
+	if x != nil {
+		return x.CleanSymbols
+	}
+	return nil
+}
+
+func (x *TxFrameTrace) GetNoisySamples() []float32 {
+	if x != nil {
+		return x.NoisySamples
+	}
+	return nil
+}
+
+func (x *TxFrameTrace) GetNoiseStddev() float32 {
+	if x != nil {
+		return x.NoiseStddev
+	}
+	return 0
+}
+
+func (x *TxFrameTrace) GetGrpcSent() bool {
+	if x != nil {
+		return x.GrpcSent
+	}
+	return false
+}
+
+func (x *TxFrameTrace) GetObservedAtUnixMs() uint64 {
+	if x != nil {
+		return x.ObservedAtUnixMs
+	}
+	return 0
+}
+
 var File_tx_v1_transmitter_proto protoreflect.FileDescriptor
 
 const file_tx_v1_transmitter_proto_rawDesc = "" +
@@ -308,10 +467,29 @@ const file_tx_v1_transmitter_proto_rawDesc = "" +
 	"\x0eactive_version\x18\x01 \x01(\x04R\ractiveVersion\x12\x18\n" +
 	"\arunning\x18\x02 \x01(\bR\arunning\x12\x1a\n" +
 	"\bsequence\x18\x03 \x01(\x04R\bsequence\x12\x15\n" +
-	"\x06run_id\x18\x04 \x01(\tR\x05runId\"G\n" +
+	"\x06run_id\x18\x04 \x01(\tR\x05runId\"}\n" +
 	"\aTxEvent\x12\x1a\n" +
 	"\bsequence\x18\x01 \x01(\x04R\bsequence\x12 \n" +
-	"\vdescription\x18\x02 \x01(\tR\vdescription2\xfd\x01\n" +
+	"\vdescription\x18\x02 \x01(\tR\vdescription\x124\n" +
+	"\x05trace\x18\x03 \x01(\v2\x1e.livekalman.tx.v1.TxFrameTraceR\x05trace\"\xfd\x03\n" +
+	"\fTxFrameTrace\x12\x1a\n" +
+	"\bsequence\x18\x01 \x01(\x04R\bsequence\x12\x1f\n" +
+	"\vtransfer_id\x18\x02 \x01(\tR\n" +
+	"transferId\x12\x1b\n" +
+	"\tfile_name\x18\x03 \x01(\tR\bfileName\x12!\n" +
+	"\fmedia_offset\x18\x04 \x01(\x04R\vmediaOffset\x12\x1f\n" +
+	"\vtotal_bytes\x18\x05 \x01(\x04R\n" +
+	"totalBytes\x12%\n" +
+	"\x0eoriginal_bytes\x18\x06 \x01(\fR\roriginalBytes\x12#\n" +
+	"\rencoded_bytes\x18\a \x01(\fR\fencodedBytes\x12'\n" +
+	"\x0fscrambled_bytes\x18\b \x01(\fR\x0escrambledBytes\x12!\n" +
+	"\fpayload_bits\x18\t \x01(\tR\vpayloadBits\x12#\n" +
+	"\rclean_symbols\x18\n" +
+	" \x03(\x02R\fcleanSymbols\x12#\n" +
+	"\rnoisy_samples\x18\v \x03(\x02R\fnoisySamples\x12!\n" +
+	"\fnoise_stddev\x18\f \x01(\x02R\vnoiseStddev\x12\x1b\n" +
+	"\tgrpc_sent\x18\r \x01(\bR\bgrpcSent\x12-\n" +
+	"\x13observed_at_unix_ms\x18\x0e \x01(\x04R\x10observedAtUnixMs2\xfd\x01\n" +
 	"\x12TransmitterService\x12T\n" +
 	"\x16ApplyTransmitterConfig\x12\x1a.livekalman.tx.v1.TxConfig\x1a\x1e.livekalman.tx.v1.ApplyTxReply\x12F\n" +
 	"\vGetTxStatus\x12\x1b.livekalman.common.v1.Empty\x1a\x1a.livekalman.tx.v1.TxStatus\x12I\n" +
@@ -329,26 +507,28 @@ func file_tx_v1_transmitter_proto_rawDescGZIP() []byte {
 	return file_tx_v1_transmitter_proto_rawDescData
 }
 
-var file_tx_v1_transmitter_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_tx_v1_transmitter_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_tx_v1_transmitter_proto_goTypes = []any{
 	(*TxConfig)(nil),     // 0: livekalman.tx.v1.TxConfig
 	(*ApplyTxReply)(nil), // 1: livekalman.tx.v1.ApplyTxReply
 	(*TxStatus)(nil),     // 2: livekalman.tx.v1.TxStatus
 	(*TxEvent)(nil),      // 3: livekalman.tx.v1.TxEvent
-	(*v1.Empty)(nil),     // 4: livekalman.common.v1.Empty
+	(*TxFrameTrace)(nil), // 4: livekalman.tx.v1.TxFrameTrace
+	(*v1.Empty)(nil),     // 5: livekalman.common.v1.Empty
 }
 var file_tx_v1_transmitter_proto_depIdxs = []int32{
-	0, // 0: livekalman.tx.v1.TransmitterService.ApplyTransmitterConfig:input_type -> livekalman.tx.v1.TxConfig
-	4, // 1: livekalman.tx.v1.TransmitterService.GetTxStatus:input_type -> livekalman.common.v1.Empty
-	4, // 2: livekalman.tx.v1.TransmitterService.WatchTxEvents:input_type -> livekalman.common.v1.Empty
-	1, // 3: livekalman.tx.v1.TransmitterService.ApplyTransmitterConfig:output_type -> livekalman.tx.v1.ApplyTxReply
-	2, // 4: livekalman.tx.v1.TransmitterService.GetTxStatus:output_type -> livekalman.tx.v1.TxStatus
-	3, // 5: livekalman.tx.v1.TransmitterService.WatchTxEvents:output_type -> livekalman.tx.v1.TxEvent
-	3, // [3:6] is the sub-list for method output_type
-	0, // [0:3] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	4, // 0: livekalman.tx.v1.TxEvent.trace:type_name -> livekalman.tx.v1.TxFrameTrace
+	0, // 1: livekalman.tx.v1.TransmitterService.ApplyTransmitterConfig:input_type -> livekalman.tx.v1.TxConfig
+	5, // 2: livekalman.tx.v1.TransmitterService.GetTxStatus:input_type -> livekalman.common.v1.Empty
+	5, // 3: livekalman.tx.v1.TransmitterService.WatchTxEvents:input_type -> livekalman.common.v1.Empty
+	1, // 4: livekalman.tx.v1.TransmitterService.ApplyTransmitterConfig:output_type -> livekalman.tx.v1.ApplyTxReply
+	2, // 5: livekalman.tx.v1.TransmitterService.GetTxStatus:output_type -> livekalman.tx.v1.TxStatus
+	3, // 6: livekalman.tx.v1.TransmitterService.WatchTxEvents:output_type -> livekalman.tx.v1.TxEvent
+	4, // [4:7] is the sub-list for method output_type
+	1, // [1:4] is the sub-list for method input_type
+	1, // [1:1] is the sub-list for extension type_name
+	1, // [1:1] is the sub-list for extension extendee
+	0, // [0:1] is the sub-list for field type_name
 }
 
 func init() { file_tx_v1_transmitter_proto_init() }
@@ -362,7 +542,7 @@ func file_tx_v1_transmitter_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_tx_v1_transmitter_proto_rawDesc), len(file_tx_v1_transmitter_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   4,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

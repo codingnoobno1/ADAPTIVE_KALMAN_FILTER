@@ -1,6 +1,8 @@
 # STREAMING_LIVEKALMANFILTER
 
-A runnable three-server adaptive BPSK/Kalman lab based on the attached design. It includes independent Go gRPC services, reproducible protobuf contracts, a .NET MAUI Blazor Hybrid monitor, a Flutter desktop/mobile monitor, and a protobuf endpoint suitable for an ESP32.
+[![CI](https://github.com/codingnoobno1/ADAPTIVE_KALMAN_FILTER/actions/workflows/ci.yml/badge.svg)](https://github.com/codingnoobno1/ADAPTIVE_KALMAN_FILTER/actions/workflows/ci.yml)
+
+A runnable three-server adaptive BPSK/Kalman lab based on the attached design. It includes independent Go gRPC services, reproducible protobuf contracts, a pure-Go ONNX ML policy with Python training/verification scripts, structured benchmark datasets and results, a .NET MAUI Blazor Hybrid monitor, a Flutter desktop/mobile monitor, and a Nanopb protobuf endpoint suitable for an ESP32.
 
 ## One-command local demo
 
@@ -12,19 +14,26 @@ From PowerShell in this directory:
 
 That command downloads a project-local Go/protoc toolchain, generates protobuf code, runs tests, builds all targets, starts Controller -> Receiver -> Sender, and launches the selected dashboard. Use `-Dashboard maui` or `-Dashboard none` as needed.
 
-## Three-person server layout
+## Repository layout
 
 ```text
 server/
-  sender/       main.go + core/ + extensions/   # Laptop 1 developer
-  receiver/     main.go + core/ + extensions/   # Laptop 2 developer
-  controller/   main.go + core/ + extensions/   # Laptop 3 developer
-shared/         config, DSP primitives, networking and common node health
-proto/          coordinated cross-team contracts
-apps/           MAUI and Flutter presentation layers
+  sender/         main.go + core/ + extensions/   # Laptop 1 developer (TX + channel sim)
+  receiver/       main.go + core/ + extensions/   # Laptop 2 developer (Kalman DSP + media RX)
+  controller/     main.go + core/ + extensions/   # Laptop 3 developer (Rule & ONNX policies)
+shared/           config, DSP primitives, networking and common node health
+proto/            coordinated cross-team gRPC/Protobuf v1 contracts
+gen/go/           generated Go protobuf & gRPC bindings
+ml/               Python MLP training, ONNX verification, 6,000-channel dataset & models
+results/          reproducible benchmark CSV tables, E2E summary & visual figures
+apps/             Flutter (desktop/mobile/web) and .NET MAUI Blazor Hybrid monitors
+sdk/dart/         reusable Dart gRPC/SSE client SDK (livekalman_sdk)
+examples/esp32/   PlatformIO ESP32 Nanopb library + native C11 host test harness
+scripts/          portable PowerShell build, codegen, local CI & multi-role runners
+.github/workflows CI verification DAG (ci.yml) and release bundler (release.yml)
 ```
 
-Each server's `main.go` is intentionally small and imports its base requirements. Required behavior lives in `core/`; optional hardware, AI, UI-export and policy features belong behind interfaces in `extensions/`. See [team workflow](docs/team-workflow.md).
+Each server's `main.go` is intentionally small and imports its base requirements. Required behavior lives in `core/`; optional hardware, AI, UI-export and policy features belong behind interfaces in `extensions/`. See [team workflow](docs/team-workflow.md), [ML policy](ml/README.md), and [experimental results](results/README.md).
 
 For faster later runs:
 

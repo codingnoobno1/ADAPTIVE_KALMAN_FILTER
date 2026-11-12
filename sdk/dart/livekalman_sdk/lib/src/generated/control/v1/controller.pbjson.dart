@@ -75,6 +75,10 @@ const PolicyDecision$json = {
     {'1': 'proposed_kalman_r', '3': 5, '4': 1, '5': 2, '10': 'proposedKalmanR'},
     {'1': 'reset_state', '3': 6, '4': 1, '5': 8, '10': 'resetState'},
     {'1': 'reason', '3': 7, '4': 1, '5': 9, '10': 'reason'},
+    {'1': 'policy', '3': 8, '4': 1, '5': 9, '10': 'policy'},
+    {'1': 'features', '3': 9, '4': 3, '5': 2, '10': 'features'},
+    {'1': 'predicted_rho', '3': 10, '4': 1, '5': 2, '10': 'predictedRho'},
+    {'1': 'observed_ber', '3': 11, '4': 1, '5': 2, '10': 'observedBer'},
   ],
 };
 
@@ -85,7 +89,9 @@ final $typed_data.Uint8List policyDecisionDescriptor = $convert.base64Decode(
     'ZRgDIAEoBFIRZWZmZWN0aXZlU2VxdWVuY2USKgoRcHJvcG9zZWRfa2FsbWFuX3EYBCABKAJSD3'
     'Byb3Bvc2VkS2FsbWFuURIqChFwcm9wb3NlZF9rYWxtYW5fchgFIAEoAlIPcHJvcG9zZWRLYWxt'
     'YW5SEh8KC3Jlc2V0X3N0YXRlGAYgASgIUgpyZXNldFN0YXRlEhYKBnJlYXNvbhgHIAEoCVIGcm'
-    'Vhc29u');
+    'Vhc29uEhYKBnBvbGljeRgIIAEoCVIGcG9saWN5EhoKCGZlYXR1cmVzGAkgAygCUghmZWF0dXJl'
+    'cxIjCg1wcmVkaWN0ZWRfcmhvGAogASgCUgxwcmVkaWN0ZWRSaG8SIQoMb2JzZXJ2ZWRfYmVyGA'
+    'sgASgCUgtvYnNlcnZlZEJlcg==');
 
 @$core.Deprecated('Use watchRequestDescriptor instead')
 const WatchRequest$json = {

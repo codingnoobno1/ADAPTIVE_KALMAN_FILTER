@@ -30,6 +30,10 @@ message PolicyDecision {
   float proposed_kalman_r = 5;
   bool reset_state = 6;
   string reason = 7;
+  string policy = 8;
+  repeated float features = 9;
+  float predicted_rho = 10;
+  float observed_ber = 11;
 }
 
 message WatchRequest { string run_id = 1; }
@@ -58,4 +62,3 @@ service ControllerService {
   rpc WatchExperiment(WatchRequest) returns (stream ExperimentEvent);
   rpc GetExperimentState(ExperimentStateRequest) returns (ExperimentState);
 }
-

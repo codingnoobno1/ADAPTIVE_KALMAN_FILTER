@@ -17,11 +17,13 @@
 - BPSK payload reconstruction, optional post-demodulation byte-shift reversal,
   CRC/size/offset checks, automatic text/image/audio detection, and common
   gRPC plus NDJSON media streams.
+- Bounded Sender/Receiver protobuf frame-trace streams for real-time demo UIs.
+- Pure-Go ONNX controller inference with live feature, rho, Q and R telemetry.
 
 ## Not implemented
 
-- Complex I/Q sample framing, QPSK, 8-PSK, phase features, innovation/NIS
-  metrics, and AI-assisted Q/R inference.
+- Complex I/Q sample framing, QPSK, 8-PSK, phase features and innovation/NIS
+  metrics.
 - Hardware deployment verification. The ESP32-compatible software endpoint is
   implemented, but no physical-device test is claimed.
 

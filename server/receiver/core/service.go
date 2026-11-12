@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"math"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -36,10 +37,13 @@ type Server struct {
 	gaps         uint64
 	metrics      chan *controlv1.ReceiverMetrics
 	media        *mediaPipeline
+	traceMu      sync.RWMutex
+	traceSubs    map[uint64]chan *rxv1.RxFrameTrace
+	nextTraceSub uint64
 }
 
 func New(cfg config.Receiver) *Server {
-	return &Server{cfg: cfg, filter: dsp.NewKalman(float64(cfg.KalmanQ), float64(cfg.KalmanR)), active: &rxv1.RxConfig{Version: 1, KalmanQ: cfg.KalmanQ, KalmanR: cfg.KalmanR}, metrics: make(chan *controlv1.ReceiverMetrics, cfg.QueueCapacity), media: newMediaPipeline()}
+	return &Server{cfg: cfg, filter: dsp.NewKalman(float64(cfg.KalmanQ), float64(cfg.KalmanR)), active: &rxv1.RxConfig{Version: 1, KalmanQ: cfg.KalmanQ, KalmanR: cfg.KalmanR}, metrics: make(chan *controlv1.ReceiverMetrics, cfg.QueueCapacity), media: newMediaPipeline(), traceSubs: map[uint64]chan *rxv1.RxFrameTrace{}}
 }
 
 func (s *Server) Metrics() <-chan *controlv1.ReceiverMetrics { return s.metrics }
@@ -123,6 +127,8 @@ func (s *Server) process(f *rxv1.TxFrame, queueDepth uint32) (*rxv1.RxFeedback, 
 	}
 	started := time.Now()
 	m := dsp.ProcessBPSK(s.filter, samples, int(f.SamplesPerSymbol), f.ReferenceBits)
+	var traceDemodulated, traceDecoded []byte
+	traceChecksum := "idle"
 	if f.Media != nil {
 		count := int(f.PayloadByteCount)
 		if count == 0 {
@@ -135,12 +141,20 @@ func (s *Server) process(f *rxv1.TxFrame, queueDepth uint32) (*rxv1.RxFeedback, 
 		// to media clients as an event. It must not tear down the signal stream:
 		// bit errors are expected at low SNR and are what the demo shows.
 		payload := m.Decoded[:count]
+		traceDemodulated = append([]byte(nil), payload...)
 		if f.Scrambled {
 			payload = append([]byte(nil), payload...)
 			dsp.Scramble(payload, f.Sequence)
 		}
+		traceDecoded = decodePayload(payload, f.Media)
 		if err := s.media.process(f.Media, f.MediaOffset, payload, f.MediaEnd); err != nil {
-			slog.Warn("media transfer", "transfer", f.Media.TransferId, "error", err)
+			traceChecksum = "mismatch"
+			slog.Warn("media transfer", "transfer", f.Media.TransferId, "file", f.Media.FileName, "error", err)
+		} else if f.MediaEnd {
+			traceChecksum = "valid"
+			slog.Info("file received intact", "file", f.Media.FileName, "bytes", f.MediaOffset+uint64(count), "type", f.Media.ContentTypeHint)
+		} else {
+			traceChecksum = "receiving"
 		}
 	}
 	latency := float64(time.Now().UnixMicro()-int64(f.CaptureTimestampUs)) / 1000.0
@@ -149,8 +163,83 @@ func (s *Server) process(f *rxv1.TxFrame, queueDepth uint32) (*rxv1.RxFeedback, 
 	}
 	s.lastSequence = f.Sequence
 	feedback := &rxv1.RxFeedback{Sequence: f.Sequence, SnrDb: float32(m.SNRDB), NoiseVariance: float32(m.NoiseVariance), ComparedBits: m.Compared, BitErrors: m.Errors, Ber: float32(m.BER), LatencyMs: latency, ActiveConfigVersion: s.active.Version, QueueDepth: queueDepth}
+	// A readable live view of the gRPC frame stream (every 32nd frame).
+	if f.Sequence%32 == 0 {
+		attrs := []any{"seq", f.Sequence, "samples", len(samples), "snr_db", fmt.Sprintf("%.1f", m.SNRDB), "ber", fmt.Sprintf("%.4f", m.BER), "noise_var", fmt.Sprintf("%.3f", m.NoiseVariance), "dc_est", fmt.Sprintf("%.3f", m.DCEstimate), "Q/R", fmt.Sprintf("%.3g", s.active.KalmanQ/s.active.KalmanR)}
+		if f.Media != nil {
+			attrs = append(attrs, "file", f.Media.FileName, "offset", f.MediaOffset, "of", f.Media.TotalSize)
+		}
+		slog.Info("frame", attrs...)
+	}
 	metrics := &controlv1.ReceiverMetrics{RunId: f.RunId, Sequence: f.Sequence, SnrDb: feedback.SnrDb, NoiseVariance: feedback.NoiseVariance, ComparedBits: m.Compared, BitErrors: m.Errors, Ber: feedback.Ber, LatencyMs: latency, ActiveConfigVersion: s.active.Version, QueueDepth: queueDepth, ObservedAtUnixMs: uint64(time.Now().UnixMilli()), FrameMean: float32(m.FrameMean), DcEstimate: float32(m.DCEstimate)}
+	if f.Media != nil {
+		noisyCount := 64
+		if len(samples) < noisyCount {
+			noisyCount = len(samples)
+		}
+		s.publishTrace(&rxv1.RxFrameTrace{Sequence: f.Sequence, TransferId: f.Media.TransferId, FileName: f.Media.FileName, MediaOffset: f.MediaOffset, TotalBytes: f.Media.TotalSize, NoisySamples: append([]float32(nil), samples[:noisyCount]...), DcEstimate: float32(m.DCEstimate), DemodulatedBytes: traceDemodulated, DecodedBytes: traceDecoded, DemodulatedBits: byteBits(traceDecoded), BitErrors: m.Errors, ComparedBits: m.Compared, Ber: float32(m.BER), ReceivedBytes: f.MediaOffset + uint64(len(traceDecoded)), ChecksumState: traceChecksum, EndOfStream: f.MediaEnd, ObservedAtUnixMs: uint64(time.Now().UnixMilli())})
+	}
 	return feedback, metrics, nil
+}
+
+func decodePayload(encoded []byte, descriptor *commonv1.MediaDescriptor) []byte {
+	decoded := append([]byte(nil), encoded...)
+	if descriptor.Encoding == commonv1.PayloadEncoding_PAYLOAD_ENCODING_BYTE_SHIFT {
+		key := byte(descriptor.ShiftKey % 256)
+		for i := range decoded {
+			decoded[i] -= key
+		}
+	}
+	return decoded
+}
+
+func byteBits(data []byte) string {
+	var out strings.Builder
+	for _, value := range data {
+		for bit := 0; bit < 8; bit++ {
+			if value&(1<<uint(bit)) != 0 {
+				out.WriteByte('1')
+			} else {
+				out.WriteByte('0')
+			}
+		}
+	}
+	return out.String()
+}
+
+func (s *Server) publishTrace(trace *rxv1.RxFrameTrace) {
+	s.traceMu.RLock()
+	defer s.traceMu.RUnlock()
+	for _, ch := range s.traceSubs {
+		select {
+		case ch <- trace:
+		default:
+		}
+	}
+}
+
+func (s *Server) WatchFrameTraces(_ *commonv1.Empty, stream rxv1.ReceiverService_WatchFrameTracesServer) error {
+	s.traceMu.Lock()
+	s.nextTraceSub++
+	id := s.nextTraceSub
+	ch := make(chan *rxv1.RxFrameTrace, 16)
+	s.traceSubs[id] = ch
+	s.traceMu.Unlock()
+	defer func() {
+		s.traceMu.Lock()
+		delete(s.traceSubs, id)
+		s.traceMu.Unlock()
+	}()
+	for {
+		select {
+		case <-stream.Context().Done():
+			return stream.Context().Err()
+		case trace := <-ch:
+			if err := stream.Send(trace); err != nil {
+				return err
+			}
+		}
+	}
 }
 
 func (s *Server) publish(m *controlv1.ReceiverMetrics) {

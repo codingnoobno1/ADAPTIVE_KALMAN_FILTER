@@ -1,0 +1,5 @@
+policy,mean_ber_all,mean_ber_drift_channels,ber_snr_below_0db,ber_snr_0_to_5db,ber_snr_5_to_10db,ber_snr_above_10db,ber_reduction_vs_no_tracking_all_pct,ber_reduction_vs_no_tracking_drift_pct
+oracle (best rho per channel),0.060918,0.078835,0.162546,0.028899,0.013489,0.002249,7.22,14.61
+onnx MLP,0.061885,0.081235,0.163885,0.030202,0.014468,0.002765,5.75,12.01
+best fixed rho = 0.0268,0.062507,0.081406,0.165141,0.030366,0.014839,0.003099,4.80,11.82
+no drift tracking (rho = 1e-7),0.065658,0.092319,0.165216,0.035675,0.019550,0.007542,0.00,0.00

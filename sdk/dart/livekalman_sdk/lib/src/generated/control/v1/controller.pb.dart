@@ -244,6 +244,10 @@ class PolicyDecision extends $pb.GeneratedMessage {
     $core.double? proposedKalmanR,
     $core.bool? resetState,
     $core.String? reason,
+    $core.String? policy,
+    $core.Iterable<$core.double>? features,
+    $core.double? predictedRho,
+    $core.double? observedBer,
   }) {
     final result = PolicyDecision._();
     if (commandId != null) result.commandId = commandId;
@@ -253,6 +257,10 @@ class PolicyDecision extends $pb.GeneratedMessage {
     if (proposedKalmanR != null) result.proposedKalmanR = proposedKalmanR;
     if (resetState != null) result.resetState = resetState;
     if (reason != null) result.reason = reason;
+    if (policy != null) result.policy = policy;
+    if (features != null) result.features.addAll(features);
+    if (predictedRho != null) result.predictedRho = predictedRho;
+    if (observedBer != null) result.observedBer = observedBer;
     return result;
   }
 
@@ -285,6 +293,12 @@ class PolicyDecision extends $pb.GeneratedMessage {
         fieldType: $pb.PbFieldType.OF)
     ..aOB(6, _omitFieldNames ? '' : 'resetState')
     ..aOS(7, _omitFieldNames ? '' : 'reason')
+    ..aOS(8, _omitFieldNames ? '' : 'policy')
+    ..p<$core.double>(9, _omitFieldNames ? '' : 'features', $pb.PbFieldType.KF)
+    ..aD(10, _omitFieldNames ? '' : 'predictedRho',
+        fieldType: $pb.PbFieldType.OF)
+    ..aD(11, _omitFieldNames ? '' : 'observedBer',
+        fieldType: $pb.PbFieldType.OF)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -371,6 +385,36 @@ class PolicyDecision extends $pb.GeneratedMessage {
   $core.bool hasReason() => $_has(6);
   @$pb.TagNumber(7)
   void clearReason() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $core.String get policy => $_getSZ(7);
+  @$pb.TagNumber(8)
+  set policy($core.String value) => $_setString(7, value);
+  @$pb.TagNumber(8)
+  $core.bool hasPolicy() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearPolicy() => $_clearField(8);
+
+  @$pb.TagNumber(9)
+  $pb.PbList<$core.double> get features => $_getList(8);
+
+  @$pb.TagNumber(10)
+  $core.double get predictedRho => $_getN(9);
+  @$pb.TagNumber(10)
+  set predictedRho($core.double value) => $_setFloat(9, value);
+  @$pb.TagNumber(10)
+  $core.bool hasPredictedRho() => $_has(9);
+  @$pb.TagNumber(10)
+  void clearPredictedRho() => $_clearField(10);
+
+  @$pb.TagNumber(11)
+  $core.double get observedBer => $_getN(10);
+  @$pb.TagNumber(11)
+  set observedBer($core.double value) => $_setFloat(10, value);
+  @$pb.TagNumber(11)
+  $core.bool hasObservedBer() => $_has(10);
+  @$pb.TagNumber(11)
+  void clearObservedBer() => $_clearField(11);
 }
 
 class WatchRequest extends $pb.GeneratedMessage {

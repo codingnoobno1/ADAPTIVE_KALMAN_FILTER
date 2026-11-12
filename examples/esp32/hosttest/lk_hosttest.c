@@ -3,6 +3,7 @@
 // examples/esp32/hosttest/post_frames.py then sends them to a real Receiver.
 //
 //   lk_hosttest <file> <out_dir> [noise_stddev]
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -55,7 +56,7 @@ int main(int argc, char **argv) {
     const uint64_t stream_id = 0xE5932001u;
     const uint32_t crc = lk_crc32_update(0, data, (size_t)size);
     char transfer_id[40];
-    snprintf(transfer_id, sizeof(transfer_id), "esp32-%llx-%08x", (unsigned long long)stream_id, crc);
+    snprintf(transfer_id, sizeof(transfer_id), "esp32-%" PRIx64 "-%08" PRIx32, stream_id, crc);
     lk_transfer_init(&t, argv[1], transfer_id, (uint64_t)size, crc);
     const size_t cap = lk_frame_capacity(&cfg);
 
@@ -64,8 +65,9 @@ int main(int argc, char **argv) {
     uint64_t seq = 0;
     for (size_t off = 0; off < (size_t)size; off += cap) {
         size_t n = (size_t)size - off < cap ? (size_t)size - off : cap;
-        if (lk_build_frame(&frame, &cfg, stream_id, ++seq, 1000 + seq, &t, data + off, n, off, off + n == (size_t)size, host_random)) {
-            fprintf(stderr, "build failed at offset %zu\n", off);
+        ++seq;
+        if (lk_build_frame(&frame, &cfg, stream_id, seq, 1000 + seq, &t, data + off, n, off, off + n == (size_t)size, host_random)) {
+            fprintf(stderr, "build failed at offset %lu\n", (unsigned long)off);
             return 1;
         }
         pb_ostream_t os = pb_ostream_from_buffer(buf, sizeof(buf));
@@ -74,13 +76,13 @@ int main(int argc, char **argv) {
             return 1;
         }
         char path[512];
-        snprintf(path, sizeof(path), "%s/frame_%06llu.bin", argv[2], (unsigned long long)seq);
+        snprintf(path, sizeof(path), "%s/frame_%06" PRIu64 ".bin", argv[2], seq);
         FILE *out = fopen(path, "wb");
         if (!out || fwrite(buf, 1, os.bytes_written, out) != os.bytes_written) { perror(path); return 1; }
         fclose(out);
     }
-    printf("%s: %ld bytes, crc32 %08x, type %s -> %llu frames (%zu bytes/frame, max encoded %zu bytes)\n",
-           t.file_name, size, t.crc32, t.content_type, (unsigned long long)seq, cap, sizeof(buf));
+    printf("%s: %ld bytes, crc32 %08" PRIx32 ", type %s -> %" PRIu64 " frames (%lu bytes/frame, max encoded %lu bytes)\n",
+           t.file_name, size, t.crc32, t.content_type, seq, (unsigned long)cap, (unsigned long)sizeof(buf));
     free(data);
     return 0;
 }

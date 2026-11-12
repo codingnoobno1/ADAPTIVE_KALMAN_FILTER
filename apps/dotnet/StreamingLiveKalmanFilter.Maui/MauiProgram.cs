@@ -19,6 +19,7 @@ public static class MauiProgram
 		builder.Services.AddMauiBlazorWebView();
 		builder.Services.AddSingleton(new HttpClient { Timeout = Timeout.InfiniteTimeSpan });
 		builder.Services.AddSingleton<ControllerEventClient>();
+		builder.Services.AddSingleton<LabTelemetryClient>();
 
 #if DEBUG
 		builder.Services.AddBlazorWebViewDeveloperTools();

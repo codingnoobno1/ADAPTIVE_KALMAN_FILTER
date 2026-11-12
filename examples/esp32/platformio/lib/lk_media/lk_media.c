@@ -45,7 +45,9 @@ static int ext_is(const char *name, const char *ext) {
 
 void lk_transfer_init(lk_transfer *t, const char *file_name, const char *transfer_id, uint64_t total_size, uint32_t crc32) {
     memset(t, 0, sizeof(*t));
-    const char *base = strrchr(file_name, '/');
+    const char *slash = strrchr(file_name, '/');
+    const char *bslash = strrchr(file_name, '\\');
+    const char *base = (!slash || (bslash && bslash > slash)) ? bslash : slash;
     copy_str(t->file_name, sizeof(t->file_name), base ? base + 1 : file_name);
     copy_str(t->transfer_id, sizeof(t->transfer_id), transfer_id);
     t->total_size = total_size;

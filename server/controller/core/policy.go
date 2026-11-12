@@ -31,5 +31,5 @@ func (p *RulePolicy) Evaluate(_ context.Context, window []*controlv1.ReceiverMet
 	}
 	m := window[len(window)-1]
 	targetR := float32(math.Max(float64(p.MinR), math.Min(float64(p.MaxR), float64(m.NoiseVariance))))
-	return &controlv1.PolicyDecision{ProposedKalmanQ: targetR * DefaultTrackingRatio, ProposedKalmanR: targetR, Reason: fmt.Sprintf("rule: noise %.4f, fixed Q/R %.3g", m.NoiseVariance, DefaultTrackingRatio)}, nil
+	return &controlv1.PolicyDecision{ProposedKalmanQ: targetR * DefaultTrackingRatio, ProposedKalmanR: targetR, Reason: fmt.Sprintf("rule: noise %.4f, fixed Q/R %.3g", m.NoiseVariance, DefaultTrackingRatio), Policy: "rule", Features: []float32{m.SnrDb, 0, m.NoiseVariance, 0, 0, 0}, PredictedRho: DefaultTrackingRatio, ObservedBer: m.Ber}, nil
 }

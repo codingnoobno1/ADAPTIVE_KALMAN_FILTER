@@ -6,6 +6,7 @@ import (
 	"io"
 	"log/slog"
 	"math/rand"
+	"strings"
 	"sync"
 	"time"
 
@@ -136,7 +137,10 @@ func (s *Server) RunStream(ctx context.Context, client rxv1.ReceiverServiceClien
 			active := frameParameters{version: s.active.Version, amplitude: s.active.Amplitude, noiseStddev: s.active.NoiseStddev}
 			payload, media, offset, end := s.nextPayloadLocked(seq)
 			s.mu.Unlock()
+			var original, encoded []byte
 			if media != nil {
+				encoded = append([]byte(nil), payload...)
+				original = originalPayload(encoded, media)
 				// Balance the channel bits for the receiver's DC tracker.
 				payload = append([]byte(nil), payload...)
 				dsp.Scramble(payload, seq)
@@ -149,8 +153,50 @@ func (s *Server) RunStream(ctx context.Context, client rxv1.ReceiverServiceClien
 			if err := stream.Send(frame); err != nil {
 				return err
 			}
+			if media != nil {
+				trace := txTrace(frame, original, encoded, payload, active.amplitude, active.noiseStddev)
+				s.mu.Lock()
+				s.publishLocked(&txv1.TxEvent{Sequence: seq, Description: fmt.Sprintf("gRPC frame %d sent", seq), Trace: trace})
+				s.mu.Unlock()
+			}
 		}
 	}
+}
+
+func originalPayload(encoded []byte, media *commonv1.MediaDescriptor) []byte {
+	original := append([]byte(nil), encoded...)
+	if media.Encoding == commonv1.PayloadEncoding_PAYLOAD_ENCODING_BYTE_SHIFT {
+		key := byte(media.ShiftKey % 256)
+		for i := range original {
+			original[i] -= key
+		}
+	}
+	return original
+}
+
+func txTrace(frame *rxv1.TxFrame, original, encoded, scrambled []byte, amplitude, noise float32) *txv1.TxFrameTrace {
+	const maxSymbols = 16
+	clean := make([]float32, 0, maxSymbols)
+	var bits strings.Builder
+	for i := 0; i < len(scrambled)*8; i++ {
+		one := scrambled[i/8]&(1<<uint(i%8)) != 0
+		if one {
+			bits.WriteByte('1')
+			if len(clean) < maxSymbols {
+				clean = append(clean, amplitude)
+			}
+		} else {
+			bits.WriteByte('0')
+			if len(clean) < maxSymbols {
+				clean = append(clean, -amplitude)
+			}
+		}
+	}
+	noisyCount := 64
+	if len(frame.Samples) < noisyCount {
+		noisyCount = len(frame.Samples)
+	}
+	return &txv1.TxFrameTrace{Sequence: frame.Sequence, TransferId: frame.Media.TransferId, FileName: frame.Media.FileName, MediaOffset: frame.MediaOffset, TotalBytes: frame.Media.TotalSize, OriginalBytes: original, EncodedBytes: encoded, ScrambledBytes: append([]byte(nil), scrambled...), PayloadBits: bits.String(), CleanSymbols: clean, NoisySamples: append([]float32(nil), frame.Samples[:noisyCount]...), NoiseStddev: noise, GrpcSent: true, ObservedAtUnixMs: uint64(time.Now().UnixMilli())}
 }
 
 func generateFrame(cfg config.Sender, active frameParameters, streamID, seq, first uint64, rng *rand.Rand, channel *dsp.Channel, payload []byte) *rxv1.TxFrame {

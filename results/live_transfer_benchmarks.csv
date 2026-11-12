@@ -1,0 +1,7 @@
+experiment,source_node,channel_profile,controller_policy,payload_file,payload_bytes,frames_sent,observed_ber,crc32_valid,notes
+live_3node_bmp_no_tracking,go_sender_grpc,configs/local-impaired.json (seed=20260925),fixed_no_tracking (rho=1e-7),examples/media/kalman.bmp,9270,1159,0.0730,false,Baseline without DC drift tracking; visible stripe corruption
+live_3node_bmp_rule_policy,go_sender_grpc,configs/local-impaired.json (seed=20260925),rule (fixed rho=0.0268),examples/media/kalman.bmp,9270,1159,0.0580,false,20.5% live BER reduction vs non-tracking via Kalman DC tracking + scrambling
+live_3node_bmp_onnx_policy,go_sender_grpc,configs/local-impaired.json (seed=20260925),onnx (ml/models/r_policy.onnx),examples/media/kalman.bmp,9270,1159,0.0591,false,Pure-Go gonnx inference adapting Q/R per 12-frame metrics window
+esp32_nanopb_http_text,esp32_lk_media_http,noiseless_wire_contract (sigma=0.0),onnx (ml/models/r_policy.onnx),examples/media/hello.txt,103,13,0.0000,true,HTTP 200 x 13 on POST :8082/api/v1/frames; SHA-256 exact match
+esp32_nanopb_http_bmp,esp32_lk_media_http,noiseless_wire_contract (sigma=0.0),onnx (ml/models/r_policy.onnx),examples/media/kalman.bmp,9270,1159,0.0000,true,HTTP 200 x 1159 on POST :8082/api/v1/frames; image/bmp auto-detected; SHA-256 exact
+esp32_nanopb_http_wav,esp32_lk_media_http,noiseless_wire_contract (sigma=0.0),onnx (ml/models/r_policy.onnx),examples/media/tone.wav,8044,1006,0.0000,true,HTTP 200 x 1006 on POST :8082/api/v1/frames; audio/wav auto-detected; SHA-256 exact

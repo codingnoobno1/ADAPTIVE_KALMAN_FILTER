@@ -65,8 +65,31 @@ message RxStatus {
   uint64 sequence_gaps = 4;
 }
 
+// RxFrameTrace is the Receiver's bounded view of one real protobuf frame after
+// Kalman tracking and BPSK hard decisions.
+message RxFrameTrace {
+  uint64 sequence = 1;
+  string transfer_id = 2;
+  string file_name = 3;
+  uint64 media_offset = 4;
+  uint64 total_bytes = 5;
+  repeated float noisy_samples = 6;
+  float dc_estimate = 7;
+  bytes demodulated_bytes = 8;
+  bytes decoded_bytes = 9;
+  string demodulated_bits = 10;
+  uint64 bit_errors = 11;
+  uint64 compared_bits = 12;
+  float ber = 13;
+  uint64 received_bytes = 14;
+  string checksum_state = 15;
+  bool end_of_stream = 16;
+  uint64 observed_at_unix_ms = 17;
+}
+
 service ReceiverService {
   rpc ProcessSignal(stream TxFrame) returns (stream RxFeedback);
   rpc ApplyReceiverConfig(RxConfig) returns (ApplyRxReply);
   rpc GetRxStatus(livekalman.common.v1.Empty) returns (RxStatus);
+  rpc WatchFrameTraces(livekalman.common.v1.Empty) returns (stream RxFrameTrace);
 }

@@ -21,6 +21,9 @@ PB_BIND(livekalman_rx_v1_ApplyRxReply, livekalman_rx_v1_ApplyRxReply, AUTO)
 PB_BIND(livekalman_rx_v1_RxStatus, livekalman_rx_v1_RxStatus, AUTO)
 
 
+PB_BIND(livekalman_rx_v1_RxFrameTrace, livekalman_rx_v1_RxFrameTrace, AUTO)
+
+
 
 #ifndef PB_CONVERT_DOUBLE_FLOAT
 /* On some platforms (such as AVR), double is really float.

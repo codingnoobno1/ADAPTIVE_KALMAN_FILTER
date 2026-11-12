@@ -30,6 +30,27 @@ message TxStatus {
 message TxEvent {
   uint64 sequence = 1;
   string description = 2;
+  TxFrameTrace trace = 3;
+}
+
+// TxFrameTrace is a reduced diagnostic view of a real signal frame. It is
+// intentionally bounded so dashboards never subscribe to the full sample-rate
+// stream used between Sender and Receiver.
+message TxFrameTrace {
+  uint64 sequence = 1;
+  string transfer_id = 2;
+  string file_name = 3;
+  uint64 media_offset = 4;
+  uint64 total_bytes = 5;
+  bytes original_bytes = 6;
+  bytes encoded_bytes = 7;
+  bytes scrambled_bytes = 8;
+  string payload_bits = 9;
+  repeated float clean_symbols = 10;
+  repeated float noisy_samples = 11;
+  float noise_stddev = 12;
+  bool grpc_sent = 13;
+  uint64 observed_at_unix_ms = 14;
 }
 
 service TransmitterService {
@@ -37,4 +58,3 @@ service TransmitterService {
   rpc GetTxStatus(livekalman.common.v1.Empty) returns (TxStatus);
   rpc WatchTxEvents(livekalman.common.v1.Empty) returns (stream TxEvent);
 }
-

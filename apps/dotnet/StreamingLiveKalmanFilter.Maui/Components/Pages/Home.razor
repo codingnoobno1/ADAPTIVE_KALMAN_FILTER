@@ -1,164 +1,66 @@
 @page "/"
 @implements IDisposable
+@using Google.Protobuf
 @using StreamingLiveKalmanFilter.Maui.Services
-@inject ControllerEventClient Events
+@inject LabTelemetryClient Lab
 
-<div class="studio-shell">
-    <aside class="rail" aria-label="Primary navigation">
-        <div class="brand-mark" title="Live Kalman Studio">
-            <svg viewBox="0 0 40 40" aria-hidden="true"><path d="M5 22c4-13 8 13 12 0s8-13 12 0 6 0 6 0"/><circle cx="20" cy="20" r="17"/></svg>
-        </div>
-        <nav>
-            <button class="rail-button active" title="Live monitor" aria-label="Live monitor"><span>⌁</span></button>
-            <button class="rail-button" title="Experiments" aria-label="Experiments"><span>◫</span></button>
-            <button class="rail-button" title="Signal library" aria-label="Signal library"><span>≋</span></button>
-            <button class="rail-button" title="Settings" aria-label="Settings"><span>⚙</span></button>
-        </nav>
-        <div class="rail-spacer"></div>
-        <div class="rail-health @(_connected ? "online" : "")" title="Local controller status"></div>
-        <div class="avatar">LK</div>
-    </aside>
-
-    <main class="studio-main">
-        <header class="command-bar">
-            <div>
-                <div class="eyebrow">SIGNAL INTELLIGENCE / REAL-TIME</div>
-                <h1>Live Kalman Studio</h1>
-            </div>
-            <div class="command-actions">
-                <label class="run-select"><span>Experiment</span><select aria-label="Experiment"><option>local-demo</option></select></label>
-                <div class="live-badge @(_connected ? "connected" : "")"><i></i>@(_connected ? "STREAMING" : "STANDBY")</div>
-            </div>
-        </header>
-
-        <section class="overview-row">
-            <div>
-                <p class="section-kicker">RECEIVER OBSERVATORY</p>
-                <h2>BPSK / Adaptive Kalman</h2>
-                <p class="overview-copy">Live signal quality, filter convergence and experiment transport health across the three-node pipeline.</p>
-            </div>
-            <div class="frame-block"><span>CURRENT FRAME</span><strong>@_latest.Sequence.ToString("D6")</strong><small>@LastSeenText</small></div>
-        </section>
-
-        <section class="metrics-grid" aria-label="Key receiver metrics">
-            <Metric Label="SIGNAL TO NOISE" Value="@_latest.SnrDb.ToString("F2")" Unit="dB" Icon="S∕N" Note="@SnrNote" Accent="mint" />
-            <Metric Label="BIT ERROR RATE" Value="@FormatBer(_latest.Ber)" Icon="BER" Note="@($"{_latest.BitErrors:N0} errors / {_latest.ComparedBits:N0} bits")" Accent="amber" />
-            <Metric Label="PIPELINE LATENCY" Value="@_latest.LatencyMs.ToString("F2")" Unit="ms" Icon="↯" Note="Capture to DSP feedback" Accent="blue" />
-            <Metric Label="NOISE VARIANCE" Value="@_latest.NoiseVariance.ToString("F3")" Icon="σ²" Note="@($"Queue depth · {_latest.QueueDepth}")" Accent="violet" />
-        </section>
-
-        <section class="workspace-grid">
-            <article class="panel chart-panel">
-                <div class="panel-heading">
-                    <div><span class="panel-kicker">SIGNAL QUALITY</span><h3>SNR telemetry</h3></div>
-                    <div class="legend"><i></i> Live estimate <span>80-frame window</span></div>
-                </div>
-                <div class="chart-wrap">
-                    <div class="y-labels"><span>@ChartMax.ToString("F1")</span><span>@ChartMid.ToString("F1")</span><span>@ChartMin.ToString("F1")</span></div>
-                    <svg class="telemetry-chart" viewBox="0 0 1000 300" preserveAspectRatio="none" role="img" aria-label="Live SNR telemetry">
-                        <defs><linearGradient id="snrArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5bf2bd" stop-opacity=".3"/><stop offset="1" stop-color="#5bf2bd" stop-opacity="0"/></linearGradient></defs>
-                        <g class="chart-grid"><line x1="0" y1="40" x2="1000" y2="40"/><line x1="0" y1="120" x2="1000" y2="120"/><line x1="0" y1="200" x2="1000" y2="200"/><line x1="0" y1="280" x2="1000" y2="280"/></g>
-                        <path class="area" d="@AreaPath()"/><polyline class="signal-line" points="@ChartPoints()" />
-                    </svg>
-                    @if (_history.Count < 2) { <div class="chart-empty"><strong>Waiting for telemetry</strong><span>Connect to the controller to begin plotting.</span></div> }
-                </div>
-                <div class="chart-footer"><span>FRAME @FirstFrame</span><span>WINDOW · @_history.Count / 80</span><span>FRAME @_latest.Sequence</span></div>
-            </article>
-
-            <article class="panel filter-panel">
-                <div class="panel-heading"><div><span class="panel-kicker">ADAPTATION</span><h3>Kalman state</h3></div><span class="auto-pill">AUTO</span></div>
-                <div class="profile-orbit"><div class="orbit-ring"><div><span>PROFILE</span><strong>v@_latest.ActiveConfigVersion</strong></div></div></div>
-                <div class="filter-values">
-                    <div><span>PROCESS Q</span><strong>0.200</strong><small>Random walk</small></div>
-                    <div><span>MEASURE R</span><strong>@_latest.NoiseVariance.ToString("F3")</strong><small>Adaptive</small></div>
-                </div>
-                <div class="confidence"><div><span>Filter confidence</span><strong>@Confidence%</strong></div><div class="confidence-track"><i style="width:@Confidence%"></i></div></div>
-                <p class="filter-copy">Configuration changes activate only on a scheduled frame boundary.</p>
-            </article>
-        </section>
-
-        <section class="lower-grid">
-            <article class="panel pipeline-panel">
-                <div class="panel-heading"><div><span class="panel-kicker">TOPOLOGY</span><h3>Three-node pipeline</h3></div><span class="transport">gRPC / HTTP·2</span></div>
-                <div class="pipeline">
-                    <div class="node @NodeClass"><div class="node-icon">TX</div><div><strong>Transmitter</strong><span>localhost:55051</span></div><i></i></div>
-                    <div class="link"><span>sample frames</span><b></b></div>
-                    <div class="node @NodeClass"><div class="node-icon">RX</div><div><strong>Receiver DSP</strong><span>localhost:55052</span></div><i></i></div>
-                    <div class="link"><span>metrics</span><b></b></div>
-                    <div class="node @NodeClass"><div class="node-icon">C</div><div><strong>Controller</strong><span>localhost:55053</span></div><i></i></div>
-                </div>
-            </article>
-
-            <article class="panel activity-panel">
-                <div class="panel-heading"><div><span class="panel-kicker">EVENTS</span><h3>Experiment activity</h3></div><span class="event-count">@_activity.Count</span></div>
-                <div class="activity-list">
-                    @foreach (var item in _activity.Take(4)) {
-                        <div class="activity-item"><i class="@item.Tone"></i><div><strong>@item.Title</strong><span>@item.Detail</span></div><time>@item.Time</time></div>
-                    }
-                </div>
-            </article>
-        </section>
-
-        <section class="connection-dock">
-            <div class="dock-status"><i class="@(_connected ? "online" : "")"></i><div><strong>@(_connected ? "Controller connected" : "Controller disconnected")</strong><span>@_message</span></div></div>
-            <label class="endpoint-field"><span>EVENT STREAM</span><input @bind="_endpoint" disabled="@_connected" aria-label="Controller event stream URL" /></label>
-            <button class="connect-button @(_connected ? "stop" : "")" @onclick="Toggle"><span>@(_connected ? "■" : "▶")</span>@(_connected ? "DISCONNECT" : "CONNECT STREAM")</button>
-        </section>
-    </main>
+<div class="demo-shell">
+ <header class="topbar"><div class="identity"><div class="logo">∿</div><div><span>STREAMING / LIVE KALMAN</span><h1>Signal Packet Observatory</h1></div></div><div class="top-actions"><div class="policy-badge @PolicyClass"><small>POLICY</small><strong>@PolicyName</strong><i></i></div><div class="live-badge @(_connected ? "connected" : "")"><i></i>@(_connected ? "LIVE TELEMETRY" : "OFFLINE")</div></div></header>
+ @if (!_configured) {
+  <section class="setup-card"><div class="setup-copy"><span class="kicker">FIRST-RUN LAB SETUP</span><h2>Choose this device and connect the three services</h2><p>The same MAUI executable becomes the Sender, Receiver or Controller console. Every panel is driven by real protobuf messages.</p></div>
+   <div class="role-picker">@foreach (var role in Roles) { <button class="role-choice @(_role == role ? "selected" : "")" @onclick="() => _role = role"><span>@RoleIcon(role)</span><small>@RoleLaptop(role)</small><strong>@role</strong><p>@RoleDescription(role)</p></button> }</div>
+   <div class="endpoint-grid"><label><span>SENDER gRPC</span><input @bind="_txEndpoint" /></label><label><span>RECEIVER gRPC</span><input @bind="_rxEndpoint" /></label><label><span>CONTROLLER gRPC</span><input @bind="_controllerEndpoint" /></label><label><span>SENDER FILE API</span><input @bind="_txHttpEndpoint" /></label></div>
+   <button class="primary wide" @onclick="Start">CONNECT &amp; OPEN @_role.ToUpperInvariant()</button>
+  </section>
+ } else {
+  <nav class="role-tabs">@foreach (var role in Roles) { <button class="@(_role == role ? "active" : "")" @onclick="() => _role = role"><span>@RoleIcon(role)</span><div><small>@RoleLaptop(role)</small><strong>@role</strong></div></button> }<button class="settings-tab" @onclick="OpenSetup">⚙ <span>ENDPOINTS</span></button></nav>
+  <section class="flow-strip"><FlowStep Number="01" Title="FILE BYTES" Detail="@FlowFile" State="@(_txTrace is null ? "waiting" : "done")" /><FlowArrow Label="encode" /><FlowStep Number="02" Title="BPSK + NOISE" Detail="@FlowSignal" State="@(_txTrace is null ? "waiting" : "done")" /><FlowArrow Label="gRPC TxFrame" /><FlowStep Number="03" Title="KALMAN + DEMOD" Detail="@FlowReceiver" State="@(_rxTrace is null ? "waiting" : "done")" /><FlowArrow Label="metrics" /><FlowStep Number="04" Title="ADAPTATION" Detail="@FlowPolicy" State="@(_decision is null ? "waiting" : "done")" /></section>
+  @if (_role == "Sender") { @SenderView() } else if (_role == "Receiver") { @ReceiverView() } else { @ControllerView() }
+  <footer class="status-dock"><div><i class="@(_connected ? "online" : "")"></i><strong>@(_connected ? "Three-service telemetry connected" : "Disconnected")</strong><span>@_status</span></div><code>TX @_txEndpoint · RX @_rxEndpoint · CTRL @_controllerEndpoint</code><button class="danger" @onclick="Disconnect">DISCONNECT</button></footer>
+ }
 </div>
 
 @code {
-    private readonly List<ReceiverMetrics> _history = [];
-    private readonly List<ActivityItem> _activity = [new("System ready", "Waiting for a controller stream", "now", "neutral")];
-    private ReceiverMetrics _latest = new(0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-    private CancellationTokenSource? _cts;
-    private DateTimeOffset? _lastSeen;
-    private ulong _lastVersion;
-    private string _endpoint = "http://127.0.0.1:8080/api/v1/events";
-    private string _message = "Ready to connect to localhost:8080";
-    private bool _connected;
+ private static readonly string[] Roles = ["Sender", "Receiver", "Controller"];
+ private static readonly string[] FeatureNames=["SNR MEAN","SNR STD","NOISE MEAN","NOISE STD","FRAME MEAN STD","DRIFT STEP"];
+ private string _role="Sender",_txEndpoint="127.0.0.1:55051",_rxEndpoint="127.0.0.1:55052",_controllerEndpoint="127.0.0.1:55053",_txHttpEndpoint="127.0.0.1:8081",_encoding="raw",_status="Ready",_uploadStatus="Select a file to start a real BPSK transfer";
+ private int _shiftKey=7; private bool _configured,_connected,_uploading; private CancellationTokenSource? _cts;
+ private Livekalman.Tx.V1.TxFrameTrace? _txTrace; private Livekalman.Rx.V1.RxFrameTrace? _rxTrace; private Livekalman.Control.V1.PolicyDecision? _decision; private TransferQueue _queue=new();
+ private readonly List<Livekalman.Control.V1.ExperimentEvent> _events=[]; private float _berBefore,_berAfter;
+ private string PolicyName=>_decision?.Policy?.ToUpperInvariant() is {Length:>0} p?p:"AWAITING"; private string PolicyClass=>PolicyName=="ONNX"?"onnx":PolicyName=="RULE"?"rule":"";
+ private string FlowFile=>_txTrace is null?"waiting for file":$"{_txTrace.FileName} · {_txTrace.MediaOffset+(ulong)_txTrace.OriginalBytes.Length}/{_txTrace.TotalBytes} B";
+ private string FlowSignal=>_txTrace is null?"no signal frame":$"frame {_txTrace.Sequence} · σ {_txTrace.NoiseStddev:F2}"; private string FlowReceiver=>_rxTrace is null?"waiting for TxFrame":$"frame {_rxTrace.Sequence} · BER {_rxTrace.Ber:P1}"; private string FlowPolicy=>_decision is null?"collecting metric window":$"{PolicyName} · ρ {_decision.PredictedRho:G3}";
 
-    private string NodeClass => _connected ? "online" : "";
-    private string LastSeenText => _lastSeen is null ? "NO DATA" : $"UPDATED {_lastSeen:HH:mm:ss}";
-    private string SnrNote => _latest.Sequence == 0 ? "No samples received" : _latest.SnrDb switch { > 12 => "Excellent channel", > 6 => "Stable channel", > 2 => "Marginal channel", _ => "Degraded channel" };
-    private int Confidence => _latest.Sequence == 0 ? 0 : Math.Clamp((int)(100 - _latest.Ber * 300 - Math.Min(_latest.NoiseVariance * 15, 25)), 0, 100);
-    private ulong FirstFrame => _history.Count == 0 ? 0 : _history[0].Sequence;
-    private double ChartMin => _history.Count == 0 ? 0 : Math.Floor(_history.Min(x => x.SnrDb) - 1);
-    private double ChartMax => _history.Count == 0 ? 12 : Math.Ceiling(_history.Max(x => x.SnrDb) + 1);
-    private double ChartMid => (ChartMin + ChartMax) / 2;
-
-    private async Task Toggle()
-    {
-        if (_connected) { Stop(); return; }
-        _cts = new(); _connected = true; _message = "Negotiating the experiment stream";
-        AddActivity("Connecting", "Opening controller event stream", "blue");
-        try
-        {
-            await foreach (var metric in Events.WatchAsync(_endpoint, _cts.Token))
-            {
-                _latest = metric; _lastSeen = DateTimeOffset.Now; _message = $"Receiving local-demo · frame {metric.Sequence:N0}";
-                _history.Add(metric); if (_history.Count > 80) _history.RemoveAt(0);
-                if (_lastVersion != 0 && metric.ActiveConfigVersion != _lastVersion) AddActivity($"Profile v{metric.ActiveConfigVersion} applied", $"Activated at frame {metric.Sequence:N0}", "mint");
-                _lastVersion = metric.ActiveConfigVersion;
-                await InvokeAsync(StateHasChanged);
-            }
-        }
-        catch (OperationCanceledException) { }
-        catch (Exception ex) { _message = ex.Message; AddActivity("Stream interrupted", ex.Message, "red"); }
-        finally { _connected = false; await InvokeAsync(StateHasChanged); }
-    }
-
-    private static string FormatBer(float value) => value == 0 ? "0.00" : value.ToString("0.00E+0");
-    private void AddActivity(string title, string detail, string tone) { _activity.Insert(0, new(title, detail, DateTime.Now.ToString("HH:mm:ss"), tone)); if (_activity.Count > 12) _activity.RemoveAt(_activity.Count - 1); }
-    private string ChartPoints() => BuildPoints();
-    private string AreaPath() => _history.Count < 2 ? "" : $"M {BuildPoints().Replace(" ", " L ")} L 1000 280 L 0 280 Z";
-    private string BuildPoints()
-    {
-        if (_history.Count < 2) return "";
-        var min = ChartMin; var range = Math.Max(1, ChartMax - min);
-        return string.Join(' ', _history.Select((m, i) => $"{1000d * i / (_history.Count - 1):F1},{270d - 240d * (m.SnrDb - min) / range:F1}"));
-    }
-    private void Stop() { _cts?.Cancel(); _cts?.Dispose(); _cts = null; _connected = false; _message = "Stream stopped by operator"; AddActivity("Disconnected", "Metrics stream closed", "neutral"); }
-    public void Dispose() => Stop();
-    private sealed record ActivityItem(string Title, string Detail, string Time, string Tone);
+ private RenderFragment SenderView()=>@<main class="role-workspace">
+  <section class="hero sender"><div><span class="kicker">LAPTOP 01 / TRANSMITTER</span><h2>Real protobuf packet generation</h2><p>File bytes are encoded, scrambled, modulated into BPSK, impaired by the simulated channel and sent as a gRPC <code>TxFrame</code>.</p></div><FrameStamp Sequence="@(_txTrace?.Sequence??0)" Label="gRPC FRAME SENT" /></section>
+  <section class="stats four"><Stat Label="TRANSFER ID" Value="@(_txTrace?.TransferId??"—")" Note="protobuf media descriptor" /><Stat Label="FILE OFFSET" Value="@OffsetText(_txTrace?.MediaOffset,_txTrace?.TotalBytes)" Note="8 payload bytes / frame" /><Stat Label="NOISE σ" Value="@(_txTrace?.NoiseStddev.ToString("F2")??"—")" Note="AWGN before gRPC" /><Stat Label="LINK RATE" Value="@($"{_queue.BytesPerSecond:F0} B/s")" Note="512 samples / frame" /></section>
+  <section class="two-col"><article class="panel"><PanelHead Kicker="PACKET TRANSFORMATION" Title="Bytes carried by this frame" Status="ACTUAL DATA" /><ByteStage Number="1" Label="ORIGINAL FILE" Value="@Hex(_txTrace?.OriginalBytes)" Tone="blue" /><ByteStage Number="2" Label="BYTE SHIFT ENCODED" Value="@Hex(_txTrace?.EncodedBytes)" Tone="amber" /><ByteStage Number="3" Label="SCRAMBLED FOR DC BALANCE" Value="@Hex(_txTrace?.ScrambledBytes)" Tone="violet" /><div class="bit-box"><span>LSB-FIRST BPSK BITS</span><code>@(_txTrace?.PayloadBits??"Waiting for a file frame…")</code></div><div class="grpc-proof @(_txTrace?.GrpcSent==true?"sent":"")"><i>✓</i><div><strong>gRPC ProcessSignal</strong><span>@(_txTrace?.GrpcSent==true?"TxFrame accepted by the HTTP/2 stream":"No media frame sent yet")</span></div></div></article>
+   <article class="panel"><PanelHead Kicker="CHANNEL VIEW" Title="Clean symbols → noisy samples" Status="REAL SAMPLES" />@SignalChart(_txTrace?.NoisySamples,"#66a8ff")<div class="chart-caption"><span>Clean BPSK: @Symbols(_txTrace?.CleanSymbols)</span><span>Noisy samples: @(_txTrace?.NoisySamples.Count??0)</span></div></article></section>
+  <section class="panel transfer-console"><PanelHead Kicker="FILE TRANSMISSION" Title="Queue a text, image or audio file" Status="@($"{_queue.Queued.Count} QUEUED")" /><div class="transfer-controls"><select @bind="_encoding"><option value="raw">RAW</option><option value="byte_shift">BYTE SHIFT</option></select><label><span>SHIFT KEY</span><input type="range" min="0" max="255" @bind="_shiftKey" /><b>@_shiftKey</b></label><button class="primary" disabled="@_uploading" @onclick="SendFile">@(_uploading?"UPLOADING…":"CHOOSE & SEND FILE")</button></div><p class="console-note">@_uploadStatus</p>@TransferProgress()</section>
+ </main>;
+ private RenderFragment ReceiverView()=>@<main class="role-workspace">
+  <section class="hero receiver"><div><span class="kicker">LAPTOP 02 / RECEIVER DSP</span><h2>Kalman filtering and BPSK demodulation</h2><p>This view is sourced from the Receiver after it accepts each real <code>TxFrame</code>.</p></div><FrameStamp Sequence="@(_rxTrace?.Sequence??0)" Label="PROTOBUF RECEIVED" /></section>
+  <section class="stats four"><Stat Label="KALMAN DC" Value="@(_rxTrace?.DcEstimate.ToString("F4")??"—")" Note="tracked channel offset" /><Stat Label="FRAME BER" Value="@(_rxTrace is null?"—":_rxTrace.Ber.ToString("P2"))" Note="hard-decision errors" /><Stat Label="BIT ERRORS" Value="@($"{_rxTrace?.BitErrors??0} / {_rxTrace?.ComparedBits??0}")" Note="simulation reference" /><Stat Label="CRC" Value="@(_rxTrace?.ChecksumState.ToUpperInvariant()??"WAITING")" Note="end-to-end file check" /></section>
+  <section class="two-col"><article class="panel"><PanelHead Kicker="RECEIVED CHANNEL" Title="Noisy waveform and DC estimate" Status="@($"DC {_rxTrace?.DcEstimate:F3}")" />@SignalChart(_rxTrace?.NoisySamples,"#55e6b4")</article><article class="panel"><PanelHead Kicker="DEMODULATION" Title="Symbols reconstructed into bytes" Status="@(_rxTrace?.EndOfStream==true?"COMPLETE":"STREAMING")" /><ByteStage Number="1" Label="HARD DECISION / SCRAMBLED" Value="@Hex(_rxTrace?.DemodulatedBytes)" Tone="violet" /><ByteStage Number="2" Label="DESCRAMBLED + UNSHIFTED" Value="@Hex(_rxTrace?.DecodedBytes)" Tone="mint" /><div class="bit-box"><span>DEMODULATED BITS</span><code>@(_rxTrace?.DemodulatedBits??"Waiting for receiver frame…")</code></div></article></section>
+  <section class="panel"><PanelHead Kicker="FILE REASSEMBLY" Title="@(_rxTrace?.FileName??"No active media")" Status="@(_rxTrace?.ChecksumState.ToUpperInvariant()??"IDLE")" /><div class="progress-label"><span>@(_rxTrace?.ReceivedBytes??0) / @(_rxTrace?.TotalBytes??0) bytes</span><strong>@Progress(_rxTrace?.ReceivedBytes,_rxTrace?.TotalBytes).ToString("P1")</strong></div><div class="progress"><i style="width:@(Progress(_rxTrace?.ReceivedBytes,_rxTrace?.TotalBytes)*100)%"></i></div></section>
+ </main>;
+ private RenderFragment ControllerView()=>@<main class="role-workspace">
+  <section class="hero controller"><div><span class="kicker">LAPTOP 03 / ADAPTIVE CONTROLLER</span><h2>Policy inference and configuration control</h2><p>The values below come from real controller <code>PolicyDecision</code> messages, including ONNX model features.</p></div><div class="model-seal @PolicyClass"><small>ACTIVE POLICY</small><strong>@PolicyName</strong><span>@(_decision is null?"Waiting for metrics":"Inference verified")</span></div></section>
+  <section class="stats four"><Stat Label="PREDICTED ρ" Value="@(_decision?.PredictedRho.ToString("G4")??"—")" Note="Q / R ratio" /><Stat Label="PROPOSED Q" Value="@(_decision?.ProposedKalmanQ.ToString("G4")??"—")" Note="process covariance" /><Stat Label="PROPOSED R" Value="@(_decision?.ProposedKalmanR.ToString("G4")??"—")" Note="measurement covariance" /><Stat Label="APPLY AT FRAME" Value="@(_decision?.EffectiveSequence.ToString()??"—")" Note="safe sequence boundary" /></section>
+  <section class="two-col"><article class="panel"><PanelHead Kicker="MODEL INPUT" Title="Six live ONNX features" Status="FLOAT32 [1,6]" /><div class="features">@for(var i=0;i<FeatureNames.Length;i++){<div><span>@FeatureNames[i]</span><strong>@Feature(i)</strong><i style="width:@FeatureBar(i)%"></i></div>}</div></article><article class="panel"><PanelHead Kicker="ADAPTATION EFFECT" Title="BER before and after decision" Status="LIVE COMPARISON" /><div class="ber-compare"><div><span>BEFORE</span><strong>@_berBefore.ToString("P3")</strong></div><b>→</b><div><span>AFTER</span><strong>@_berAfter.ToString("P3")</strong></div></div><p class="reason">@(_decision?.Reason??"Waiting for the first policy decision…")</p></article></section>
+  <section class="panel"><PanelHead Kicker="CONTROL PLANE" Title="Recent experiment events" Status="gRPC STREAM" /><div class="event-table"><div class="event-row header"><span>FRAME</span><span>KIND</span><span>DESCRIPTION</span><span>VERSION</span></div>@foreach(var e in _events.Take(8)){<div class="event-row"><code>@e.Sequence</code><b>@e.Kind</b><span>@e.Description</span><code>@(e.Decision?.ProposedVersion??e.Metrics?.ActiveConfigVersion??0)</code></div>}</div></section>
+ </main>;
+ private async Task Start(){_configured=true;_connected=true;_cts=new();_status="Opening protobuf streams";_ = RunSender(_cts.Token);_ = RunReceiver(_cts.Token);_ = RunController(_cts.Token);_ = PollQueue(_cts.Token);await Task.CompletedTask;}
+ private async Task RunSender(CancellationToken ct){try{await foreach(var t in Lab.WatchSenderAsync(_txEndpoint,ct)){_txTrace=t;_status=$"Sender frame {t.Sequence} sent";await InvokeAsync(StateHasChanged);}}catch(Exception ex)when(!ct.IsCancellationRequested){await Fault("Sender",ex);}}
+ private async Task RunReceiver(CancellationToken ct){try{await foreach(var t in Lab.WatchReceiverAsync(_rxEndpoint,ct)){_rxTrace=t;_status=$"Receiver frame {t.Sequence} demodulated";await InvokeAsync(StateHasChanged);}}catch(Exception ex)when(!ct.IsCancellationRequested){await Fault("Receiver",ex);}}
+ private async Task RunController(CancellationToken ct){try{await foreach(var e in Lab.WatchControllerAsync(_controllerEndpoint,ct)){_events.Insert(0,e);if(_events.Count>30)_events.RemoveAt(_events.Count-1);if(e.Metrics is not null&&e.Metrics.Sequence>0&&_decision is not null&&e.Metrics.ActiveConfigVersion>=_decision.ProposedVersion)_berAfter=e.Metrics.Ber;if(e.Decision is not null&&e.Decision.CommandId>0){_decision=e.Decision;_berBefore=e.Decision.ObservedBer;_berAfter=0;}await InvokeAsync(StateHasChanged);}}catch(Exception ex)when(!ct.IsCancellationRequested){await Fault("Controller",ex);}}
+ private async Task PollQueue(CancellationToken ct){while(!ct.IsCancellationRequested){try{_queue=await Lab.GetTransfersAsync(_txHttpEndpoint,ct);await InvokeAsync(StateHasChanged);}catch when(!ct.IsCancellationRequested){}try{await Task.Delay(1000,ct);}catch(OperationCanceledException){}}}
+ private async Task SendFile(){if(_cts is null)return;_uploading=true;try{_uploadStatus=await Lab.PickAndSendAsync(_txHttpEndpoint,_encoding,_shiftKey,_cts.Token);}catch(Exception ex){_uploadStatus=ex.Message;}finally{_uploading=false;await InvokeAsync(StateHasChanged);}}
+ private Task Fault(string source,Exception ex){_status=$"{source}: {ex.Message}";return InvokeAsync(StateHasChanged);} private void OpenSetup(){Disconnect();_configured=false;} private void Disconnect(){_cts?.Cancel();_cts?.Dispose();_cts=null;_connected=false;_status="Disconnected by operator";} public void Dispose()=>Disconnect();
+ private string Feature(int i)=>_decision is not null&&_decision.Features.Count>i?_decision.Features[i].ToString("F4"):"—"; private double FeatureBar(int i)=>_decision is null||_decision.Features.Count<=i?0:Math.Clamp(Math.Abs(_decision.Features[i])*20,3,100);
+ private static string RoleIcon(string r)=>r switch{"Sender"=>"TX","Receiver"=>"RX",_=>"AI"}; private static string RoleLaptop(string r)=>r switch{"Sender"=>"LAPTOP 01","Receiver"=>"LAPTOP 02",_=>"LAPTOP 03"}; private static string RoleDescription(string r)=>r switch{"Sender"=>"Generate and transmit protobuf signal frames","Receiver"=>"Filter, demodulate and reconstruct media",_=>"Run rule or ONNX adaptation policy"};
+ private static string Hex(ByteString? v)=>v is null||v.Length==0?"—":string.Join(' ',Convert.ToHexString(v.ToByteArray()).Chunk(2).Select(x=>new string(x))); private static string Symbols(Google.Protobuf.Collections.RepeatedField<float>? v)=>v is null||v.Count==0?"—":string.Join(' ',v.Select(x=>x>=0?"+A":"−A")); private static string OffsetText(ulong? o,ulong? t)=>o is null?"—":$"{o} / {t}"; private static double Progress(ulong? v,ulong? t)=>t is null or 0?0:Math.Clamp((double)(v??0)/t.Value,0,1);
+ private RenderFragment SignalChart(Google.Protobuf.Collections.RepeatedField<float>? v,string color)=>@<div class="signal-chart"><svg viewBox="0 0 720 210" preserveAspectRatio="none"><g><line x1="0" y1="35" x2="720" y2="35"/><line x1="0" y1="105" x2="720" y2="105"/><line x1="0" y1="175" x2="720" y2="175"/></g><polyline points="@Points(v)" style="stroke:@color" /></svg>@if(v is null||v.Count==0){<div>Waiting for a media frame…</div>}</div>;
+ private static string Points(Google.Protobuf.Collections.RepeatedField<float>? v){if(v is null||v.Count<2)return "";var max=Math.Max(1,v.Max(x=>Math.Abs(x)));return string.Join(' ',v.Select((x,i)=>$"{720d*i/(v.Count-1):F1},{105-75*x/max:F1}"));}
+ private RenderFragment TransferProgress()=>@<div class="queue-view">@if(_queue.Active is not null){<div><strong>@_queue.Active.FileName</strong><span>@_queue.Active.SentBytes / @_queue.Active.TotalBytes B · @_queue.Active.Encoding</span><div class="progress"><i style="width:@(100d*_queue.Active.SentBytes/Math.Max(1,_queue.Active.TotalBytes))%"></i></div></div>}else{<div class="empty">Sender queue ready · @_queue.Recent.Count recent transfers</div>}</div>;
 }

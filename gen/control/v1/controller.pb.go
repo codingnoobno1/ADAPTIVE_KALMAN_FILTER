@@ -173,6 +173,10 @@ type PolicyDecision struct {
 	ProposedKalmanR   float32                `protobuf:"fixed32,5,opt,name=proposed_kalman_r,json=proposedKalmanR,proto3" json:"proposed_kalman_r,omitempty"`
 	ResetState        bool                   `protobuf:"varint,6,opt,name=reset_state,json=resetState,proto3" json:"reset_state,omitempty"`
 	Reason            string                 `protobuf:"bytes,7,opt,name=reason,proto3" json:"reason,omitempty"`
+	Policy            string                 `protobuf:"bytes,8,opt,name=policy,proto3" json:"policy,omitempty"`
+	Features          []float32              `protobuf:"fixed32,9,rep,packed,name=features,proto3" json:"features,omitempty"`
+	PredictedRho      float32                `protobuf:"fixed32,10,opt,name=predicted_rho,json=predictedRho,proto3" json:"predicted_rho,omitempty"`
+	ObservedBer       float32                `protobuf:"fixed32,11,opt,name=observed_ber,json=observedBer,proto3" json:"observed_ber,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -254,6 +258,34 @@ func (x *PolicyDecision) GetReason() string {
 		return x.Reason
 	}
 	return ""
+}
+
+func (x *PolicyDecision) GetPolicy() string {
+	if x != nil {
+		return x.Policy
+	}
+	return ""
+}
+
+func (x *PolicyDecision) GetFeatures() []float32 {
+	if x != nil {
+		return x.Features
+	}
+	return nil
+}
+
+func (x *PolicyDecision) GetPredictedRho() float32 {
+	if x != nil {
+		return x.PredictedRho
+	}
+	return 0
+}
+
+func (x *PolicyDecision) GetObservedBer() float32 {
+	if x != nil {
+		return x.ObservedBer
+	}
+	return 0
 }
 
 type WatchRequest struct {
@@ -528,7 +560,7 @@ const file_control_v1_controller_proto_rawDesc = "" +
 	"\n" +
 	"frame_mean\x18\f \x01(\x02R\tframeMean\x12\x1f\n" +
 	"\vdc_estimate\x18\r \x01(\x02R\n" +
-	"dcEstimate\"\x9a\x02\n" +
+	"dcEstimate\"\x96\x03\n" +
 	"\x0ePolicyDecision\x12\x1d\n" +
 	"\n" +
 	"command_id\x18\x01 \x01(\x04R\tcommandId\x12)\n" +
@@ -538,7 +570,12 @@ const file_control_v1_controller_proto_rawDesc = "" +
 	"\x11proposed_kalman_r\x18\x05 \x01(\x02R\x0fproposedKalmanR\x12\x1f\n" +
 	"\vreset_state\x18\x06 \x01(\bR\n" +
 	"resetState\x12\x16\n" +
-	"\x06reason\x18\a \x01(\tR\x06reason\"%\n" +
+	"\x06reason\x18\a \x01(\tR\x06reason\x12\x16\n" +
+	"\x06policy\x18\b \x01(\tR\x06policy\x12\x1a\n" +
+	"\bfeatures\x18\t \x03(\x02R\bfeatures\x12#\n" +
+	"\rpredicted_rho\x18\n" +
+	" \x01(\x02R\fpredictedRho\x12!\n" +
+	"\fobserved_ber\x18\v \x01(\x02R\vobservedBer\"%\n" +
 	"\fWatchRequest\x12\x15\n" +
 	"\x06run_id\x18\x01 \x01(\tR\x05runId\"\xac\x02\n" +
 	"\x0fExperimentEvent\x12\x15\n" +

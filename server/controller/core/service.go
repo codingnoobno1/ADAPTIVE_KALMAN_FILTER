@@ -90,6 +90,7 @@ func (s *Server) Adapt(stream controlv1.ControllerService_AdaptServer) error {
 		if err := stream.Send(decision); err != nil {
 			return err
 		}
+		slog.Info("decision sent", "policy", s.cfg.Policy, "sequence", m.Sequence, "Q", decision.ProposedKalmanQ, "R", decision.ProposedKalmanR, "Q/R", decision.ProposedKalmanQ/decision.ProposedKalmanR, "reason", decision.Reason)
 		s.mu.Lock()
 		s.lastDecision[m.RunId] = m.Sequence
 		s.mu.Unlock()
@@ -151,6 +152,8 @@ func (s *Server) sse(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Connection", "keep-alive")
 	id, ch := s.subscribe()
 	defer s.unsubscribe(id)
+	w.WriteHeader(http.StatusOK)
+	flusher.Flush()
 	for {
 		select {
 		case <-r.Context().Done():

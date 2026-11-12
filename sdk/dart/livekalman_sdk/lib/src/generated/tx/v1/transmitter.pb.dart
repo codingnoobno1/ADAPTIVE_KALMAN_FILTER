@@ -322,10 +322,12 @@ class TxEvent extends $pb.GeneratedMessage {
   factory TxEvent({
     $fixnum.Int64? sequence,
     $core.String? description,
+    TxFrameTrace? trace,
   }) {
     final result = TxEvent._();
     if (sequence != null) result.sequence = sequence;
     if (description != null) result.description = description;
+    if (trace != null) result.trace = trace;
     return result;
   }
 
@@ -347,6 +349,8 @@ class TxEvent extends $pb.GeneratedMessage {
         1, _omitFieldNames ? '' : 'sequence', $pb.PbFieldType.OU6,
         defaultOrMaker: $fixnum.Int64.ZERO)
     ..aOS(2, _omitFieldNames ? '' : 'description')
+    ..aOM<TxFrameTrace>(3, _omitFieldNames ? '' : 'trace',
+        subBuilder: TxFrameTrace.$_createMessage)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -386,6 +390,236 @@ class TxEvent extends $pb.GeneratedMessage {
   $core.bool hasDescription() => $_has(1);
   @$pb.TagNumber(2)
   void clearDescription() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  TxFrameTrace get trace => $_getN(2);
+  @$pb.TagNumber(3)
+  set trace(TxFrameTrace value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasTrace() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearTrace() => $_clearField(3);
+  @$pb.TagNumber(3)
+  TxFrameTrace ensureTrace() => $_ensure(2);
+}
+
+/// TxFrameTrace is a reduced diagnostic view of a real signal frame. It is
+/// intentionally bounded so dashboards never subscribe to the full sample-rate
+/// stream used between Sender and Receiver.
+class TxFrameTrace extends $pb.GeneratedMessage {
+  factory TxFrameTrace({
+    $fixnum.Int64? sequence,
+    $core.String? transferId,
+    $core.String? fileName,
+    $fixnum.Int64? mediaOffset,
+    $fixnum.Int64? totalBytes,
+    $core.List<$core.int>? originalBytes,
+    $core.List<$core.int>? encodedBytes,
+    $core.List<$core.int>? scrambledBytes,
+    $core.String? payloadBits,
+    $core.Iterable<$core.double>? cleanSymbols,
+    $core.Iterable<$core.double>? noisySamples,
+    $core.double? noiseStddev,
+    $core.bool? grpcSent,
+    $fixnum.Int64? observedAtUnixMs,
+  }) {
+    final result = TxFrameTrace._();
+    if (sequence != null) result.sequence = sequence;
+    if (transferId != null) result.transferId = transferId;
+    if (fileName != null) result.fileName = fileName;
+    if (mediaOffset != null) result.mediaOffset = mediaOffset;
+    if (totalBytes != null) result.totalBytes = totalBytes;
+    if (originalBytes != null) result.originalBytes = originalBytes;
+    if (encodedBytes != null) result.encodedBytes = encodedBytes;
+    if (scrambledBytes != null) result.scrambledBytes = scrambledBytes;
+    if (payloadBits != null) result.payloadBits = payloadBits;
+    if (cleanSymbols != null) result.cleanSymbols.addAll(cleanSymbols);
+    if (noisySamples != null) result.noisySamples.addAll(noisySamples);
+    if (noiseStddev != null) result.noiseStddev = noiseStddev;
+    if (grpcSent != null) result.grpcSent = grpcSent;
+    if (observedAtUnixMs != null) result.observedAtUnixMs = observedAtUnixMs;
+    return result;
+  }
+
+  TxFrameTrace._();
+
+  factory TxFrameTrace.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      TxFrameTrace()..mergeFromBuffer(data, registry);
+  factory TxFrameTrace.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      TxFrameTrace()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'TxFrameTrace',
+      package:
+          const $pb.PackageName(_omitMessageNames ? '' : 'livekalman.tx.v1'),
+      createEmptyInstance: TxFrameTrace.$_createMessage)
+    ..a<$fixnum.Int64>(
+        1, _omitFieldNames ? '' : 'sequence', $pb.PbFieldType.OU6,
+        defaultOrMaker: $fixnum.Int64.ZERO)
+    ..aOS(2, _omitFieldNames ? '' : 'transferId')
+    ..aOS(3, _omitFieldNames ? '' : 'fileName')
+    ..a<$fixnum.Int64>(
+        4, _omitFieldNames ? '' : 'mediaOffset', $pb.PbFieldType.OU6,
+        defaultOrMaker: $fixnum.Int64.ZERO)
+    ..a<$fixnum.Int64>(
+        5, _omitFieldNames ? '' : 'totalBytes', $pb.PbFieldType.OU6,
+        defaultOrMaker: $fixnum.Int64.ZERO)
+    ..a<$core.List<$core.int>>(
+        6, _omitFieldNames ? '' : 'originalBytes', $pb.PbFieldType.OY)
+    ..a<$core.List<$core.int>>(
+        7, _omitFieldNames ? '' : 'encodedBytes', $pb.PbFieldType.OY)
+    ..a<$core.List<$core.int>>(
+        8, _omitFieldNames ? '' : 'scrambledBytes', $pb.PbFieldType.OY)
+    ..aOS(9, _omitFieldNames ? '' : 'payloadBits')
+    ..p<$core.double>(
+        10, _omitFieldNames ? '' : 'cleanSymbols', $pb.PbFieldType.KF)
+    ..p<$core.double>(
+        11, _omitFieldNames ? '' : 'noisySamples', $pb.PbFieldType.KF)
+    ..aD(12, _omitFieldNames ? '' : 'noiseStddev',
+        fieldType: $pb.PbFieldType.OF)
+    ..aOB(13, _omitFieldNames ? '' : 'grpcSent')
+    ..a<$fixnum.Int64>(
+        14, _omitFieldNames ? '' : 'observedAtUnixMs', $pb.PbFieldType.OU6,
+        defaultOrMaker: $fixnum.Int64.ZERO)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  TxFrameTrace clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  TxFrameTrace copyWith(void Function(TxFrameTrace) updates) =>
+      super.copyWith((message) => updates(message as TxFrameTrace))
+          as TxFrameTrace;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use TxFrameTrace() / TxFrameTrace.new instead')
+  static TxFrameTrace create() => TxFrameTrace._();
+  static $pb.GeneratedMessage $_createMessage() => TxFrameTrace._();
+  @$core.override
+  TxFrameTrace createEmptyInstance() => TxFrameTrace._();
+  @$core.pragma('dart2js:noInline')
+  static TxFrameTrace getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<TxFrameTrace>(
+          TxFrameTrace.$_createMessage);
+  static TxFrameTrace? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $fixnum.Int64 get sequence => $_getI64(0);
+  @$pb.TagNumber(1)
+  set sequence($fixnum.Int64 value) => $_setInt64(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasSequence() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearSequence() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get transferId => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set transferId($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasTransferId() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearTransferId() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.String get fileName => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set fileName($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasFileName() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearFileName() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $fixnum.Int64 get mediaOffset => $_getI64(3);
+  @$pb.TagNumber(4)
+  set mediaOffset($fixnum.Int64 value) => $_setInt64(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasMediaOffset() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearMediaOffset() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $fixnum.Int64 get totalBytes => $_getI64(4);
+  @$pb.TagNumber(5)
+  set totalBytes($fixnum.Int64 value) => $_setInt64(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasTotalBytes() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearTotalBytes() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $core.List<$core.int> get originalBytes => $_getN(5);
+  @$pb.TagNumber(6)
+  set originalBytes($core.List<$core.int> value) => $_setBytes(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasOriginalBytes() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearOriginalBytes() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $core.List<$core.int> get encodedBytes => $_getN(6);
+  @$pb.TagNumber(7)
+  set encodedBytes($core.List<$core.int> value) => $_setBytes(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasEncodedBytes() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearEncodedBytes() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $core.List<$core.int> get scrambledBytes => $_getN(7);
+  @$pb.TagNumber(8)
+  set scrambledBytes($core.List<$core.int> value) => $_setBytes(7, value);
+  @$pb.TagNumber(8)
+  $core.bool hasScrambledBytes() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearScrambledBytes() => $_clearField(8);
+
+  @$pb.TagNumber(9)
+  $core.String get payloadBits => $_getSZ(8);
+  @$pb.TagNumber(9)
+  set payloadBits($core.String value) => $_setString(8, value);
+  @$pb.TagNumber(9)
+  $core.bool hasPayloadBits() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearPayloadBits() => $_clearField(9);
+
+  @$pb.TagNumber(10)
+  $pb.PbList<$core.double> get cleanSymbols => $_getList(9);
+
+  @$pb.TagNumber(11)
+  $pb.PbList<$core.double> get noisySamples => $_getList(10);
+
+  @$pb.TagNumber(12)
+  $core.double get noiseStddev => $_getN(11);
+  @$pb.TagNumber(12)
+  set noiseStddev($core.double value) => $_setFloat(11, value);
+  @$pb.TagNumber(12)
+  $core.bool hasNoiseStddev() => $_has(11);
+  @$pb.TagNumber(12)
+  void clearNoiseStddev() => $_clearField(12);
+
+  @$pb.TagNumber(13)
+  $core.bool get grpcSent => $_getBF(12);
+  @$pb.TagNumber(13)
+  set grpcSent($core.bool value) => $_setBool(12, value);
+  @$pb.TagNumber(13)
+  $core.bool hasGrpcSent() => $_has(12);
+  @$pb.TagNumber(13)
+  void clearGrpcSent() => $_clearField(13);
+
+  @$pb.TagNumber(14)
+  $fixnum.Int64 get observedAtUnixMs => $_getI64(13);
+  @$pb.TagNumber(14)
+  set observedAtUnixMs($fixnum.Int64 value) => $_setInt64(13, value);
+  @$pb.TagNumber(14)
+  $core.bool hasObservedAtUnixMs() => $_has(13);
+  @$pb.TagNumber(14)
+  void clearObservedAtUnixMs() => $_clearField(14);
 }
 
 const $core.bool _omitFieldNames =

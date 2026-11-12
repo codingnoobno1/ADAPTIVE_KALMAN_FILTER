@@ -270,6 +270,8 @@ func (s *Server) streamMediaHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache")
 	id, events := s.media.subscribe(nil)
 	defer s.media.unsubscribe(id)
+	w.WriteHeader(http.StatusOK)
+	flusher.Flush()
 	encoder := json.NewEncoder(w)
 	for {
 		select {

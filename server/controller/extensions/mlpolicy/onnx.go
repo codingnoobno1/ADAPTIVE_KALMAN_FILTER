@@ -123,6 +123,10 @@ func (p *Policy) Evaluate(_ context.Context, window []*controlv1.ReceiverMetrics
 		ProposedKalmanQ: float32(rho * r),
 		ProposedKalmanR: float32(r),
 		Reason:          fmt.Sprintf("onnx: snr %.1f dB, drift step %.3f -> Q/R %.3g", features[0], features[5], rho),
+		Policy:          "onnx",
+		Features:        features,
+		PredictedRho:    float32(rho),
+		ObservedBer:     window[len(window)-1].Ber,
 	}, nil
 }
 

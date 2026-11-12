@@ -14,6 +14,7 @@
 #include <HTTPClient.h>
 #include <LittleFS.h>
 #include <WiFi.h>
+#include <esp_timer.h>
 #include <pb_encode.h>
 
 #include "lk_media.h"
@@ -52,7 +53,7 @@ static bool postFrame() {
     if (status == 200) return true;
     // A retry after a lost reply can reach the Receiver twice; it treats the
     // duplicate as a gap and aborts the transfer, which the next file recovers.
-    Serial.printf("frame %llu: HTTP %d (attempt %d)\n", frame.sequence, status, attempt);
+    Serial.printf("frame %llu: HTTP %d (attempt %d)\n", (unsigned long long)frame.sequence, status, attempt);
     http.end();
     delay(200 * attempt);
     http.begin(kReceiverUrl);
@@ -95,7 +96,7 @@ static bool sendFile(const char *path) {
     size_t n = f.read(chunk, cap);
     if (n == 0) break;
     const bool end = offset + n >= size;
-    if (lk_build_frame(&frame, &kFrameConfig, streamId, ++sequenceNumber, esp_timer_get_time(), &t, chunk, n, offset, end, hwRandom) != 0 ||
+    if (lk_build_frame(&frame, &kFrameConfig, streamId, ++sequenceNumber, (uint64_t)esp_timer_get_time(), &t, chunk, n, offset, end, hwRandom) != 0 ||
         !postFrame()) {
       Serial.printf("aborting %s at byte %u\n", t.file_name, (unsigned)offset);
       f.close();

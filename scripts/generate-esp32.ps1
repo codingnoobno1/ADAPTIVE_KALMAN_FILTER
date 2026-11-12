@@ -9,8 +9,12 @@ param(
 # common.proto, and commit the result (like gen/ for Go).
 $ErrorActionPreference = 'Stop'
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
-$out = Join-Path $root 'examples\esp32\platformio\lib\lk_media'
-$env:PATH = "$(Join-Path $root '.tools\protoc\bin');$env:PATH"
+$out = Join-Path $root 'examples/esp32/platformio/lib/lk_media'
+$localProtocBin = Join-Path $root '.tools/protoc/bin'
+if (Test-Path -LiteralPath $localProtocBin) {
+    $pathSep = [System.IO.Path]::PathSeparator
+    $env:PATH = "$localProtocBin$pathSep$env:PATH"
+}
 Push-Location $root
 try {
     & $Python -m nanopb.generator.nanopb_generator -I proto -D $out proto/common/v1/common.proto proto/rx/v1/receiver.proto

@@ -9,4 +9,6 @@ $exe = Join-Path $root "bin\$Role.exe"
 $configPath = (Resolve-Path (Join-Path $root $Config)).Path
 if (-not (Test-Path -LiteralPath $exe)) { throw "Missing $exe. Run scripts\build-all.ps1 first." }
 Write-Host "Running $Role with $configPath"
-& $exe --config $configPath
+# Run from the repository root so relative paths in the config (onnxModel) resolve.
+Push-Location $root
+try { & $exe --config $configPath } finally { Pop-Location }

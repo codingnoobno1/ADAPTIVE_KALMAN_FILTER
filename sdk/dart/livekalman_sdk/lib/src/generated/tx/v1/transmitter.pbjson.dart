@@ -79,10 +79,59 @@ const TxEvent$json = {
   '2': [
     {'1': 'sequence', '3': 1, '4': 1, '5': 4, '10': 'sequence'},
     {'1': 'description', '3': 2, '4': 1, '5': 9, '10': 'description'},
+    {
+      '1': 'trace',
+      '3': 3,
+      '4': 1,
+      '5': 11,
+      '6': '.livekalman.tx.v1.TxFrameTrace',
+      '10': 'trace'
+    },
   ],
 };
 
 /// Descriptor for `TxEvent`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List txEventDescriptor = $convert.base64Decode(
     'CgdUeEV2ZW50EhoKCHNlcXVlbmNlGAEgASgEUghzZXF1ZW5jZRIgCgtkZXNjcmlwdGlvbhgCIA'
-    'EoCVILZGVzY3JpcHRpb24=');
+    'EoCVILZGVzY3JpcHRpb24SNAoFdHJhY2UYAyABKAsyHi5saXZla2FsbWFuLnR4LnYxLlR4RnJh'
+    'bWVUcmFjZVIFdHJhY2U=');
+
+@$core.Deprecated('Use txFrameTraceDescriptor instead')
+const TxFrameTrace$json = {
+  '1': 'TxFrameTrace',
+  '2': [
+    {'1': 'sequence', '3': 1, '4': 1, '5': 4, '10': 'sequence'},
+    {'1': 'transfer_id', '3': 2, '4': 1, '5': 9, '10': 'transferId'},
+    {'1': 'file_name', '3': 3, '4': 1, '5': 9, '10': 'fileName'},
+    {'1': 'media_offset', '3': 4, '4': 1, '5': 4, '10': 'mediaOffset'},
+    {'1': 'total_bytes', '3': 5, '4': 1, '5': 4, '10': 'totalBytes'},
+    {'1': 'original_bytes', '3': 6, '4': 1, '5': 12, '10': 'originalBytes'},
+    {'1': 'encoded_bytes', '3': 7, '4': 1, '5': 12, '10': 'encodedBytes'},
+    {'1': 'scrambled_bytes', '3': 8, '4': 1, '5': 12, '10': 'scrambledBytes'},
+    {'1': 'payload_bits', '3': 9, '4': 1, '5': 9, '10': 'payloadBits'},
+    {'1': 'clean_symbols', '3': 10, '4': 3, '5': 2, '10': 'cleanSymbols'},
+    {'1': 'noisy_samples', '3': 11, '4': 3, '5': 2, '10': 'noisySamples'},
+    {'1': 'noise_stddev', '3': 12, '4': 1, '5': 2, '10': 'noiseStddev'},
+    {'1': 'grpc_sent', '3': 13, '4': 1, '5': 8, '10': 'grpcSent'},
+    {
+      '1': 'observed_at_unix_ms',
+      '3': 14,
+      '4': 1,
+      '5': 4,
+      '10': 'observedAtUnixMs'
+    },
+  ],
+};
+
+/// Descriptor for `TxFrameTrace`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List txFrameTraceDescriptor = $convert.base64Decode(
+    'CgxUeEZyYW1lVHJhY2USGgoIc2VxdWVuY2UYASABKARSCHNlcXVlbmNlEh8KC3RyYW5zZmVyX2'
+    'lkGAIgASgJUgp0cmFuc2ZlcklkEhsKCWZpbGVfbmFtZRgDIAEoCVIIZmlsZU5hbWUSIQoMbWVk'
+    'aWFfb2Zmc2V0GAQgASgEUgttZWRpYU9mZnNldBIfCgt0b3RhbF9ieXRlcxgFIAEoBFIKdG90YW'
+    'xCeXRlcxIlCg5vcmlnaW5hbF9ieXRlcxgGIAEoDFINb3JpZ2luYWxCeXRlcxIjCg1lbmNvZGVk'
+    'X2J5dGVzGAcgASgMUgxlbmNvZGVkQnl0ZXMSJwoPc2NyYW1ibGVkX2J5dGVzGAggASgMUg5zY3'
+    'JhbWJsZWRCeXRlcxIhCgxwYXlsb2FkX2JpdHMYCSABKAlSC3BheWxvYWRCaXRzEiMKDWNsZWFu'
+    'X3N5bWJvbHMYCiADKAJSDGNsZWFuU3ltYm9scxIjCg1ub2lzeV9zYW1wbGVzGAsgAygCUgxub2'
+    'lzeVNhbXBsZXMSIQoMbm9pc2Vfc3RkZGV2GAwgASgCUgtub2lzZVN0ZGRldhIbCglncnBjX3Nl'
+    'bnQYDSABKAhSCGdycGNTZW50Ei0KE29ic2VydmVkX2F0X3VuaXhfbXMYDiABKARSEG9ic2Vydm'
+    'VkQXRVbml4TXM=');

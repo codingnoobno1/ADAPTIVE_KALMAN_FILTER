@@ -23,6 +23,7 @@ const (
 	ReceiverService_ProcessSignal_FullMethodName       = "/livekalman.rx.v1.ReceiverService/ProcessSignal"
 	ReceiverService_ApplyReceiverConfig_FullMethodName = "/livekalman.rx.v1.ReceiverService/ApplyReceiverConfig"
 	ReceiverService_GetRxStatus_FullMethodName         = "/livekalman.rx.v1.ReceiverService/GetRxStatus"
+	ReceiverService_WatchFrameTraces_FullMethodName    = "/livekalman.rx.v1.ReceiverService/WatchFrameTraces"
 )
 
 // ReceiverServiceClient is the client API for ReceiverService service.
@@ -32,6 +33,7 @@ type ReceiverServiceClient interface {
 	ProcessSignal(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[TxFrame, RxFeedback], error)
 	ApplyReceiverConfig(ctx context.Context, in *RxConfig, opts ...grpc.CallOption) (*ApplyRxReply, error)
 	GetRxStatus(ctx context.Context, in *v1.Empty, opts ...grpc.CallOption) (*RxStatus, error)
+	WatchFrameTraces(ctx context.Context, in *v1.Empty, opts ...grpc.CallOption) (grpc.ServerStreamingClient[RxFrameTrace], error)
 }
 
 type receiverServiceClient struct {
@@ -75,6 +77,25 @@ func (c *receiverServiceClient) GetRxStatus(ctx context.Context, in *v1.Empty, o
 	return out, nil
 }
 
+func (c *receiverServiceClient) WatchFrameTraces(ctx context.Context, in *v1.Empty, opts ...grpc.CallOption) (grpc.ServerStreamingClient[RxFrameTrace], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &ReceiverService_ServiceDesc.Streams[1], ReceiverService_WatchFrameTraces_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[v1.Empty, RxFrameTrace]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type ReceiverService_WatchFrameTracesClient = grpc.ServerStreamingClient[RxFrameTrace]
+
 // ReceiverServiceServer is the server API for ReceiverService service.
 // All implementations must embed UnimplementedReceiverServiceServer
 // for forward compatibility.
@@ -82,6 +103,7 @@ type ReceiverServiceServer interface {
 	ProcessSignal(grpc.BidiStreamingServer[TxFrame, RxFeedback]) error
 	ApplyReceiverConfig(context.Context, *RxConfig) (*ApplyRxReply, error)
 	GetRxStatus(context.Context, *v1.Empty) (*RxStatus, error)
+	WatchFrameTraces(*v1.Empty, grpc.ServerStreamingServer[RxFrameTrace]) error
 	mustEmbedUnimplementedReceiverServiceServer()
 }
 
@@ -100,6 +122,9 @@ func (UnimplementedReceiverServiceServer) ApplyReceiverConfig(context.Context, *
 }
 func (UnimplementedReceiverServiceServer) GetRxStatus(context.Context, *v1.Empty) (*RxStatus, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetRxStatus not implemented")
+}
+func (UnimplementedReceiverServiceServer) WatchFrameTraces(*v1.Empty, grpc.ServerStreamingServer[RxFrameTrace]) error {
+	return status.Errorf(codes.Unimplemented, "method WatchFrameTraces not implemented")
 }
 func (UnimplementedReceiverServiceServer) mustEmbedUnimplementedReceiverServiceServer() {}
 func (UnimplementedReceiverServiceServer) testEmbeddedByValue()                         {}
@@ -165,6 +190,17 @@ func _ReceiverService_GetRxStatus_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ReceiverService_WatchFrameTraces_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(v1.Empty)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(ReceiverServiceServer).WatchFrameTraces(m, &grpc.GenericServerStream[v1.Empty, RxFrameTrace]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type ReceiverService_WatchFrameTracesServer = grpc.ServerStreamingServer[RxFrameTrace]
+
 // ReceiverService_ServiceDesc is the grpc.ServiceDesc for ReceiverService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -187,6 +223,11 @@ var ReceiverService_ServiceDesc = grpc.ServiceDesc{
 			Handler:       _ReceiverService_ProcessSignal_Handler,
 			ServerStreams: true,
 			ClientStreams: true,
+		},
+		{
+			StreamName:    "WatchFrameTraces",
+			Handler:       _ReceiverService_WatchFrameTraces_Handler,
+			ServerStreams: true,
 		},
 	},
 	Metadata: "rx/v1/receiver.proto",

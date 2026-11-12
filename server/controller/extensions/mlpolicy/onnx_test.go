@@ -11,14 +11,20 @@ import (
 	controlv1 "github.com/streaming-live-kalman/filter/gen/control/v1"
 )
 
-var modelPath = filepath.Join("..", "..", "..", "..", "ml", "models", "r_policy.onnx")
+func testModelPath() string {
+	if override := os.Getenv("LK_TEST_ONNX_MODEL"); override != "" {
+		return override
+	}
+	return filepath.Join("..", "..", "..", "..", "ml", "models", "r_policy.onnx")
+}
 
 func loadTestPolicy(t *testing.T) *Policy {
 	t.Helper()
-	if _, err := os.Stat(modelPath); err != nil {
+	path := testModelPath()
+	if _, err := os.Stat(path); err != nil {
 		t.Skip("model not trained yet; run ml/train.py")
 	}
-	p, err := Load(modelPath, 0.02, 4.0, 12)
+	p, err := Load(path, 0.02, 4.0, 12)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -29,7 +35,7 @@ func loadTestPolicy(t *testing.T) *Policy {
 // onnxruntime, proving the pure-Go runtime computes the same model.
 func TestGonnxMatchesPython(t *testing.T) {
 	p := loadTestPolicy(t)
-	raw, err := os.ReadFile(filepath.Join(filepath.Dir(modelPath), "r_policy.golden.json"))
+	raw, err := os.ReadFile(filepath.Join(filepath.Dir(testModelPath()), "r_policy.golden.json"))
 	if err != nil {
 		t.Fatal(err)
 	}

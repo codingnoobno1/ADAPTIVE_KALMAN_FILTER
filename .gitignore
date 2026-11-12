@@ -9,8 +9,20 @@ run/
 **/.flutter-plugins*
 **/ephemeral/
 .vs/
+.idea/
 *.user
 *.suo
 ml/.venv/
-ml/data/
 __pycache__/
+*.py[cod]
+coverage.out
+
+# Local report/slide authoring scratch directories
+.codex-*/
+tmp/
+qa/
+output/
+tools/
+/*.docx
+docs/slide-assets/
+docs/report-assets/prior-evidence/

@@ -75,6 +75,28 @@ typedef struct _livekalman_rx_v1_RxStatus {
     uint64_t sequence_gaps;
 } livekalman_rx_v1_RxStatus;
 
+/* RxFrameTrace is the Receiver's bounded view of one real protobuf frame after
+ Kalman tracking and BPSK hard decisions. */
+typedef struct _livekalman_rx_v1_RxFrameTrace {
+    uint64_t sequence;
+    pb_callback_t transfer_id;
+    pb_callback_t file_name;
+    uint64_t media_offset;
+    uint64_t total_bytes;
+    pb_callback_t noisy_samples;
+    float dc_estimate;
+    pb_callback_t demodulated_bytes;
+    pb_callback_t decoded_bytes;
+    pb_callback_t demodulated_bits;
+    uint64_t bit_errors;
+    uint64_t compared_bits;
+    float ber;
+    uint64_t received_bytes;
+    pb_callback_t checksum_state;
+    bool end_of_stream;
+    uint64_t observed_at_unix_ms;
+} livekalman_rx_v1_RxFrameTrace;
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -86,11 +108,13 @@ extern "C" {
 #define livekalman_rx_v1_RxConfig_init_default   {0, 0, 0, 0, 0, 0}
 #define livekalman_rx_v1_ApplyRxReply_init_default {0, {{NULL}, NULL}, 0}
 #define livekalman_rx_v1_RxStatus_init_default   {0, 0, 0, 0}
+#define livekalman_rx_v1_RxFrameTrace_init_default {0, {{NULL}, NULL}, {{NULL}, NULL}, 0, 0, {{NULL}, NULL}, 0, {{NULL}, NULL}, {{NULL}, NULL}, {{NULL}, NULL}, 0, 0, 0, 0, {{NULL}, NULL}, 0, 0}
 #define livekalman_rx_v1_TxFrame_init_zero       {"", 0, 0, 0, 0, 0, 0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, {0, {0}}, _livekalman_common_v1_SampleFormat_MIN, {0, {0}}, false, livekalman_common_v1_MediaDescriptor_init_zero, 0, 0, 0, 0}
 #define livekalman_rx_v1_RxFeedback_init_zero    {0, 0, 0, 0, 0, 0, 0, 0, 0}
 #define livekalman_rx_v1_RxConfig_init_zero      {0, 0, 0, 0, 0, 0}
 #define livekalman_rx_v1_ApplyRxReply_init_zero  {0, {{NULL}, NULL}, 0}
 #define livekalman_rx_v1_RxStatus_init_zero      {0, 0, 0, 0}
+#define livekalman_rx_v1_RxFrameTrace_init_zero  {0, {{NULL}, NULL}, {{NULL}, NULL}, 0, 0, {{NULL}, NULL}, 0, {{NULL}, NULL}, {{NULL}, NULL}, {{NULL}, NULL}, 0, 0, 0, 0, {{NULL}, NULL}, 0, 0}
 
 /* Field tags (for use in manual encoding/decoding) */
 #define livekalman_rx_v1_TxFrame_run_id_tag      1
@@ -132,6 +156,23 @@ extern "C" {
 #define livekalman_rx_v1_RxStatus_stream_active_tag 2
 #define livekalman_rx_v1_RxStatus_last_sequence_tag 3
 #define livekalman_rx_v1_RxStatus_sequence_gaps_tag 4
+#define livekalman_rx_v1_RxFrameTrace_sequence_tag 1
+#define livekalman_rx_v1_RxFrameTrace_transfer_id_tag 2
+#define livekalman_rx_v1_RxFrameTrace_file_name_tag 3
+#define livekalman_rx_v1_RxFrameTrace_media_offset_tag 4
+#define livekalman_rx_v1_RxFrameTrace_total_bytes_tag 5
+#define livekalman_rx_v1_RxFrameTrace_noisy_samples_tag 6
+#define livekalman_rx_v1_RxFrameTrace_dc_estimate_tag 7
+#define livekalman_rx_v1_RxFrameTrace_demodulated_bytes_tag 8
+#define livekalman_rx_v1_RxFrameTrace_decoded_bytes_tag 9
+#define livekalman_rx_v1_RxFrameTrace_demodulated_bits_tag 10
+#define livekalman_rx_v1_RxFrameTrace_bit_errors_tag 11
+#define livekalman_rx_v1_RxFrameTrace_compared_bits_tag 12
+#define livekalman_rx_v1_RxFrameTrace_ber_tag    13
+#define livekalman_rx_v1_RxFrameTrace_received_bytes_tag 14
+#define livekalman_rx_v1_RxFrameTrace_checksum_state_tag 15
+#define livekalman_rx_v1_RxFrameTrace_end_of_stream_tag 16
+#define livekalman_rx_v1_RxFrameTrace_observed_at_unix_ms_tag 17
 
 /* Struct field encoding specification for nanopb */
 #define livekalman_rx_v1_TxFrame_FIELDLIST(X, a) \
@@ -194,11 +235,33 @@ X(a, STATIC,   SINGULAR, UINT64,   sequence_gaps,     4)
 #define livekalman_rx_v1_RxStatus_CALLBACK NULL
 #define livekalman_rx_v1_RxStatus_DEFAULT NULL
 
+#define livekalman_rx_v1_RxFrameTrace_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, UINT64,   sequence,          1) \
+X(a, CALLBACK, SINGULAR, STRING,   transfer_id,       2) \
+X(a, CALLBACK, SINGULAR, STRING,   file_name,         3) \
+X(a, STATIC,   SINGULAR, UINT64,   media_offset,      4) \
+X(a, STATIC,   SINGULAR, UINT64,   total_bytes,       5) \
+X(a, CALLBACK, REPEATED, FLOAT,    noisy_samples,     6) \
+X(a, STATIC,   SINGULAR, FLOAT,    dc_estimate,       7) \
+X(a, CALLBACK, SINGULAR, BYTES,    demodulated_bytes,   8) \
+X(a, CALLBACK, SINGULAR, BYTES,    decoded_bytes,     9) \
+X(a, CALLBACK, SINGULAR, STRING,   demodulated_bits,  10) \
+X(a, STATIC,   SINGULAR, UINT64,   bit_errors,       11) \
+X(a, STATIC,   SINGULAR, UINT64,   compared_bits,    12) \
+X(a, STATIC,   SINGULAR, FLOAT,    ber,              13) \
+X(a, STATIC,   SINGULAR, UINT64,   received_bytes,   14) \
+X(a, CALLBACK, SINGULAR, STRING,   checksum_state,   15) \
+X(a, STATIC,   SINGULAR, BOOL,     end_of_stream,    16) \
+X(a, STATIC,   SINGULAR, UINT64,   observed_at_unix_ms,  17)
+#define livekalman_rx_v1_RxFrameTrace_CALLBACK pb_default_field_callback
+#define livekalman_rx_v1_RxFrameTrace_DEFAULT NULL
+
 extern const pb_msgdesc_t livekalman_rx_v1_TxFrame_msg;
 extern const pb_msgdesc_t livekalman_rx_v1_RxFeedback_msg;
 extern const pb_msgdesc_t livekalman_rx_v1_RxConfig_msg;
 extern const pb_msgdesc_t livekalman_rx_v1_ApplyRxReply_msg;
 extern const pb_msgdesc_t livekalman_rx_v1_RxStatus_msg;
+extern const pb_msgdesc_t livekalman_rx_v1_RxFrameTrace_msg;
 
 /* Defines for backwards compatibility with code written before nanopb-0.4.0 */
 #define livekalman_rx_v1_TxFrame_fields &livekalman_rx_v1_TxFrame_msg
@@ -206,9 +269,11 @@ extern const pb_msgdesc_t livekalman_rx_v1_RxStatus_msg;
 #define livekalman_rx_v1_RxConfig_fields &livekalman_rx_v1_RxConfig_msg
 #define livekalman_rx_v1_ApplyRxReply_fields &livekalman_rx_v1_ApplyRxReply_msg
 #define livekalman_rx_v1_RxStatus_fields &livekalman_rx_v1_RxStatus_msg
+#define livekalman_rx_v1_RxFrameTrace_fields &livekalman_rx_v1_RxFrameTrace_msg
 
 /* Maximum encoded size of messages (where known) */
 /* livekalman_rx_v1_ApplyRxReply_size depends on runtime parameters */
+/* livekalman_rx_v1_RxFrameTrace_size depends on runtime parameters */
 #define LIVEKALMAN_RX_V1_RX_V1_RECEIVER_PB_H_MAX_SIZE livekalman_rx_v1_TxFrame_size
 #define livekalman_rx_v1_RxConfig_size           45
 #define livekalman_rx_v1_RxFeedback_size         74

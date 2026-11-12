@@ -1,0 +1,78 @@
+{
+  "suite": "STREAMING_LIVEKALMANFILTER End-to-End & ML Verification",
+  "channel_profile": "configs/local-impaired.json",
+  "controller_policy": "onnx (ml/models/r_policy.onnx)",
+  "frame_parameters": {
+    "sample_rate_hz": 48000,
+    "samples_per_frame": 512,
+    "samples_per_symbol": 8,
+    "bits_per_frame": 64,
+    "frames_per_second": 93.75,
+    "payload_throughput_bytes_per_sec": 750
+  },
+  "ml_policy_verification": {
+    "dataset_path": "ml/data/dataset.csv",
+    "total_scenarios": 6000,
+    "train_scenarios": 4800,
+    "test_scenarios": 1200,
+    "rho_grid_points": 29,
+    "rho_range": [1e-7, 10.0],
+    "onnx_model_path": "ml/models/r_policy.onnx",
+    "onnx_model_bytes": 2243,
+    "onnx_ir_version": 8,
+    "onnx_opset_version": 13,
+    "onnx_operators": ["Gemm", "Mul", "Relu", "Sub"],
+    "golden_vectors": 32,
+    "onnx_vs_sklearn_max_abs_diff": 2.86102294921875e-6,
+    "gonnx_vs_onnxruntime_tolerance": 1e-4,
+    "best_fixed_rho_train": 0.026827,
+    "held_out_mean_ber_all": {
+      "oracle": 0.060918,
+      "onnx_mlp": 0.061885,
+      "best_fixed_rho": 0.062507,
+      "no_drift_tracking": 0.065658
+    },
+    "held_out_mean_ber_drift_channels": {
+      "oracle": 0.078835,
+      "onnx_mlp": 0.081235,
+      "best_fixed_rho": 0.081406,
+      "no_drift_tracking": 0.092319
+    }
+  },
+  "live_stack_verification": {
+    "harness": "scripts/verify_e2e.py",
+    "nodes_verified": [
+      {"id": "sender-1", "role": "sender", "grpc_port": 55051, "http_port": 8081, "healthy": true},
+      {"id": "receiver-1", "role": "receiver", "grpc_port": 55052, "http_port": 8082, "healthy": true},
+      {"id": "controller-1", "role": "controller", "grpc_port": 55053, "http_port": 8080, "healthy": true}
+    ],
+    "onnx_closed_loop_decisions_observed": true,
+    "go_sender_impaired_channel_transfer": {
+      "payload": "examples/media/hello.txt",
+      "bytes": 103,
+      "frames": 13,
+      "transport": "ReceiverService.ProcessSignal (bidirectional gRPC)",
+      "completed": true
+    },
+    "esp32_nanopb_http_ingest": [
+      {
+        "payload": "examples/media/hello.txt",
+        "bytes": 103,
+        "frames": 13,
+        "endpoint": "POST :8082/api/v1/frames",
+        "content_type": "text/plain; charset=utf-8",
+        "crc32_valid": true,
+        "sha256_exact_match": true
+      },
+      {
+        "payload": "examples/media/kalman.bmp",
+        "bytes": 9270,
+        "frames": 1159,
+        "endpoint": "POST :8082/api/v1/frames",
+        "content_type": "image/bmp",
+        "crc32_valid": true,
+        "sha256_exact_match": true
+      }
+    ]
+  }
+}
